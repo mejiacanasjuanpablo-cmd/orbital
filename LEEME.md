@@ -41,7 +41,12 @@ Desliza a los lados (o usa las flechas del teclado) para cambiar de página. Fun
 5. **Enfoque**: temporizador pomodoro (enfoque, descanso y descanso largo, con vibración y sonido al terminar) y lista de tareas.
    Las tareas se guardan en el PC, en `data/tareas.json`.
 6. **Calendario**: el mes actual, relojes del mundo y el clima.
-7. **Comandos**: botones de comandos y la consola donde se ve su resultado.
+7. **Discord**: silenciar el micrófono, ensordecer, modo streamer y abrir Discord. Indica si Discord está abierto en el PC.
+   Los botones envían atajos globales, que hay que configurar una vez en Discord
+   (Ajustes de usuario → Atajos de teclado → Añadir un atajo):
+   `Ctrl+Shift+F7` silencio, `Ctrl+Shift+F8` ensordecer, `Ctrl+Shift+F9` modo streamer.
+   Puedes cambiar los atajos en `config.json` (grupo `"discord"`, campo `"keys"` en formato SendKeys).
+8. **Comandos**: botones de comandos y la consola donde se ve su resultado.
 
 ### Ajustes de estas páginas en `config.json`
 

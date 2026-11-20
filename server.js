@@ -35,7 +35,7 @@ function publicConfig() {
     groups: (cfg.groups || []).map((g) => ({
       name: g.name,
       place: g.place || 'atajos',
-      items: (g.items || []).map(({ id, label, icon, color, type, confirm }) => ({ id, label, icon, color, type, confirm: !!confirm })),
+      items: (g.items || []).map(({ id, label, icon, color, type, confirm, hint }) => ({ id, label, icon, color, type, hint, confirm: !!confirm })),
     })),
   };
 }
@@ -76,7 +76,7 @@ function scriptFor(action) {
   switch (action.type) {
     case 'open': {
       const args = action.args ? ` -ArgumentList ${psQuote(action.args)}` : '';
-      return `Start-Process ${psQuote(action.target)}${args}`;
+      return `Start-Process ([Environment]::ExpandEnvironmentVariables(${psQuote(action.target)}))${args}`;
     }
     case 'media': {
       const vk = MEDIA[action.key];
@@ -179,7 +179,8 @@ while (Get-Process -Id ${process.pid} -ErrorAction SilentlyContinue) {
   $media = $null; try { $media = Get-PanelMedia } catch { }
   $vol = Get-PanelVolume
   $procs = $null; try { $procs = Get-TopProcesses } catch { }
-  [Console]::Out.WriteLine((@{ disks = @($disks); net = $net; media = $media; volume = $vol; procs = $procs } | ConvertTo-Json -Compress -Depth 5))
+  $discord = [bool](Get-Process -Name Discord -ErrorAction SilentlyContinue)
+  [Console]::Out.WriteLine((@{ disks = @($disks); net = $net; media = $media; volume = $vol; procs = $procs; discord = $discord } | ConvertTo-Json -Compress -Depth 5))
   [Console]::Out.Flush()
   Start-Sleep -Milliseconds 1500
 }`;
@@ -215,6 +216,7 @@ function stats() {
     uptime: os.uptime(),
     cpu: { percent: cpuPercent, cores: os.cpus().length, model: os.cpus()[0]?.model?.trim(), perCore: corePercents },
     procs: extra.procs || null,
+    apps: { discord: !!extra.discord },
     mem: { total: os.totalmem(), free: os.freemem() },
     disks: extra.disks,
     net: extra.net,

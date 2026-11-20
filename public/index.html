@@ -213,6 +213,20 @@
   .wx .off { color: var(--muted); font-size: 12px; margin-top: 8px; line-height: 1.5; }
   .wx .off code { color: var(--text); font-size: 11px; }
 
+  /* ---------- Discord */
+  .dkeys { grid-column: 1 / 9; grid-row: 1 / 7; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: var(--gap); }
+  .dkeys .key { flex-direction: column; gap: clamp(6px, 1.6vmin, 12px); font-size: clamp(12px, 2.6vmin, 16px); border-radius: var(--r);
+                background: radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--c) 14%, transparent), transparent 70%), var(--tile); }
+  .dkeys .key svg.i { font-size: clamp(26px, 8vmin, 48px); }
+  .dstat { grid-column: 9 / 13; grid-row: 1 / 7; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+  .dnow { display: flex; align-items: center; gap: 8px; }
+  .dnow b { font-size: clamp(13px, 2.6vmin, 17px); font-weight: 600; }
+  .dhelp { color: var(--muted); font-size: clamp(10px, 1.8vmin, 12px); line-height: 1.45; }
+  .dhelp b { color: var(--text); font-weight: 600; }
+  .dbinds { display: grid; gap: 6px; }
+  .dbind { font-size: clamp(10px, 1.8vmin, 12px); color: var(--muted); line-height: 1.35; }
+  .dbind kbd { display: inline-block; font: 600 .95em "Cascadia Mono", Consolas, monospace; color: var(--text); background: var(--tile-2); border: 1px solid var(--line-2); border-radius: 5px; padding: 1px 5px; margin-bottom: 2px; }
+
   /* ---------- Vertical: apila las tarjetas y permite desplazarse */
   @media (orientation: portrait) {
     .page { grid-template-rows: none; grid-auto-rows: minmax(84px, auto); align-content: start; overflow-y: auto; }
@@ -234,6 +248,7 @@
     .pomo { min-height: 420px; } .pring { flex: none; width: 240px; }
     .tasks { min-height: 360px; }
     .cal { min-height: 330px; } .wclocks { min-height: 140px; } .wx { min-height: 190px; }
+    .dkeys, .dstat { grid-column: 1 / 13; grid-row: auto; } .dkeys { grid-auto-rows: 130px; }
   }
 
   /* ---------- Hoja de confirmación y aviso */
@@ -287,6 +302,10 @@
     <symbol id="i-rain" viewBox="0 0 24 24"><path d="M7 14.5h10a4 4 0 0 0 .6-8 6 6 0 0 0-11.4 1.6A3.3 3.3 0 0 0 7 14.5z"/><path d="M8 17.5l-1 2.5M12 17.5l-1 2.5M16 17.5l-1 2.5"/></symbol>
     <symbol id="i-storm" viewBox="0 0 24 24"><path d="M7 14.5h10a4 4 0 0 0 .6-8 6 6 0 0 0-11.4 1.6A3.3 3.3 0 0 0 7 14.5z"/><path d="m12.5 15.5-2 3.5h3l-2 3.5"/></symbol>
     <symbol id="i-snow" viewBox="0 0 24 24"><path d="M12 3.5v17M4.6 7.8l14.8 8.4M4.6 16.2l14.8-8.4"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/></symbol>
+    <symbol id="i-headphones" viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3.5" y="14" width="4.5" height="6" rx="1.5"/><rect x="16" y="14" width="4.5" height="6" rx="1.5"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 6.5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H10l-4.5 3.5V16.5H6a2 2 0 0 1-2-2z"/><path d="M8.5 10.5h.01M12 10.5h.01M15.5 10.5h.01"/></symbol>
     <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none"/></symbol>
   </defs>
 </svg>
@@ -372,7 +391,18 @@
     <div class="tile wx" id="wx"><span class="cap" style="color:var(--orange)">Clima</span><div class="off">Cargando…</div></div>
   </section>
 
-  <!-- 7 · Comandos -->
+  <!-- 7 · Discord -->
+  <section class="page" data-name="Discord">
+    <div class="dkeys" id="dcKeys"></div>
+    <div class="tile dstat">
+      <div class="cap" style="color:#818cf8">Discord</div>
+      <div class="dnow"><span class="live" id="dcLive"></span><b id="dcState">Comprobando…</b></div>
+      <div class="dhelp">Estos botones envían atajos globales. Configúralos una vez en Discord: <b>Ajustes de usuario → Atajos de teclado → Añadir un atajo</b>.</div>
+      <div class="dbinds" id="dcBinds"></div>
+    </div>
+  </section>
+
+  <!-- 8 · Comandos -->
   <section class="page" data-name="Comandos">
     <div class="cmds" id="cmds"></div>
     <div class="tile console">
@@ -454,6 +484,9 @@
     const by = (p) => cfg.groups.filter((g) => g.place === p).flatMap((g) => g.items);
     $('deck').replaceChildren(...by('atajos').slice(0, 12).map(keyBtn));
     $('cmds').replaceChildren(...by('comandos').map(keyBtn));
+    const dc = by('discord');
+    $('dcKeys').replaceChildren(...dc.map(keyBtn));
+    $('dcBinds').innerHTML = dc.filter((i) => i.hint).map((i) => { const [k, a] = i.hint.split('→'); return `<div class="dbind"><kbd>${esc(k.trim())}</kbd><br>${esc((a || '').trim())}</div>`; }).join('');
     mediaItems = Object.fromEntries(by('media').map((i) => [i.id, i]));
   }
   document.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', () => {
@@ -560,6 +593,8 @@
     $('stripVol').textContent = s.volume && s.volume.level != null ? (s.volume.muted ? 'Silencio' : `Vol ${s.volume.level}%`) : 'Vol –';
     renderMedia(s.media); syncArt(s.artKey);
     renderPerf(s, rp); renderProcs(s.procs);
+    const dOn = !!(s.apps && s.apps.discord);
+    $('dcLive').classList.toggle('on', dOn); $('dcState').textContent = dOn ? 'Abierto en el PC' : 'Cerrado';
   }
 
   function online(on, text) { $('live').classList.toggle('on', on); $('stripStatus').textContent = text; }
