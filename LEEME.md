@@ -19,9 +19,24 @@ No hay que instalar ninguna app en el celular y no se expone nada a la red Wi-Fi
 Consejo: en Chrome del celular, menú ⋮ > **Agregar a pantalla principal** para tenerlo como icono.
 Cada vez que arrancas el panel se genera un token nuevo, así que ábrelo siempre desde el script.
 
+## Páginas
+
+Desliza a los lados (o usa las flechas del teclado) para cambiar de página. Funciona mejor con el celular en horizontal.
+
+1. **Inicio**: reloj, la canción que suena en el PC (con carátula, progreso y controles), volumen, y CPU, RAM, red y disco con gráficas.
+2. **Sistema**: indicadores circulares y los botones de atajos.
+3. **Comandos**: botones de comandos y la consola donde se ve su resultado.
+
 ## Personalizar: `config.json`
 
 Los cambios se aplican sin reiniciar; basta con recargar la página en el celular.
+
+Cada grupo tiene `"place"`: `"atajos"` (página 2, hasta 12 botones), `"comandos"` (página 3) o `"media"`.
+Los botones `prev`, `playpause` y `next` del grupo `media` son los que usa la tarjeta de música.
+
+Cada botón admite `"icon"` y `"color"` (por ejemplo `"#2dd4bf"`). Iconos disponibles:
+`play` `pause` `prev` `next` `vol` `mute` `music` `folder` `download` `briefcase` `globe` `calculator`
+`scissors` `activity` `monitor` `flame` `wifi` `clock` `lock` `moon` `terminal`.
 
 | type      | campos                       | ejemplo                                                |
 |-----------|------------------------------|--------------------------------------------------------|
@@ -31,7 +46,6 @@ Los cambios se aplican sin reiniciar; basta con recargar la página en el celula
 | `command` | `command`, `cwd`, `timeout`  | cualquier PowerShell; su salida se muestra en el celular |
 
 Si añades `"confirm": true` a un botón, pedirá confirmación antes de ejecutarse.
-Los grupos cuyos botones son todos de tipo `command` aparecen en la pestaña **Comandos**, y el resto en **Atajos**.
 
 ## Seguridad
 

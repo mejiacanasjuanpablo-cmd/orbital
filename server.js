@@ -32,7 +32,8 @@ function publicConfig() {
     title: cfg.title || 'Panel',
     groups: (cfg.groups || []).map((g) => ({
       name: g.name,
-      items: (g.items || []).map(({ id, label, icon, type, confirm }) => ({ id, label, icon, type, confirm: !!confirm })),
+      place: g.place || 'atajos',
+      items: (g.items || []).map(({ id, label, icon, color, type, confirm }) => ({ id, label, icon, color, type, confirm: !!confirm })),
     })),
   };
 }
@@ -109,7 +110,35 @@ setInterval(() => {
 }, 1000).unref();
 
 // Disco y red con un único proceso de PowerShell que emite una línea JSON cada 2 s.
-let extra = { disks: [], net: { rxBps: 0, txBps: 0 } };
+let extra = { disks: [], net: { rxBps: 0, txBps: 0 }, media: null, volume: null };
+let art = { key: null, data: null };
+const PS_PRELUDE = `[Console]::OutputEncoding = [Text.Encoding]::UTF8; [Console]::InputEncoding = [Text.Encoding]::UTF8
+. ${"'" + path.join(ROOT, 'lib', 'media.ps1').replace(/'/g, "''") + "'"}
+`;
+
+// Proceso permanente para cambiar el volumen al instante (sin recompilar en cada pulsación).
+let ctl = null;
+function startControlWorker() {
+  const script = `
+while (Get-Process -Id ${process.pid} -ErrorAction SilentlyContinue) {
+  $line = [Console]::In.ReadLine(); if ($null -eq $line) { break }
+  $p = $line.Split(' ')
+  try {
+    switch ($p[0]) {
+      'vol'  { [PanelAudio]::Mute = $false; [PanelAudio]::Volume = [float]([math]::Min([math]::Max([int]$p[1], 0), 100) / 100) }
+      'mute' { [PanelAudio]::Mute = ($p[1] -eq '1') }
+    }
+  } catch { }
+}`;
+  ctl = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', PS_PRELUDE + script], { windowsHide: true });
+  ctl.on('exit', () => { ctl = null; setTimeout(startControlWorker, 3000); });
+  process.on('exit', () => ctl && ctl.kill());
+}
+startControlWorker();
+function control(cmd) {
+  if (ctl && ctl.stdin.writable) ctl.stdin.write(cmd + '\n');
+}
+
 function startStatsWorker() {
   const script = `
 $ErrorActionPreference = 'SilentlyContinue'
@@ -125,20 +154,29 @@ while (Get-Process -Id ${process.pid} -ErrorAction SilentlyContinue) {
     if ($dt -gt 0) { $net = @{ rxBps = [math]::Max(0, ($rx - $prev[0]) / $dt); txBps = [math]::Max(0, ($tx - $prev[1]) / $dt) } }
   }
   $prev = @($rx, $tx); $prevT = $t
-  [Console]::Out.WriteLine((@{ disks = @($disks); net = $net } | ConvertTo-Json -Compress -Depth 4))
+  $media = $null; try { $media = Get-PanelMedia } catch { }
+  $vol = Get-PanelVolume
+  [Console]::Out.WriteLine((@{ disks = @($disks); net = $net; media = $media; volume = $vol } | ConvertTo-Json -Compress -Depth 4))
   [Console]::Out.Flush()
-  Start-Sleep -Seconds 2
+  Start-Sleep -Milliseconds 1500
 }`;
-  const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { windowsHide: true });
+  const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', PS_PRELUDE + script], { windowsHide: true });
+  child.stdout.setEncoding('utf8');
   let buf = '';
   child.stdout.on('data', (d) => {
-    buf += d.toString();
+    buf += d;
     let i;
     while ((i = buf.indexOf('\n')) >= 0) {
       const line = buf.slice(0, i).trim();
       buf = buf.slice(i + 1);
       try {
-        if (line) extra = JSON.parse(line);
+        if (!line) continue;
+        const data = JSON.parse(line);
+        if (data.media && data.media.art) {
+          art = { key: data.media.artKey, data: data.media.art };
+        }
+        if (data.media) delete data.media.art;
+        extra = data;
       } catch {}
     }
   });
@@ -156,6 +194,9 @@ function stats() {
     mem: { total: os.totalmem(), free: os.freemem() },
     disks: extra.disks,
     net: extra.net,
+    media: extra.media && extra.media.title ? extra.media : null,
+    volume: extra.volume,
+    artKey: extra.media && extra.media.artKey === art.key ? art.key : null,
     time: Date.now(),
   };
 }
@@ -200,6 +241,14 @@ const server = http.createServer(async (req, res) => {
     try {
       if (url.pathname === '/api/config' && req.method === 'GET') return send(res, 200, publicConfig());
       if (url.pathname === '/api/stats' && req.method === 'GET') return send(res, 200, stats());
+      if (url.pathname === '/api/art' && req.method === 'GET') return send(res, 200, { key: art.key, data: art.data });
+      if (url.pathname === '/api/volume' && req.method === 'POST') {
+        const body = JSON.parse((await readBody(req)) || '{}');
+        if (typeof body.muted === 'boolean') control(`mute ${body.muted ? 1 : 0}`);
+        else if (Number.isFinite(body.level)) control(`vol ${Math.round(body.level)}`);
+        else return send(res, 400, { error: 'falta level o muted' });
+        return send(res, 200, { ok: true });
+      }
       if (url.pathname === '/api/action' && req.method === 'POST') {
         const { id } = JSON.parse((await readBody(req)) || '{}');
         const action = findAction(id);
