@@ -1,0 +1,39 @@
+{
+  "title": "Panel del PC",
+  "groups": [
+    {
+      "name": "Multimedia",
+      "items": [
+        { "id": "prev", "label": "Anterior", "icon": "⏮", "type": "media", "key": "prev" },
+        { "id": "playpause", "label": "Play / Pausa", "icon": "⏯", "type": "media", "key": "playpause" },
+        { "id": "next", "label": "Siguiente", "icon": "⏭", "type": "media", "key": "next" },
+        { "id": "voldown", "label": "Vol −", "icon": "🔉", "type": "media", "key": "voldown", "repeat": 2 },
+        { "id": "mute", "label": "Silencio", "icon": "🔇", "type": "media", "key": "mute" },
+        { "id": "volup", "label": "Vol +", "icon": "🔊", "type": "media", "key": "volup", "repeat": 2 }
+      ]
+    },
+    {
+      "name": "Atajos",
+      "items": [
+        { "id": "explorer", "label": "Explorador", "icon": "📁", "type": "open", "target": "explorer.exe" },
+        { "id": "downloads", "label": "Descargas", "icon": "⬇️", "type": "open", "target": "explorer.exe", "args": "shell:Downloads" },
+        { "id": "documents", "label": "Documentos", "icon": "💼", "type": "open", "target": "explorer.exe", "args": "shell:Personal" },
+        { "id": "browser", "label": "Navegador", "icon": "🌐", "type": "open", "target": "https://www.google.com" },
+        { "id": "calc", "label": "Calculadora", "icon": "🧮", "type": "open", "target": "calc.exe" },
+        { "id": "screenshot", "label": "Recorte", "icon": "✂️", "type": "open", "target": "ms-screenclip:" },
+        { "id": "taskmgr", "label": "Admin. tareas", "icon": "📊", "type": "keys", "keys": "^+{ESC}" },
+        { "id": "showdesktop", "label": "Escritorio", "icon": "🖥", "type": "command", "command": "(New-Object -ComObject Shell.Application).ToggleDesktop()" }
+      ]
+    },
+    {
+      "name": "Comandos",
+      "items": [
+        { "id": "topcpu", "label": "Procesos top CPU", "icon": "🔥", "type": "command", "command": "Get-Process | Sort-Object CPU -Descending | Select-Object -First 10 Name, @{n='CPU(s)';e={[math]::Round($_.CPU,1)}}, @{n='RAM(MB)';e={[math]::Round($_.WorkingSet64/1MB)}} | Format-Table -AutoSize | Out-String -Width 60" },
+        { "id": "ip", "label": "Mi IP local", "icon": "📶", "type": "command", "command": "Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } | Select-Object InterfaceAlias, IPAddress | Format-Table -AutoSize | Out-String -Width 60" },
+        { "id": "uptime", "label": "Uptime", "icon": "⏱", "type": "command", "command": "$u = (Get-Date) - (Get-CimInstance Win32_OperatingSystem).LastBootUpTime; 'Encendido hace {0} d {1} h {2} min' -f $u.Days, $u.Hours, $u.Minutes" },
+        { "id": "lock", "label": "Bloquear PC", "icon": "🔒", "type": "command", "command": "rundll32.exe user32.dll,LockWorkStation", "confirm": true },
+        { "id": "sleep", "label": "Suspender", "icon": "🌙", "type": "command", "command": "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Application]::SetSuspendState('Suspend', $false, $false) | Out-Null", "confirm": true }
+      ]
+    }
+  ]
+}

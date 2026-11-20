@@ -1,0 +1,6 @@
+# Datos de cada PC: nunca se suben
+.token
+config.json
+data/
+debug.log
+*.zip

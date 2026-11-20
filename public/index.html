@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0f1115">
+<title>Panel USB</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --panel-2: #1f232c; --line: #2a2f3a;
+    --text: #e8eaf0; --muted: #8b93a5; --accent: #5b8cff; --ok: #3ccf8e; --warn: #f5b84b; --bad: #ff6b6b;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { padding: env(safe-area-inset-top) 0 calc(72px + env(safe-area-inset-bottom)); min-height: 100vh; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 8px; }
+  h1 { font-size: 20px; margin: 0; font-weight: 650; }
+  .status { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
+  .dot.on { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  main { padding: 0 16px; }
+  section.view { display: none; }
+  section.view.active { display: block; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 18px 0 10px; font-weight: 600; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  @media (min-width: 560px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+  .btn {
+    appearance: none; border: 1px solid var(--line); background: var(--panel); color: var(--text);
+    border-radius: var(--radius); padding: 14px 6px 12px; min-height: 92px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    font: inherit; font-size: 13px; text-align: center; cursor: pointer;
+    transition: transform .08s ease, background .15s ease, border-color .15s ease;
+  }
+  .btn .ic { font-size: 28px; line-height: 1; }
+  .btn:active { transform: scale(.95); background: var(--panel-2); }
+  .btn.busy { border-color: var(--accent); }
+  .btn.done { border-color: var(--ok); }
+  .btn.fail { border-color: var(--bad); }
+
+  .cards { display: grid; gap: 10px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
+  .card .row { display: flex; justify-content: space-between; align-items: baseline; }
+  .card .label { color: var(--muted); font-size: 13px; }
+  .card .big { font-size: 26px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .card .sub { color: var(--muted); font-size: 12px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .bar { height: 8px; background: var(--panel-2); border-radius: 99px; overflow: hidden; margin-top: 10px; }
+  .bar > i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .4s ease, background .4s; }
+  canvas.spark { width: 100%; height: 56px; display: block; margin-top: 10px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; background: rgba(15,17,21,.92); backdrop-filter: blur(10px);
+        border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+  nav button { flex: 1; appearance: none; border: 0; background: none; color: var(--muted); font: inherit; font-size: 12px;
+               padding: 10px 0 12px; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; }
+  nav button .ic { font-size: 22px; }
+  nav button.active { color: var(--accent); }
+
+  .sheet { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: none; align-items: flex-end; z-index: 10; }
+  .sheet.open { display: flex; }
+  .sheet .inner { background: var(--panel); width: 100%; max-height: 80vh; border-radius: 20px 20px 0 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+                  display: flex; flex-direction: column; gap: 12px; border-top: 1px solid var(--line); }
+  .sheet h3 { margin: 0; font-size: 17px; }
+  .sheet pre { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px; overflow: auto;
+               font: 12px/1.45 ui-monospace, "Cascadia Mono", Consolas, monospace; white-space: pre; color: #cfd5e3; }
+  .sheet .actions { display: flex; gap: 10px; }
+  .sheet .actions button { flex: 1; appearance: none; border: 1px solid var(--line); background: var(--panel-2); color: var(--text);
+                           border-radius: 12px; padding: 14px; font: inherit; font-weight: 600; cursor: pointer; }
+  .sheet .actions button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px);
+           background: var(--panel-2); border: 1px solid var(--line); padding: 10px 16px; border-radius: 99px; font-size: 13px;
+           opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: calc(100% - 32px); }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .empty { color: var(--muted); padding: 40px 0; text-align: center; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">Panel</h1>
+  <div class="status"><span class="dot" id="dot"></span><span id="statusText">Conectando…</span></div>
+</header>
+
+<main>
+  <section class="view active" id="view-atajos"></section>
+  <section class="view" id="view-monitor">
+    <h2 id="hostName">PC</h2>
+    <div class="cards">
+      <div class="card">
+        <div class="row"><span class="label">CPU</span><span class="big" id="cpuVal">–</span></div>
+        <div class="sub" id="cpuSub"></div>
+        <canvas class="spark" id="cpuSpark"></canvas>
+      </div>
+      <div class="card">
+        <div class="row"><span class="label">Memoria</span><span class="big" id="memVal">–</span></div>
+        <div class="sub" id="memSub"></div>
+        <div class="bar"><i id="memBar"></i></div>
+      </div>
+      <div class="two">
+        <div class="card"><div class="label">↓ Descarga</div><div class="big" id="rxVal" style="font-size:20px">–</div></div>
+        <div class="card"><div class="label">↑ Subida</div><div class="big" id="txVal" style="font-size:20px">–</div></div>
+      </div>
+      <div id="disks" class="cards"></div>
+      <div class="card"><div class="row"><span class="label">Encendido</span><span id="uptime" class="sub" style="font-size:14px;color:var(--text)">–</span></div></div>
+    </div>
+  </section>
+  <section class="view" id="view-comandos"></section>
+</main>
+
+<nav>
+  <button data-view="atajos" class="active"><span class="ic">⚡</span>Atajos</button>
+  <button data-view="monitor"><span class="ic">📈</span>Monitor</button>
+  <button data-view="comandos"><span class="ic">⌨️</span>Comandos</button>
+</nav>
+
+<div class="sheet" id="sheet">
+  <div class="inner">
+    <h3 id="sheetTitle"></h3>
+    <pre id="sheetBody" hidden></pre>
+    <div class="actions" id="sheetActions"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  // El token llega en el fragmento (#t=...) y no viaja en ninguna petición.
+  const fromHash = new URLSearchParams(location.hash.slice(1)).get('t');
+  let token = null;
+  try { if (fromHash) sessionStorage.setItem('panelToken', fromHash); token = sessionStorage.getItem('panelToken'); } catch {}
+  token = token || fromHash;
+  if (fromHash) history.replaceState(null, '', location.pathname);
+
+  const $ = (id) => document.getElementById(id);
+  const api = async (path, opts = {}) => {
+    const r = await fetch(path, { ...opts, headers: { 'x-panel-token': token || '', 'Content-Type': 'application/json', ...(opts.headers || {}) } });
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(body.error || r.status);
+    return body;
+  };
+  const buzz = (ms = 12) => { try { navigator.vibrate && navigator.vibrate(ms); } catch {} };
+
+  // ---- Navegación
+  const views = { atajos: $('view-atajos'), monitor: $('view-monitor'), comandos: $('view-comandos') };
+  document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('nav button').forEach((x) => x.classList.toggle('active', x === b));
+    Object.entries(views).forEach(([k, v]) => v.classList.toggle('active', k === b.dataset.view));
+    try { localStorage.setItem('panelView', b.dataset.view); } catch {}
+    if (b.dataset.view === 'monitor') drawSpark();
+  }));
+  try { const v = localStorage.getItem('panelView'); if (v && views[v]) document.querySelector(`nav button[data-view="${v}"]`).click(); } catch {}
+
+  // ---- Toast y hoja inferior
+  let toastTimer;
+  const toast = (msg) => { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1800); };
+  const sheet = (title, body, buttons) => new Promise((resolve) => {
+    $('sheetTitle').textContent = title;
+    $('sheetBody').hidden = body == null; $('sheetBody').textContent = body || '';
+    const box = $('sheetActions'); box.innerHTML = '';
+    buttons.forEach(([label, value, primary]) => {
+      const b = document.createElement('button'); b.textContent = label; if (primary) b.className = 'primary';
+      b.onclick = () => { $('sheet').classList.remove('open'); resolve(value); }; box.appendChild(b);
+    });
+    $('sheet').classList.add('open');
+  });
+  $('sheet').addEventListener('click', (e) => { if (e.target.id === 'sheet') $('sheet').classList.remove('open'); });
+
+  // ---- Botones
+  async function press(item, el) {
+    buzz();
+    if (item.confirm && !(await sheet(`¿${item.label}?`, null, [['Cancelar', false], ['Sí, hacerlo', true, true]]))) return;
+    el.classList.remove('done', 'fail'); el.classList.add('busy');
+    try {
+      const r = await api('/api/action', { method: 'POST', body: JSON.stringify({ id: item.id }) });
+      el.classList.remove('busy'); el.classList.add(r.code === 0 ? 'done' : 'fail');
+      if (r.showOutput) {
+        const out = [r.stdout, r.stderr && '⚠ ' + r.stderr].filter(Boolean).join('\n\n') || '(sin salida)';
+        sheet(`${item.icon || ''} ${item.label}`, out, [['Cerrar', true, true]]);
+      } else toast(r.code === 0 ? `${item.icon || '✓'} ${item.label}` : `Error: ${r.stderr || r.code}`);
+    } catch (e) {
+      el.classList.remove('busy'); el.classList.add('fail'); toast('Error: ' + e.message);
+    }
+    setTimeout(() => el.classList.remove('done', 'fail'), 1200);
+  }
+
+  function renderGroups(target, groups) {
+    target.innerHTML = '';
+    if (!groups.length) { target.innerHTML = '<div class="empty">Nada configurado aquí todavía.</div>'; return; }
+    groups.forEach((g) => {
+      const h = document.createElement('h2'); h.textContent = g.name; target.appendChild(h);
+      const grid = document.createElement('div'); grid.className = 'grid';
+      g.items.forEach((item) => {
+        const b = document.createElement('button'); b.className = 'btn';
+        const ic = document.createElement('span'); ic.className = 'ic'; ic.textContent = item.icon || '•';
+        const lb = document.createElement('span'); lb.textContent = item.label;
+        b.append(ic, lb); b.addEventListener('click', () => press(item, b)); grid.appendChild(b);
+      });
+      target.appendChild(grid);
+    });
+  }
+
+  async function loadConfig() {
+    const cfg = await api('/api/config');
+    $('title').textContent = cfg.title; document.title = cfg.title;
+    const isCmd = (g) => g.items.length && g.items.every((i) => i.type === 'command');
+    renderGroups(views.atajos, cfg.groups.filter((g) => !isCmd(g)));
+    renderGroups(views.comandos, cfg.groups.filter(isCmd));
+  }
+
+  // ---- Monitor
+  const fmtBytes = (b) => { const u = ['B', 'KB', 'MB', 'GB', 'TB']; let i = 0; while (b >= 1024 && i < u.length - 1) { b /= 1024; i++; } return `${b.toFixed(b < 10 && i ? 1 : 0)} ${u[i]}`; };
+  const color = (p) => (p >= 90 ? 'var(--bad)' : p >= 70 ? 'var(--warn)' : 'var(--accent)');
+  const cpuHist = [];
+  function drawSpark() {
+    const c = $('cpuSpark'); const dpr = window.devicePixelRatio || 1;
+    const w = c.clientWidth, h = c.clientHeight; if (!w) return;
+    c.width = w * dpr; c.height = h * dpr; const x = c.getContext('2d'); x.scale(dpr, dpr);
+    x.clearRect(0, 0, w, h); if (cpuHist.length < 2) return;
+    const step = w / 59; const pts = cpuHist.map((v, i) => [w - (cpuHist.length - 1 - i) * step, h - (v / 100) * (h - 4) - 2]);
+    const grad = x.createLinearGradient(0, 0, 0, h); grad.addColorStop(0, 'rgba(91,140,255,.35)'); grad.addColorStop(1, 'rgba(91,140,255,0)');
+    x.beginPath(); pts.forEach(([px, py], i) => (i ? x.lineTo(px, py) : x.moveTo(px, py)));
+    x.lineTo(pts[pts.length - 1][0], h); x.lineTo(pts[0][0], h); x.closePath(); x.fillStyle = grad; x.fill();
+    x.beginPath(); pts.forEach(([px, py], i) => (i ? x.lineTo(px, py) : x.moveTo(px, py)));
+    x.strokeStyle = '#5b8cff'; x.lineWidth = 2; x.lineJoin = 'round'; x.stroke();
+  }
+
+  function renderStats(s) {
+    $('hostName').textContent = s.host;
+    $('cpuVal').textContent = `${Math.round(s.cpu.percent)}%`; $('cpuVal').style.color = color(s.cpu.percent);
+    $('cpuSub').textContent = `${s.cpu.cores} núcleos · ${s.cpu.model || ''}`;
+    cpuHist.push(s.cpu.percent); if (cpuHist.length > 60) cpuHist.shift();
+    if (views.monitor.classList.contains('active')) drawSpark();
+    const used = s.mem.total - s.mem.free, mp = (used / s.mem.total) * 100;
+    $('memVal').textContent = `${Math.round(mp)}%`; $('memSub').textContent = `${fmtBytes(used)} de ${fmtBytes(s.mem.total)}`;
+    $('memBar').style.width = mp + '%'; $('memBar').style.background = color(mp);
+    $('rxVal').textContent = fmtBytes(s.net.rxBps || 0) + '/s'; $('txVal').textContent = fmtBytes(s.net.txBps || 0) + '/s';
+    const d = $('disks'); d.innerHTML = '';
+    (s.disks || []).forEach((k) => {
+      const p = k.total ? ((k.total - k.free) / k.total) * 100 : 0;
+      const card = document.createElement('div'); card.className = 'card';
+      card.innerHTML = `<div class="row"><span class="label"></span><span class="big" style="font-size:20px"></span></div><div class="sub"></div><div class="bar"><i></i></div>`;
+      card.querySelector('.label').textContent = `Disco ${k.name}`;
+      card.querySelector('.big').textContent = `${Math.round(p)}%`;
+      card.querySelector('.sub').textContent = `${fmtBytes(k.free)} libres de ${fmtBytes(k.total)}`;
+      const bar = card.querySelector('.bar i'); bar.style.width = p + '%'; bar.style.background = color(p);
+      d.appendChild(card);
+    });
+    const u = s.uptime, dd = Math.floor(u / 86400), hh = Math.floor((u % 86400) / 3600), mm = Math.floor((u % 3600) / 60);
+    $('uptime').textContent = `${dd ? dd + ' d ' : ''}${hh} h ${mm} min`;
+  }
+
+  // ---- Conexión
+  function setOnline(on, text) { $('dot').classList.toggle('on', on); $('statusText').textContent = text; }
+  let configLoaded = false;
+  async function tick() {
+    try {
+      if (!configLoaded) { await loadConfig(); configLoaded = true; }
+      renderStats(await api('/api/stats'));
+      setOnline(true, 'Conectado');
+    } catch (e) {
+      setOnline(false, String(e.message).includes('token') ? 'Token inválido' : 'Sin conexión');
+    }
+  }
+  if (!token) setOnline(false, 'Falta el token');
+  tick(); setInterval(tick, 2000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
+})();
+</script>
+</body>
+</html>
