@@ -128,6 +128,91 @@
   .console pre .err { color: var(--red); }
   .console pre .hint { color: var(--dim); }
 
+  /* ---------- Rendimiento */
+  .chart { display: flex; flex-direction: column; }
+  .chart .head { display: flex; align-items: baseline; gap: 10px; }
+  .chart .head .v { margin-left: auto; font-size: clamp(14px, 3vmin, 22px); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .chart .head .v small { font-size: .6em; color: var(--muted); font-weight: 500; margin-left: 2px; }
+  .chart .legend { display: flex; gap: 12px; color: var(--muted); font-size: 10px; }
+  .chart .legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  .chart canvas { flex: 1; width: 100%; min-height: 0; margin-top: 6px; }
+  .perf-cpu { grid-column: 1 / 9; grid-row: 1 / 4; }
+  .perf-ram { grid-column: 1 / 5; grid-row: 4 / 7; }
+  .perf-net { grid-column: 5 / 9; grid-row: 4 / 7; }
+  .perf-cores { grid-column: 9 / 13; grid-row: 1 / 7; display: flex; flex-direction: column; }
+  .cores { flex: 1; display: grid; gap: 5px 8px; margin-top: 8px; min-height: 0; }
+  .core { display: grid; grid-template-columns: 1.6em 1fr 2.4em; align-items: center; gap: 6px; font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 0; }
+  .core .bar { height: 100%; max-height: 14px; min-height: 4px; border-radius: 4px; }
+  .core .bar i { border-radius: 4px; transition: width .6s ease, background .6s; }
+  .core b { color: var(--text); font-weight: 600; text-align: right; }
+
+  /* ---------- Procesos */
+  .plist { grid-row: 1 / 7; display: flex; flex-direction: column; }
+  .plist.cpu { grid-column: 1 / 7; } .plist.mem { grid-column: 7 / 13; }
+  .plist .head { display: flex; justify-content: space-between; align-items: baseline; }
+  .plist .head span:last-child { color: var(--muted); font-size: 11px; }
+  .rows { flex: 1; display: grid; grid-template-rows: repeat(8, 1fr); margin-top: 6px; min-height: 0; }
+  .prow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 10px; border-top: 1px solid var(--line); min-height: 0; position: relative; }
+  .prow .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: clamp(11px, 2.1vmin, 14px); position: relative; z-index: 1; }
+  .prow .nm em { font-style: normal; color: var(--muted); font-size: .8em; margin-left: 6px; }
+  .prow .val { font-variant-numeric: tabular-nums; font-weight: 600; font-size: clamp(11px, 2.1vmin, 14px); position: relative; z-index: 1; }
+  .prow .fill { position: absolute; left: 0; top: 18%; bottom: 18%; border-radius: 6px; background: var(--c); opacity: .14; transition: width .6s ease; }
+
+  /* ---------- Enfoque */
+  .pomo { grid-column: 1 / 7; grid-row: 1 / 7; display: flex; flex-direction: column; align-items: center; }
+  .modes { display: flex; gap: 6px; background: var(--tile-2); padding: 4px; border-radius: 99px; align-self: stretch; }
+  .modes button { flex: 1; border: 0; background: none; color: var(--muted); padding: 6px 4px; border-radius: 99px; cursor: pointer; font-size: clamp(10px, 2vmin, 13px); font-weight: 600; white-space: nowrap; }
+  .modes button.on { background: var(--text); color: var(--bg); }
+  .pring { position: relative; flex: 1; aspect-ratio: 1; max-width: 100%; min-height: 0; margin: 8px 0; }
+  .pring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .pring circle { fill: none; stroke-width: 6; stroke-linecap: round; }
+  .pring .t { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+  .pring .t b { font-size: clamp(26px, 9vmin, 60px); font-weight: 250; font-variant-numeric: tabular-nums; letter-spacing: -.03em; line-height: 1; }
+  .pring .t span { color: var(--muted); font-size: clamp(9px, 1.8vmin, 12px); margin-top: 4px; }
+  .pctl { display: flex; gap: 10px; align-items: center; }
+  .pctl .cbtn { border: 1px solid var(--line-2); }
+  .tasks { grid-column: 7 / 13; grid-row: 1 / 7; display: flex; flex-direction: column; }
+  .tasks .head { display: flex; justify-content: space-between; align-items: baseline; }
+  .tasks .head span:last-child { color: var(--muted); font-size: 11px; }
+  .tasks form { display: flex; gap: 8px; margin-top: 8px; }
+  .tasks input { flex: 1; min-width: 0; background: var(--tile-2); border: 1px solid var(--line); color: var(--text); border-radius: 10px; padding: 8px 10px; font: inherit; font-size: 13px; -webkit-user-select: text; user-select: text; outline: none; }
+  .tasks input:focus { border-color: var(--teal); }
+  .tasks form button { border: 0; background: var(--teal); color: #04110f; font-weight: 700; border-radius: 10px; padding: 0 12px; cursor: pointer; font-size: 18px; }
+  .tlist { flex: 1; overflow-y: auto; margin: 8px -4px 0; padding: 0 4px; min-height: 0; }
+  .titem { display: flex; align-items: center; gap: 10px; padding: 8px 2px; border-top: 1px solid var(--line); }
+  .titem .ck { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--line-2); flex: none; display: grid; place-items: center; cursor: pointer; background: none; color: var(--bg); padding: 0; }
+  .titem.done .ck { background: var(--teal); border-color: var(--teal); }
+  .titem .tx { flex: 1; min-width: 0; font-size: 13px; overflow-wrap: anywhere; cursor: pointer; }
+  .titem.done .tx { color: var(--dim); text-decoration: line-through; }
+  .titem .rm { border: 0; background: none; color: var(--dim); cursor: pointer; font-size: 16px; padding: 2px 4px; }
+  .tlist .hint { color: var(--dim); font-size: 12px; padding: 12px 2px; }
+
+  /* ---------- Calendario */
+  .cal { grid-column: 1 / 7; grid-row: 1 / 7; display: flex; flex-direction: column; }
+  .cal .head { display: flex; align-items: center; gap: 8px; }
+  .cal .head b { font-size: clamp(13px, 2.8vmin, 18px); font-weight: 600; margin-right: auto; }
+  .cal .head button { border: 0; background: var(--tile-2); width: 28px; height: 28px; border-radius: 8px; cursor: pointer; color: var(--muted); font-size: 14px; }
+  .grid7 { flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: 1fr; gap: 2px; margin-top: 6px; min-height: 0; text-align: center; font-variant-numeric: tabular-nums; }
+  .grid7 .dn { color: var(--dim); font-size: 10px; font-weight: 700; text-transform: uppercase; display: grid; place-items: center; }
+  .grid7 .d { display: grid; place-items: center; font-size: clamp(11px, 2.2vmin, 14px); border-radius: 10px; }
+  .grid7 .d.out { color: var(--dim); }
+  .grid7 .d.we { color: var(--muted); }
+  .grid7 .d.today { background: var(--teal); color: #04110f; font-weight: 700; }
+  .wclocks { grid-column: 7 / 13; grid-row: 1 / 4; display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px 12px; align-content: start; }
+  .wc .n { color: var(--muted); font-size: clamp(9px, 1.7vmin, 11px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wc .t { font-size: clamp(16px, 4.2vmin, 28px); font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .wc .t small { font-size: .45em; color: var(--muted); margin-left: 4px; letter-spacing: 0; }
+  .wx { grid-column: 7 / 13; grid-row: 4 / 7; display: flex; flex-direction: column; }
+  .wx .now { display: flex; align-items: center; gap: 12px; }
+  .wx .now svg.i { font-size: clamp(26px, 7vmin, 44px); color: var(--orange); }
+  .wx .now b { font-size: clamp(22px, 6vmin, 38px); font-weight: 300; }
+  .wx .now .d { color: var(--muted); font-size: clamp(9px, 1.7vmin, 12px); line-height: 1.35; }
+  .wx .days { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: auto; text-align: center; font-size: 11px; color: var(--muted); }
+  .wx .days svg.i { font-size: 18px; color: var(--text); display: block; margin: 3px auto; }
+  .wx .days b { color: var(--text); font-weight: 600; }
+  .wx .off { color: var(--muted); font-size: 12px; margin-top: 8px; line-height: 1.5; }
+  .wx .off code { color: var(--text); font-size: 11px; }
+
   /* ---------- Vertical: apila las tarjetas y permite desplazarse */
   @media (orientation: portrait) {
     .page { grid-template-rows: none; grid-auto-rows: minmax(84px, auto); align-content: start; overflow-y: auto; }
@@ -142,6 +227,13 @@
     .console { grid-column: 1 / 13; grid-row: auto; min-height: 280px; }
     .time { font-size: clamp(64px, 24vw, 120px); }
     .art { width: 96px; }
+    .perf-cpu, .perf-ram, .perf-net, .perf-cores, .plist.cpu, .plist.mem, .pomo, .tasks, .cal, .wclocks, .wx { grid-column: 1 / 13; grid-row: auto; }
+    .perf-cpu, .perf-ram, .perf-net { min-height: 170px; }
+    .perf-cores { min-height: 260px; }
+    .plist { min-height: 330px; }
+    .pomo { min-height: 420px; } .pring { flex: none; width: 240px; }
+    .tasks { min-height: 360px; }
+    .cal { min-height: 330px; } .wclocks { min-height: 140px; } .wx { min-height: 190px; }
   }
 
   /* ---------- Hoja de confirmación y aviso */
@@ -184,6 +276,17 @@
     <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="m7 9.5 3 2.5-3 2.5M12.5 15h4.5"/></symbol>
     <symbol id="i-expand" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
     <symbol id="i-shrink" viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v4h4"/></symbol>
+    <symbol id="i-skip" viewBox="0 0 24 24"><path d="M5 5.5v13l9-6.5zM18 5.5v13"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" stroke-width="3"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+    <symbol id="i-moonsm" viewBox="0 0 24 24"><path d="M18.5 14.5A7 7 0 0 1 9.5 5.5a7 7 0 1 0 9 9z"/></symbol>
+    <symbol id="i-cloudsun" viewBox="0 0 24 24"><path d="M8 4.5v1.5M3.5 9H5M4.8 5.8l1 1M12.2 5.8l-1 1"/><path d="M5.6 11.6A3.5 3.5 0 0 1 11.4 8"/><path d="M7.5 19.5h9a3.5 3.5 0 0 0 .5-7 5 5 0 0 0-9.6 1.2 3 3 0 0 0 .1 5.8z"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18.5h10a4 4 0 0 0 .6-8 6 6 0 0 0-11.4 1.6A3.3 3.3 0 0 0 7 18.5z"/></symbol>
+    <symbol id="i-fog" viewBox="0 0 24 24"><path d="M4 9h16M3 13h18M5 17h14"/></symbol>
+    <symbol id="i-rain" viewBox="0 0 24 24"><path d="M7 14.5h10a4 4 0 0 0 .6-8 6 6 0 0 0-11.4 1.6A3.3 3.3 0 0 0 7 14.5z"/><path d="M8 17.5l-1 2.5M12 17.5l-1 2.5M16 17.5l-1 2.5"/></symbol>
+    <symbol id="i-storm" viewBox="0 0 24 24"><path d="M7 14.5h10a4 4 0 0 0 .6-8 6 6 0 0 0-11.4 1.6A3.3 3.3 0 0 0 7 14.5z"/><path d="m12.5 15.5-2 3.5h3l-2 3.5"/></symbol>
+    <symbol id="i-snow" viewBox="0 0 24 24"><path d="M12 3.5v17M4.6 7.8l14.8 8.4M4.6 16.2l14.8-8.4"/></symbol>
     <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none"/></symbol>
   </defs>
 </svg>
@@ -229,7 +332,47 @@
     <div class="deck" id="deck"></div>
   </section>
 
-  <!-- 3 · Comandos -->
+  <!-- 3 · Rendimiento -->
+  <section class="page" data-name="Rendimiento">
+    <div class="tile chart perf-cpu"><div class="head"><span class="cap" style="color:var(--teal)">CPU · últimos 3 min</span><span class="v" id="pcpuV">–</span></div><canvas id="chCpu"></canvas></div>
+    <div class="tile chart perf-ram"><div class="head"><span class="cap" style="color:var(--violet)">RAM</span><span class="v" id="pramV">–</span></div><canvas id="chRam"></canvas></div>
+    <div class="tile chart perf-net"><div class="head"><span class="cap" style="color:var(--orange)">Red</span><span class="legend"><span><i style="background:var(--orange)"></i>Bajada</span><span><i style="background:var(--sky)"></i>Subida</span></span></div><canvas id="chNet"></canvas></div>
+    <div class="tile perf-cores"><div class="cap" style="color:var(--teal)">Núcleos</div><div class="cores" id="cores"></div></div>
+  </section>
+
+  <!-- 4 · Procesos -->
+  <section class="page" data-name="Procesos">
+    <div class="tile plist cpu" style="--c: var(--teal)"><div class="head"><span class="cap" style="color:var(--teal)">Más CPU</span><span id="procCount"></span></div><div class="rows" id="procCpu"></div></div>
+    <div class="tile plist mem" style="--c: var(--violet)"><div class="head"><span class="cap" style="color:var(--violet)">Más memoria</span><span>agrupado por programa</span></div><div class="rows" id="procMem"></div></div>
+  </section>
+
+  <!-- 5 · Enfoque -->
+  <section class="page" data-name="Enfoque">
+    <div class="tile pomo">
+      <div class="modes" id="pomoModes"><button data-m="enfoque">Enfoque</button><button data-m="descanso">Descanso</button><button data-m="largo">Descanso largo</button></div>
+      <div class="pring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" stroke="rgba(255,255,255,.07)"/><circle id="pomoArc" cx="50" cy="50" r="45" stroke="var(--teal)" stroke-dasharray="282.74" stroke-dashoffset="0" style="transition: stroke-dashoffset .9s linear, stroke .3s"/></svg>
+        <div class="t"><b id="pomoTime">25:00</b><span id="pomoLabel">Listo para enfocarte</span></div></div>
+      <div class="pctl">
+        <button class="cbtn" id="pomoReset" aria-label="Reiniciar"><svg class="i"><use href="#i-reset"/></svg></button>
+        <button class="cbtn main" id="pomoGo" aria-label="Iniciar o pausar"><svg class="i"><use id="pomoGoIcon" href="#i-play"/></svg></button>
+        <button class="cbtn" id="pomoSkip" aria-label="Saltar"><svg class="i"><use href="#i-skip"/></svg></button>
+      </div>
+    </div>
+    <div class="tile tasks">
+      <div class="head"><span class="cap" style="color:var(--teal)">Tareas</span><span id="taskCount"></span></div>
+      <form id="taskForm" autocomplete="off"><input id="taskInput" maxlength="200" placeholder="Nueva tarea…" enterkeyhint="done"><button aria-label="Agregar">+</button></form>
+      <div class="tlist" id="taskList"></div>
+    </div>
+  </section>
+
+  <!-- 6 · Calendario -->
+  <section class="page" data-name="Calendario">
+    <div class="tile cal"><div class="head"><b id="calTitle"></b><button id="calPrev" aria-label="Mes anterior">‹</button><button id="calToday" aria-label="Hoy" style="width:auto;padding:0 10px;font-size:12px">Hoy</button><button id="calNext" aria-label="Mes siguiente">›</button></div><div class="grid7" id="calGrid"></div></div>
+    <div class="tile wclocks" id="wclocks"></div>
+    <div class="tile wx" id="wx"><span class="cap" style="color:var(--orange)">Clima</span><div class="off">Cargando…</div></div>
+  </section>
+
+  <!-- 7 · Comandos -->
   <section class="page" data-name="Comandos">
     <div class="cmds" id="cmds"></div>
     <div class="tile console">
@@ -270,7 +413,7 @@
   const go = (i) => pagesEl.scrollTo({ left: Math.max(0, Math.min(pages.length - 1, i)) * pagesEl.clientWidth, behavior: 'smooth' });
   const markDot = () => { const c = current(); [...dots.children].forEach((d, i) => d.classList.toggle('on', i === c)); try { localStorage.setItem('panelPage', c); } catch {} drawSparks(); };
   pagesEl.addEventListener('scroll', () => { clearTimeout(markDot.t); markDot.t = setTimeout(markDot, 60); });
-  addEventListener('keydown', (e) => { if (e.key === 'ArrowRight') go(current() + 1); if (e.key === 'ArrowLeft') go(current() - 1); });
+  addEventListener('keydown', (e) => { if (e.target.closest('input, textarea')) return; if (e.key === 'ArrowRight') go(current() + 1); if (e.key === 'ArrowLeft') go(current() - 1); });
   addEventListener('resize', () => { const c = Number(localStorage.getItem('panelPage') || 0); pagesEl.scrollLeft = c * pagesEl.clientWidth; drawSparks(); });
   try { const c = Number(localStorage.getItem('panelPage') || 0); requestAnimationFrame(() => (pagesEl.scrollLeft = c * pagesEl.clientWidth)); } catch {}
 
@@ -307,7 +450,7 @@
   };
   let mediaItems = {};
   async function loadConfig() {
-    const cfg = await api('/api/config'); document.title = cfg.title;
+    const cfg = await api('/api/config'); document.title = cfg.title; onConfig(cfg);
     const by = (p) => cfg.groups.filter((g) => g.place === p).flatMap((g) => g.items);
     $('deck').replaceChildren(...by('atajos').slice(0, 12).map(keyBtn));
     $('cmds').replaceChildren(...by('comandos').map(keyBtn));
@@ -416,16 +559,200 @@
     }
     $('stripVol').textContent = s.volume && s.volume.level != null ? (s.volume.muted ? 'Silencio' : `Vol ${s.volume.level}%`) : 'Vol –';
     renderMedia(s.media); syncArt(s.artKey);
+    renderPerf(s, rp); renderProcs(s.procs);
   }
 
   function online(on, text) { $('live').classList.toggle('on', on); $('stripStatus').textContent = text; }
   let cfgLoaded = false, busy = false;
   async function tick() {
     if (busy) return; busy = true;
-    try { if (!cfgLoaded) { await loadConfig(); cfgLoaded = true; } render(await api('/api/stats')); online(true, 'Conectado'); }
+    try { if (!cfgLoaded) { await loadConfig(); cfgLoaded = true; loadTasks(); loadWeather(); } render(await api('/api/stats')); online(true, 'Conectado'); }
     catch (e) { online(false, String(e.message).includes('token') ? 'Token inválido' : 'Sin conexión'); }
     busy = false;
   }
+  // ---------- Gráficas grandes (Rendimiento)
+  const LONG = 120; // 120 muestras × 1,5 s = 3 min
+  const color = (p) => (p >= 90 ? 'var(--red)' : p >= 70 ? 'var(--orange)' : 'var(--teal)');
+  const longHist = { cpu: [], ram: [], rx: [], tx: [] };
+  const pushLong = (k, v) => { longHist[k].push(v); if (longHist[k].length > LONG) longHist[k].shift(); };
+  function drawChart(c, series, max, fmt) {
+    const w = c.clientWidth, h = c.clientHeight; if (!w || !h) return;
+    const dpr = devicePixelRatio || 1; c.width = w * dpr; c.height = h * dpr; const x = c.getContext('2d'); x.scale(dpr, dpr);
+    const padR = 38, cw = w - padR, top = 7, bot = 7, ph = h - top - bot;
+    x.font = '10px "Segoe UI", system-ui, sans-serif'; x.fillStyle = '#4b5363'; x.textBaseline = 'middle';
+    for (let i = 0; i <= 2; i++) { const y = top + ph * (i / 2); x.strokeStyle = 'rgba(255,255,255,.06)'; x.beginPath(); x.moveTo(0, y); x.lineTo(cw, y); x.stroke(); x.fillText(fmt(max * (1 - i / 2)), cw + 6, y); }
+    const step = cw / (LONG - 1);
+    series.forEach(({ data, color, fill }) => {
+      if (data.length < 2) return;
+      const pts = data.map((v, i) => [cw - (data.length - 1 - i) * step, top + ph - (Math.min(v, max) / max) * ph]);
+      if (fill) { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, color + '55'); g.addColorStop(1, color + '00');
+        x.beginPath(); pts.forEach(([a, b], i) => (i ? x.lineTo(a, b) : x.moveTo(a, b))); x.lineTo(cw, h); x.lineTo(pts[0][0], h); x.fillStyle = g; x.fill(); }
+      x.beginPath(); pts.forEach(([a, b], i) => (i ? x.lineTo(a, b) : x.moveTo(a, b))); x.strokeStyle = color; x.lineWidth = 1.8; x.lineJoin = 'round'; x.stroke();
+    });
+  }
+  const pageVisible = (el) => { const r = el.closest('.page').getBoundingClientRect(); return r.right > 0 && r.left < innerWidth; };
+  function drawPerf() {
+    if (!pageVisible($('chCpu'))) return;
+    drawChart($('chCpu'), [{ data: longHist.cpu, color: '#2dd4bf', fill: true }], 100, (v) => Math.round(v) + '%');
+    drawChart($('chRam'), [{ data: longHist.ram, color: '#a78bfa', fill: true }], 100, (v) => Math.round(v) + '%');
+    const nmax = Math.max(1024, ...longHist.rx, ...longHist.tx) * 1.15;
+    drawChart($('chNet'), [{ data: longHist.rx, color: '#fb923c', fill: true }, { data: longHist.tx, color: '#38bdf8' }], nmax, (v) => fmtB(v)[0] + fmtB(v)[1]);
+  }
+  pagesEl.addEventListener('scroll', () => { clearTimeout(drawPerf.t); drawPerf.t = setTimeout(drawPerf, 80); });
+  addEventListener('resize', () => setTimeout(drawPerf, 100));
+  function renderPerf(s, rp) {
+    pushLong('cpu', s.cpu.percent); pushLong('ram', rp); pushLong('rx', s.net.rxBps || 0); pushLong('tx', s.net.txBps || 0);
+    $('pcpuV').innerHTML = `${Math.round(s.cpu.percent)}<small>%</small>`;
+    $('pramV').innerHTML = `${Math.round(rp)}<small>%</small>`;
+    const cores = s.cpu.perCore || [], box = $('cores');
+    if (box.children.length !== cores.length) {
+      box.style.gridTemplateRows = `repeat(${cores.length}, 1fr)`;
+      box.innerHTML = cores.map((_, i) => `<div class="core"><span>${i}</span><div class="bar"><i></i></div><b></b></div>`).join('');
+    }
+    cores.forEach((p, i) => { const row = box.children[i]; const bar = row.querySelector('i'); bar.style.width = p + '%'; bar.style.background = color(p); row.querySelector('b').textContent = p + '%'; });
+    drawPerf();
+  }
+
+  // ---------- Procesos
+  function procRows(el, list, valueOf, label, max) {
+    const rows = (list || []).slice(0, 8);
+    el.innerHTML = rows.map((p) => {
+      const v = valueOf(p), w = max > 0 ? Math.max(2, (v / max) * 100) : 0;
+      return `<div class="prow"><div class="fill" style="width:${w}%"></div><span class="nm">${esc(p.name)}${p.count > 1 ? `<em>×${p.count}</em>` : ''}</span><span class="val">${esc(label(p))}</span></div>`;
+    }).join('') || '<div class="prow"><span class="nm" style="color:var(--dim)">Recopilando…</span></div>';
+  }
+  function renderProcs(p) {
+    if (!p) return;
+    $('procCount').textContent = `${p.total} procesos`;
+    procRows($('procCpu'), p.byCpu, (x) => x.cpu, (x) => x.cpu.toFixed(x.cpu < 1 ? 2 : 1) + '%', Math.max(5, ...(p.byCpu || []).map((x) => x.cpu)));
+    const memMax = Math.max(...(p.byMem || []).map((x) => x.mem), 1);
+    procRows($('procMem'), p.byMem, (x) => x.mem, (x) => fmtB(x.mem, 1).join(' '), memMax);
+  }
+
+  // ---------- Pomodoro (el estado se guarda en el celular para sobrevivir a recargas)
+  let pomoCfg = { enfoque: 25, descanso: 5, largo: 15 };
+  const POMO_LABEL = { enfoque: 'Enfoque', descanso: 'Descanso', largo: 'Descanso largo' };
+  const POMO_COLOR = { enfoque: '#2dd4bf', descanso: '#4ade80', largo: '#38bdf8' };
+  let pomo = { mode: 'enfoque', endAt: null, left: null, done: 0, day: new Date().toDateString() };
+  try { Object.assign(pomo, JSON.parse(localStorage.getItem('panelPomo') || '{}')); } catch {}
+  if (pomo.day !== new Date().toDateString()) { pomo.done = 0; pomo.day = new Date().toDateString(); }
+  const savePomo = () => { try { localStorage.setItem('panelPomo', JSON.stringify(pomo)); } catch {} };
+  const pomoTotal = () => (pomoCfg[pomo.mode] || 25) * 60;
+  const pomoLeft = () => (pomo.endAt ? Math.max(0, (pomo.endAt - Date.now()) / 1000) : (pomo.left ?? pomoTotal()));
+  function beep() {
+    try { const a = new (window.AudioContext || window.webkitAudioContext)(); [0, .25, .5].forEach((t) => { const o = a.createOscillator(), g = a.createGain();
+      o.frequency.value = 880; g.gain.setValueAtTime(.0001, a.currentTime + t); g.gain.exponentialRampToValueAtTime(.3, a.currentTime + t + .02); g.gain.exponentialRampToValueAtTime(.0001, a.currentTime + t + .2);
+      o.connect(g).connect(a.destination); o.start(a.currentTime + t); o.stop(a.currentTime + t + .22); }); } catch {}
+  }
+  function pomoNext(finished) {
+    if (finished && pomo.mode === 'enfoque') pomo.done++;
+    pomo.mode = pomo.mode === 'enfoque' ? (pomo.done > 0 && pomo.done % 4 === 0 ? 'largo' : 'descanso') : 'enfoque';
+    pomo.endAt = null; pomo.left = null; savePomo(); renderPomo();
+  }
+  function renderPomo() {
+    const left = pomoLeft(), total = pomoTotal();
+    if (pomo.endAt && left <= 0) {
+      try { navigator.vibrate && navigator.vibrate([300, 150, 300, 150, 600]); } catch {}
+      beep(); toast(pomo.mode === 'enfoque' ? '¡Sesión terminada! Toca descansar' : '¡Descanso terminado! A enfocarse'); return pomoNext(true);
+    }
+    const m = Math.floor(left / 60), s = Math.floor(left % 60);
+    $('pomoTime').textContent = `${pad(m)}:${pad(s)}`;
+    $('pomoArc').style.strokeDashoffset = 282.74 * (1 - left / total);
+    $('pomoArc').setAttribute('stroke', POMO_COLOR[pomo.mode]);
+    $('pomoGoIcon').setAttribute('href', pomo.endAt ? '#i-pause' : '#i-play');
+    $('pomoLabel').textContent = pomo.endAt ? `${POMO_LABEL[pomo.mode]} · ${pomo.done} hoy` : (left < total ? 'En pausa' : `${POMO_LABEL[pomo.mode]} · ${pomo.done} sesiones hoy`);
+    [...$('pomoModes').children].forEach((b) => b.classList.toggle('on', b.dataset.m === pomo.mode));
+  }
+  $('pomoGo').onclick = () => { buzz(); if (pomo.endAt) { pomo.left = pomoLeft(); pomo.endAt = null; } else { pomo.endAt = Date.now() + pomoLeft() * 1000; pomo.left = null; } savePomo(); renderPomo(); };
+  $('pomoReset').onclick = () => { buzz(); pomo.endAt = null; pomo.left = null; savePomo(); renderPomo(); };
+  $('pomoSkip').onclick = () => { buzz(); pomoNext(false); };
+  $('pomoModes').onclick = (e) => { const m = e.target.dataset.m; if (!m) return; buzz(); pomo.mode = m; pomo.endAt = null; pomo.left = null; savePomo(); renderPomo(); };
+  setInterval(renderPomo, 1000);
+
+  // ---------- Tareas (se guardan en el PC, en data/tareas.json)
+  let tasks = [];
+  function renderTasks() {
+    const pend = tasks.filter((t) => !t.done).length;
+    $('taskCount').textContent = tasks.length ? `${pend} pendiente${pend === 1 ? '' : 's'}` : '';
+    $('taskList').innerHTML = tasks.length ? tasks.map((t) => `<div class="titem${t.done ? ' done' : ''}" data-id="${esc(t.id)}"><button class="ck" data-a="toggle" aria-label="Completar">${t.done ? '<svg class="i" style="font-size:13px"><use href="#i-check"/></svg>' : ''}</button><span class="tx" data-a="toggle">${esc(t.text)}</span><button class="rm" data-a="rm" aria-label="Eliminar">✕</button></div>`).join('')
+      : '<div class="hint">Sin tareas. Escribe una arriba.</div>';
+  }
+  async function saveTasks() { renderTasks(); try { tasks = await api('/api/tasks', { method: 'PUT', body: JSON.stringify(tasks) }); renderTasks(); } catch (e) { toast('No se pudo guardar: ' + e.message); } }
+  async function loadTasks() { try { const r = await api('/api/tasks'); tasks = Array.isArray(r) ? r : (r.value || []); } catch {} renderTasks(); }
+  $('taskForm').onsubmit = (e) => { e.preventDefault(); const v = $('taskInput').value.trim(); if (!v) return; buzz(); tasks.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text: v, done: false }); $('taskInput').value = ''; saveTasks(); };
+  $('taskList').onclick = (e) => {
+    const a = e.target.closest('[data-a]'); if (!a) return; const id = a.closest('.titem').dataset.id; buzz();
+    if (a.dataset.a === 'toggle') tasks = tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t));
+    if (a.dataset.a === 'rm') tasks = tasks.filter((t) => t.id !== id);
+    saveTasks();
+  };
+
+  // ---------- Calendario y relojes del mundo
+  let calOffset = 0, clocks = [];
+  function renderCal() {
+    const now = new Date(), base = new Date(now.getFullYear(), now.getMonth() + calOffset, 1);
+    const mt = new Intl.DateTimeFormat('es', { month: 'long', year: 'numeric' }).format(base);
+    $('calTitle').textContent = mt.charAt(0).toUpperCase() + mt.slice(1);
+    const start = (base.getDay() + 6) % 7, first = new Date(base); first.setDate(1 - start);
+    let html = ['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d) => `<div class="dn">${d}</div>`).join('');
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(first); d.setDate(first.getDate() + i);
+      const cls = ['d', d.getMonth() !== base.getMonth() && 'out', (d.getDay() === 0 || d.getDay() === 6) && 'we', d.toDateString() === now.toDateString() && 'today'].filter(Boolean).join(' ');
+      html += `<div class="${cls}">${d.getDate()}</div>`;
+    }
+    $('calGrid').innerHTML = html;
+  }
+  $('calPrev').onclick = () => { calOffset--; renderCal(); };
+  $('calNext').onclick = () => { calOffset++; renderCal(); };
+  $('calToday').onclick = () => { calOffset = 0; renderCal(); };
+  function renderClocks() {
+    const now = new Date(), localOff = -now.getTimezoneOffset();
+    const list = [{ nombre: 'Aquí', zona: Intl.DateTimeFormat().resolvedOptions().timeZone }, ...clocks];
+    $('wclocks').innerHTML = '<span class="cap" style="color:var(--sky);grid-column:1/-1;margin-bottom:4px">Relojes del mundo</span>' + list.map((c) => {
+      let t = '--:--', diff = '';
+      try {
+        t = new Intl.DateTimeFormat('es', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: c.zona }).format(now);
+        const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: c.zona, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' }).formatToParts(now).map((x) => [x.type, x.value]));
+        const off = Math.round((Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute) - Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes())) / 60000);
+        const d = (off - localOff) / 60; diff = d === 0 ? (c.nombre === 'Aquí' ? '' : 'igual') : (d > 0 ? '+' : '') + d + ' h';
+      } catch {}
+      return `<div class="wc"><div class="n">${esc(c.nombre)}</div><div class="t">${t}<small>${diff}</small></div></div>`;
+    }).join('');
+  }
+  setInterval(() => { renderClocks(); if (new Date().getSeconds() === 0) renderCal(); }, 1000);
+
+  // ---------- Clima
+  const WX = (code, day = true) => {
+    if (code === 0 || code === 1) return [day ? 'sun' : 'moonsm', code === 0 ? 'Despejado' : 'Mayormente despejado'];
+    if (code === 2) return ['cloudsun', 'Parcialmente nublado'];
+    if (code === 3) return ['cloud', 'Nublado'];
+    if (code === 45 || code === 48) return ['fog', 'Niebla'];
+    if (code >= 51 && code <= 57) return ['rain', 'Llovizna'];
+    if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return ['rain', 'Lluvia'];
+    if ((code >= 71 && code <= 77) || code === 85 || code === 86) return ['snow', 'Nieve'];
+    if (code >= 95) return ['storm', 'Tormenta'];
+    return ['cloud', '—'];
+  };
+  async function loadWeather() {
+    let w; try { w = await api('/api/weather'); } catch (e) { w = { activo: true, error: e.message }; }
+    const box = $('wx');
+    if (!w.activo) { box.innerHTML = `<span class="cap" style="color:var(--orange)">Clima</span><div class="off">Desactivado. Para verlo, pon tu ciudad en <code>config.json</code> → <code>"clima"</code> con <code>"activo": true</code>, <code>lat</code> y <code>lon</code>. Los datos vienen de Open-Meteo.</div>`; return; }
+    if (w.error) { box.innerHTML = `<span class="cap" style="color:var(--orange)">Clima</span><div class="off">No disponible: ${esc(w.error)}</div>`; return; }
+    const [ic, txt] = WX(w.now.code, w.now.day);
+    const dayFmt = new Intl.DateTimeFormat('es', { weekday: 'short' });
+    box.innerHTML = `<span class="cap" style="color:var(--orange)">Clima${w.ciudad ? ' · ' + esc(w.ciudad) : ''}</span>
+      <div class="now"><svg class="i"><use href="#i-${ic}"/></svg><b>${Math.round(w.now.temp)}°</b><div class="d">${txt}<br>Sensación ${Math.round(w.now.feels)}° · Humedad ${w.now.hum}%</div></div>
+      <div class="days">${w.days.slice(1, 5).map((d) => { const [di] = WX(d.code); return `<div>${esc(dayFmt.format(new Date(d.date + 'T12:00')))}<svg class="i"><use href="#i-${di}"/></svg><b>${Math.round(d.max)}°</b> ${Math.round(d.min)}°</div>`; }).join('')}</div>`;
+  }
+  setInterval(loadWeather, 15 * 60 * 1000);
+
+  function onConfig(cfg) {
+    clocks = (cfg.relojes || []).filter((c) => c.zona);
+    if (cfg.pomodoro) pomoCfg = { ...pomoCfg, ...cfg.pomodoro };
+    renderClocks(); renderPomo();
+  }
+  renderCal(); renderClocks(); renderPomo();
+
   // ---------- Pantalla completa, horizontal y pantalla siempre encendida
   const isFs = () => !!document.fullscreenElement || matchMedia('(display-mode: fullscreen)').matches;
   async function enterFs() {

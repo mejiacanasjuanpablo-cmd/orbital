@@ -30,6 +30,8 @@ function publicConfig() {
   const cfg = loadConfig();
   return {
     title: cfg.title || 'Panel',
+    relojes: (cfg.relojes || []).slice(0, 6).map((r) => ({ nombre: String(r.nombre || ''), zona: String(r.zona || '') })),
+    pomodoro: cfg.pomodoro || null,
     groups: (cfg.groups || []).map((g) => ({
       name: g.name,
       place: g.place || 'atajos',
@@ -94,16 +96,19 @@ function scriptFor(action) {
 // ---------- Monitor del sistema
 let lastCpu = os.cpus();
 let cpuPercent = 0;
+let corePercents = [];
 setInterval(() => {
   const now = os.cpus();
   let idle = 0;
   let total = 0;
-  now.forEach((c, i) => {
+  corePercents = now.map((c, i) => {
     const p = lastCpu[i].times;
     const t = c.times;
     const dTotal = t.user + t.nice + t.sys + t.idle + t.irq - (p.user + p.nice + p.sys + p.idle + p.irq);
-    idle += t.idle - p.idle;
+    const dIdle = t.idle - p.idle;
+    idle += dIdle;
     total += dTotal;
+    return dTotal > 0 ? Math.round((1 - dIdle / dTotal) * 100) : 0;
   });
   cpuPercent = total > 0 ? Math.round((1 - idle / total) * 1000) / 10 : 0;
   lastCpu = now;
@@ -143,6 +148,23 @@ function startStatsWorker() {
   const script = `
 $ErrorActionPreference = 'SilentlyContinue'
 $prev = $null; $prevT = $null
+$procPrev = @{}; $procT = $null; $cores = [Environment]::ProcessorCount
+function Get-TopProcesses {
+  $now = [DateTime]::UtcNow; $dt = if ($script:procT) { ($now - $script:procT).TotalSeconds } else { 0 }
+  $cur = @{}; $groups = @{}
+  foreach ($p in Get-Process) {
+    $c = $null; try { $c = $p.TotalProcessorTime.TotalSeconds } catch { }
+    $pct = 0
+    if ($null -ne $c) { $cur[$p.Id] = $c; if ($dt -gt 0 -and $script:procPrev.ContainsKey($p.Id)) { $pct = [math]::Max(0, ($c - $script:procPrev[$p.Id]) / $dt / $cores * 100) } }
+    $g = $groups[$p.ProcessName]
+    if (-not $g) { $g = @{ name = $p.ProcessName; count = 0; cpu = 0.0; mem = 0.0 }; $groups[$p.ProcessName] = $g }
+    $g.count++; $g.cpu += $pct; $g.mem += [double]$p.WorkingSet64
+  }
+  $script:procPrev = $cur; $script:procT = $now
+  $list = $groups.Values | Where-Object { $_.name -ne 'Idle' }
+  foreach ($g in $list) { $g.cpu = [math]::Round($g.cpu, 2) }
+  @{ byCpu = @($list | Sort-Object { $_.cpu } -Descending | Select-Object -First 10); byMem = @($list | Sort-Object { $_.mem } -Descending | Select-Object -First 10); total = (@($list) | Measure-Object -Property count -Sum).Sum }
+}
 while (Get-Process -Id ${process.pid} -ErrorAction SilentlyContinue) {
   $disks = Get-CimInstance Win32_LogicalDisk -Filter "DriveType=3" | ForEach-Object {
     @{ name = $_.DeviceID; total = [double]$_.Size; free = [double]$_.FreeSpace } }
@@ -156,7 +178,8 @@ while (Get-Process -Id ${process.pid} -ErrorAction SilentlyContinue) {
   $prev = @($rx, $tx); $prevT = $t
   $media = $null; try { $media = Get-PanelMedia } catch { }
   $vol = Get-PanelVolume
-  [Console]::Out.WriteLine((@{ disks = @($disks); net = $net; media = $media; volume = $vol } | ConvertTo-Json -Compress -Depth 4))
+  $procs = $null; try { $procs = Get-TopProcesses } catch { }
+  [Console]::Out.WriteLine((@{ disks = @($disks); net = $net; media = $media; volume = $vol; procs = $procs } | ConvertTo-Json -Compress -Depth 5))
   [Console]::Out.Flush()
   Start-Sleep -Milliseconds 1500
 }`;
@@ -190,7 +213,8 @@ function stats() {
   return {
     host: os.hostname(),
     uptime: os.uptime(),
-    cpu: { percent: cpuPercent, cores: os.cpus().length, model: os.cpus()[0]?.model?.trim() },
+    cpu: { percent: cpuPercent, cores: os.cpus().length, model: os.cpus()[0]?.model?.trim(), perCore: corePercents },
+    procs: extra.procs || null,
     mem: { total: os.totalmem(), free: os.freemem() },
     disks: extra.disks,
     net: extra.net,
@@ -199,6 +223,50 @@ function stats() {
     artKey: extra.media && extra.media.artKey === art.key ? art.key : null,
     time: Date.now(),
   };
+}
+
+// ---------- Tareas (lista de pendientes, se guarda en data/tareas.json)
+const TASKS_PATH = path.join(ROOT, 'data', 'tareas.json');
+function readTasks() {
+  try { return JSON.parse(fs.readFileSync(TASKS_PATH, 'utf8')); } catch { return []; }
+}
+function writeTasks(list) {
+  if (!Array.isArray(list) || list.length > 200) throw new Error('lista de tareas inválida');
+  const clean = list.map((t) => ({
+    id: String(t.id || crypto.randomUUID()).slice(0, 64),
+    text: String(t.text || '').trim().slice(0, 200),
+    done: !!t.done,
+  })).filter((t) => t.text);
+  fs.mkdirSync(path.dirname(TASKS_PATH), { recursive: true });
+  fs.writeFileSync(TASKS_PATH, JSON.stringify(clean, null, 2));
+  return clean;
+}
+
+// ---------- Clima (Open-Meteo, solo si está activado en config.json; caché de 15 min)
+let weatherCache = { at: 0, key: '', data: null };
+async function getWeather() {
+  const c = loadConfig().clima || {};
+  if (!c.activo) return { activo: false };
+  const lat = Number(c.lat), lon = Number(c.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return { activo: false, error: 'faltan lat/lon en config.json' };
+  const key = `${lat},${lon}`;
+  if (weatherCache.data && weatherCache.key === key && Date.now() - weatherCache.at < 15 * 60 * 1000) return weatherCache.data;
+  const u = new URL('https://api.open-meteo.com/v1/forecast');
+  u.search = new URLSearchParams({
+    latitude: lat.toFixed(2), longitude: lon.toFixed(2), timezone: 'auto', forecast_days: '5',
+    current: 'temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day',
+    daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
+  }).toString();
+  const r = await fetch(u, { signal: AbortSignal.timeout(8000) });
+  if (!r.ok) throw new Error(`clima: HTTP ${r.status}`);
+  const j = await r.json();
+  const data = {
+    activo: true, ciudad: c.ciudad || '',
+    now: { temp: j.current.temperature_2m, feels: j.current.apparent_temperature, hum: j.current.relative_humidity_2m, code: j.current.weather_code, wind: j.current.wind_speed_10m, day: !!j.current.is_day },
+    days: j.daily.time.map((d, i) => ({ date: d, code: j.daily.weather_code[i], max: j.daily.temperature_2m_max[i], min: j.daily.temperature_2m_min[i], rain: j.daily.precipitation_probability_max[i] })),
+  };
+  weatherCache = { at: Date.now(), key, data };
+  return data;
 }
 
 // ---------- HTTP
@@ -241,6 +309,11 @@ const server = http.createServer(async (req, res) => {
     try {
       if (url.pathname === '/api/config' && req.method === 'GET') return send(res, 200, publicConfig());
       if (url.pathname === '/api/stats' && req.method === 'GET') return send(res, 200, stats());
+      if (url.pathname === '/api/tasks' && req.method === 'GET') return send(res, 200, readTasks());
+      if (url.pathname === '/api/tasks' && req.method === 'PUT') return send(res, 200, writeTasks(JSON.parse((await readBody(req)) || '[]')));
+      if (url.pathname === '/api/weather' && req.method === 'GET') {
+        try { return send(res, 200, await getWeather()); } catch (e) { return send(res, 200, { activo: true, error: String(e.message || e) }); }
+      }
       if (url.pathname === '/api/art' && req.method === 'GET') return send(res, 200, { key: art.key, data: art.data });
       if (url.pathname === '/api/volume' && req.method === 'POST') {
         const body = JSON.parse((await readBody(req)) || '{}');

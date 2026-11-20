@@ -35,7 +35,20 @@ Desliza a los lados (o usa las flechas del teclado) para cambiar de página. Fun
 
 1. **Inicio**: reloj, la canción que suena en el PC (con carátula, progreso y controles), volumen, y CPU, RAM, red y disco con gráficas.
 2. **Sistema**: indicadores circulares y los botones de atajos.
-3. **Comandos**: botones de comandos y la consola donde se ve su resultado.
+3. **Rendimiento**: historial de CPU, RAM y red de los últimos 3 minutos, y el uso de cada núcleo.
+4. **Procesos**: los programas que más CPU y memoria usan, agrupados (por ejemplo, todas las ventanas de Chrome juntas).
+   Los servicios protegidos de Windows no se pueden medir sin permisos de administrador.
+5. **Enfoque**: temporizador pomodoro (enfoque, descanso y descanso largo, con vibración y sonido al terminar) y lista de tareas.
+   Las tareas se guardan en el PC, en `data/tareas.json`.
+6. **Calendario**: el mes actual, relojes del mundo y el clima.
+7. **Comandos**: botones de comandos y la consola donde se ve su resultado.
+
+### Ajustes de estas páginas en `config.json`
+
+- `"relojes"`: lista de `{ "nombre": "...", "zona": "America/New_York" }` (zonas horarias IANA, máximo 6).
+- `"pomodoro"`: minutos de `enfoque`, `descanso` y `largo`.
+- `"clima"`: viene desactivado. Para activarlo pon `"activo": true`, `"ciudad"`, `"lat"` y `"lon"`.
+  El servidor consulta Open-Meteo (gratis, sin cuenta) cada 15 minutos y le envía esas coordenadas redondeadas.
 
 ## Personalizar: `config.json`
 

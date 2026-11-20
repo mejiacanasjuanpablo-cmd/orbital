@@ -1,5 +1,12 @@
 {
   "title": "Panel del PC",
+  "relojes": [
+    { "nombre": "Nueva York", "zona": "America/New_York" },
+    { "nombre": "San Francisco", "zona": "America/Los_Angeles" },
+    { "nombre": "Madrid", "zona": "Europe/Madrid" }
+  ],
+  "clima": { "activo": false, "ciudad": "", "lat": null, "lon": null },
+  "pomodoro": { "enfoque": 25, "descanso": 5, "largo": 15 },
   "groups": [
     {
       "name": "Multimedia",
