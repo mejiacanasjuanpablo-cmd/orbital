@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#07090c">
 <meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
 <title>Panel USB</title>
 <style>
   :root {
@@ -41,6 +43,8 @@
   .strip .sep { color: var(--dim); }
   .live { width: 7px; height: 7px; border-radius: 50%; background: var(--red); flex: none; }
   .live.on { background: var(--green); box-shadow: 0 0 0 3px rgba(74,222,128,.15); }
+  .fs { margin-left: auto; flex: none; border: 0; background: none; color: var(--muted); padding: 4px; margin-right: -4px; cursor: pointer; font-size: clamp(14px, 2.6vmin, 18px); display: grid; place-items: center; border-radius: 8px; }
+  .fs:active { background: var(--tile-2); }
   .time { margin-top: auto; display: flex; align-items: flex-start; font-weight: 200; letter-spacing: -.04em; line-height: .9;
           font-size: clamp(48px, 21vmin, 150px); font-variant-numeric: tabular-nums; }
   .time .colon { opacity: .55; margin: 0 .02em; animation: blink 2s steps(1) infinite; }
@@ -178,6 +182,8 @@
     <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></symbol>
     <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10z"/></symbol>
     <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="m7 9.5 3 2.5-3 2.5M12.5 15h4.5"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+    <symbol id="i-shrink" viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></symbol>
     <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none"/></symbol>
   </defs>
 </svg>
@@ -186,7 +192,7 @@
   <!-- 1 · Inicio -->
   <section class="page" data-name="Inicio">
     <div class="tile clock">
-      <div class="strip"><span class="live" id="live"></span><span id="host">PC</span><span class="sep">·</span><span>USB</span><span class="sep">·</span><span id="stripVol">–</span><span class="sep">·</span><span id="stripStatus">Conectando…</span></div>
+      <div class="strip"><span class="live" id="live"></span><span id="host">PC</span><span class="sep">·</span><span>USB</span><span class="sep">·</span><span id="stripVol">–</span><span class="sep">·</span><span id="stripStatus">Conectando…</span><button id="fsBtn" class="fs" aria-label="Pantalla completa"><svg class="i"><use id="fsIcon" href="#i-expand"/></svg></button></div>
       <div class="time"><span id="hh">--</span><span class="colon">:</span><span id="mm">--</span><sup id="ss">--</sup></div>
       <div class="date" id="date"></div>
       <div class="meta"><span>Encendido <b id="uptime">–</b></span><span id="cpuModel"></span></div>
@@ -241,8 +247,9 @@
 (() => {
   // El token llega en el fragmento (#t=...), que nunca se envía al servidor.
   const fromHash = new URLSearchParams(location.hash.slice(1)).get('t');
+  // Se guarda para que el icono de la pantalla de inicio funcione sin volver a pasar el token.
   let token = fromHash;
-  try { if (fromHash) sessionStorage.setItem('panelToken', fromHash); token = sessionStorage.getItem('panelToken') || fromHash; } catch {}
+  try { if (fromHash) localStorage.setItem('panelToken', fromHash); token = localStorage.getItem('panelToken') || fromHash; } catch {}
   if (fromHash) history.replaceState(null, '', location.pathname);
 
   const $ = (id) => document.getElementById(id);
@@ -419,7 +426,26 @@
     catch (e) { online(false, String(e.message).includes('token') ? 'Token inválido' : 'Sin conexión'); }
     busy = false;
   }
+  // ---------- Pantalla completa, horizontal y pantalla siempre encendida
+  const isFs = () => !!document.fullscreenElement || matchMedia('(display-mode: fullscreen)').matches;
+  async function enterFs() {
+    try { if (!document.fullscreenElement && document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen({ navigationUI: 'hide' }); } catch {}
+    try { await screen.orientation.lock('landscape'); } catch {}
+  }
+  const syncFs = () => $('fsIcon').setAttribute('href', isFs() ? '#i-shrink' : '#i-expand');
+  document.addEventListener('fullscreenchange', () => { syncFs(); setTimeout(() => { pagesEl.scrollLeft = current() * pagesEl.clientWidth; drawSparks(); }, 300); });
+  $('fsBtn').onclick = (e) => { e.stopPropagation(); buzz(); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); else enterFs(); };
+  // El navegador solo permite pantalla completa tras un toque (al soltarlo): el primero la activa.
+  document.addEventListener('click', function first(e) { if (e.target.closest('#fsBtn')) return; document.removeEventListener('click', first, true); if (!isFs()) enterFs(); }, true);
+
+  let wakeLock = null;
+  async function keepAwake() { try { if ('wakeLock' in navigator && !wakeLock && !document.hidden) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => (wakeLock = null)); } } catch {} }
+  document.addEventListener('visibilitychange', keepAwake);
+  document.addEventListener('pointerdown', keepAwake);
+  keepAwake();
+
   if (!token) online(false, 'Falta el token');
+  syncFs();
   markDot();
   tick(); setInterval(tick, 1500);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });

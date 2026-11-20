@@ -25,7 +25,16 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
     Write-Host "No se encontró Node.js. Instálalo desde https://nodejs.org" -ForegroundColor Red; exit 1
 }
 
-$token = -join ((1..32) | ForEach-Object { '{0:x}' -f (Get-Random -Maximum 16) })
+# Token fijo guardado en .token, para que el icono de la pantalla de inicio siga funcionando.
+# Para invalidarlo (por ejemplo, si cambias de celular), borra el archivo .token.
+$tokenFile = Join-Path $PSScriptRoot '.token'
+$token = if (Test-Path $tokenFile) { (Get-Content $tokenFile -Raw).Trim() } else { '' }
+if ($token -notmatch '^[0-9a-f]{32,}$') {
+    $bytes = New-Object byte[] 24
+    [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+    $token = -join ($bytes | ForEach-Object { $_.ToString('x2') })
+    Set-Content -Path $tokenFile -Value $token -NoNewline -Encoding ascii
+}
 $url = "http://localhost:$Puerto/#t=$token"
 
 $adb = $null
@@ -71,7 +80,8 @@ try {
     } else {
         # Túnel USB: el localhost del celular apunta al localhost del PC. Nada se expone a la red Wi-Fi.
         & $adb -s $serial reverse "tcp:$Puerto" "tcp:$Puerto" | Out-Null
-        & $adb -s $serial shell am start -a android.intent.action.VIEW -d "'$url'" | Out-Null
+        # application_id hace que Chrome reutilice la misma pestaña en lugar de abrir una nueva cada vez.
+        & $adb -s $serial shell am start -a android.intent.action.VIEW -d "'$url'" --es com.android.browser.application_id panelusb | Out-Null
         Write-Host "Panel abierto en el celular. Si se desconecta el cable, vuelve a ejecutar este script." -ForegroundColor Green
     }
     Write-Host "Ctrl+C para detener."

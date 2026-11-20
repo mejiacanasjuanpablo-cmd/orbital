@@ -16,8 +16,18 @@ No hay que instalar ninguna app en el celular y no se expone nada a la red Wi-Fi
 - Para probarlo sin celular: `.\iniciar.ps1 -SoloPC`.
 - Para detenerlo, pulsa Ctrl+C o cierra la ventana.
 
-Consejo: en Chrome del celular, menú ⋮ > **Agregar a pantalla principal** para tenerlo como icono.
-Cada vez que arrancas el panel se genera un token nuevo, así que ábrelo siempre desde el script.
+### Pantalla completa
+
+- El primer toque en el panel lo pone a pantalla completa y en horizontal. También puedes usar el botón ⛶ de la esquina del reloj.
+- Mientras el panel está abierto, la pantalla del celular no se apaga.
+- Para salir de la pantalla completa, desliza desde arriba y pulsa Atrás, o toca el botón otra vez.
+
+### Como app en la pantalla de inicio
+
+En Chrome del celular: menú ⋮ > **Agregar a pantalla principal**. El icono abre el panel directamente a pantalla completa.
+Solo funciona mientras `iniciar.cmd` está en marcha en el PC con el cable conectado.
+
+El token de acceso se guarda en `.token`. Si lo borras se genera uno nuevo y tendrás que volver a abrir el panel desde el script.
 
 ## Páginas
 
