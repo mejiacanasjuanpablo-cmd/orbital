@@ -85,7 +85,8 @@ function scriptFor(action) {
       return `$w = New-Object -ComObject WScript.Shell; 1..${times} | ForEach-Object { $w.SendKeys([string][char]${vk}) }`;
     }
     case 'keys':
-      return `$w = New-Object -ComObject WScript.Shell; $w.SendKeys(${psQuote(action.keys)})`;
+      // Pulsación con scan code (lib/keys.ps1): Discord ignora SendKeys cuando su ventana está al frente.
+      return `. ${psQuote(path.join(ROOT, 'lib', 'keys.ps1'))}; Send-PanelKeys ${psQuote(action.keys)}`;
     case 'command':
       return action.command;
     default:
