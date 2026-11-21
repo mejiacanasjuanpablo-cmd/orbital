@@ -35,7 +35,8 @@
       "name": "Enfoque",
       "place": "enfoque",
       "items": [
-        { "id": "ixdf", "label": "Cursos IxDF", "icon": "book", "color": "#2dd4bf", "type": "open", "target": "https://ixdf.org/courses" }
+        { "id": "ixdf", "label": "Cursos IxDF", "icon": "book", "color": "#2dd4bf", "type": "open", "target": "https://ixdf.org/courses" },
+        { "id": "claude_academy", "label": "Claude Academy", "icon": "terminal", "color": "#e8825a", "type": "open", "target": "https://academy.claude.com/products/code" }
       ]
     },
     {
