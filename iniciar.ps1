@@ -2,6 +2,7 @@
 # Uso:  .\iniciar.ps1            (con el celular conectado y la depuración USB activada)
 #       .\iniciar.ps1 -Wifi      (sin cable: el celular entra por la red Wi-Fi de la casa)
 #       .\iniciar.ps1 -SoloPC    (sin celular: lo abre en el navegador del PC)
+# En la edición solo Wi-Fi (con EDICION-WIFI.txt) siempre arranca en modo Wi-Fi y nunca usa adb.
 param(
     [int]$Puerto = 8787,
     [switch]$Wifi,
@@ -12,13 +13,14 @@ Set-Location $PSScriptRoot
 
 # Comprobación rápida de lo imprescindible (la revisión completa está en verificar.cmd).
 if (-not (Test-Path (Join-Path $PSScriptRoot 'lib\requisitos.ps1'))) {
-    Write-Host "Faltan archivos del panel. Vuelve a descomprimir Panel-USB.zip completo." -ForegroundColor Red; exit 1
+    Write-Host "Faltan archivos del panel. Vuelve a descomprimir el .zip del panel completo." -ForegroundColor Red; exit 1
 }
-. (Join-Path $PSScriptRoot 'lib\requisitos.ps1')   # Find-Adb, Get-NodeVersion, Get-ArchivosFaltantes
+. (Join-Path $PSScriptRoot 'lib\requisitos.ps1')   # Find-Adb, Get-NodeVersion, Get-ArchivosFaltantes, $PanelSoloWifi
+if ($PanelSoloWifi) { $Wifi = $true }
 $faltanArchivos = Get-ArchivosFaltantes $PSScriptRoot
 if ($faltanArchivos.Count) {
     Write-Host "Faltan archivos del panel: $($faltanArchivos -join ', ')" -ForegroundColor Red
-    Write-Host "Vuelve a descomprimir Panel-USB.zip completo."; exit 1
+    Write-Host "Vuelve a descomprimir el .zip del panel completo."; exit 1
 }
 $nodeVer = Get-NodeVersion
 if (-not $nodeVer -or $nodeVer -lt $PanelNodeMinimo) {
@@ -58,7 +60,8 @@ $adb = $null
 $serial = $null
 if ($Wifi) {
     # En modo Wi-Fi el cable es opcional: si el celular está conectado se usa solo para abrirle el panel.
-    $adb = Find-Adb
+    # La edición solo Wi-Fi no usa adb nunca.
+    $adb = if ($PanelSoloWifi) { $null } else { Find-Adb }
     if ($adb) {
         $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
         & $adb start-server 2>&1 | Out-Null

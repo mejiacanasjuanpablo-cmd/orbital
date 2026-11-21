@@ -1,13 +1,20 @@
 ﻿# Verificación de requisitos del panel. La usan verificar.ps1, instalar.ps1, iniciar.ps1 y empaquetar.ps1.
 # Solo define funciones y listas; no hace nada al cargarse.
 
+# Edición "solo Wi-Fi": la copia que se comparte en Panel-WiFi.zip trae el archivo EDICION-WIFI.txt.
+# Con él, el panel funciona solo por Wi-Fi (sin cable, sin adb y sin modo desarrollador en el celular).
+$PanelMarcaWifi = 'EDICION-WIFI.txt'
+$PanelSoloWifi = Test-Path (Join-Path (Split-Path $PSScriptRoot -Parent) $PanelMarcaWifi)
+
 # Archivos sin los que el panel no funciona (también son los que se empaquetan, junto con la guía y los instaladores).
-$PanelArchivos = @(
-    'server.js', 'config.ejemplo.json', 'panel.ico',
-    'iniciar.ps1', 'iniciar.cmd', 'iniciar-wifi.cmd',
+$PanelArchivosComunes = @(
+    'server.js', 'config.ejemplo.json', 'panel.ico', 'iniciar.ps1', 'iniciar.cmd',
     'lib\allow.js', 'lib\aprobacion.js', 'lib\qr.js', 'lib\keys.ps1', 'lib\media.ps1', 'lib\requisitos.ps1',
     'public\index.html', 'public\espera.html', 'public\manifest.webmanifest', 'public\icon-192.png', 'public\icon-512.png'
 )
+# En la edición completa, iniciar.cmd abre el modo USB e iniciar-wifi.cmd el modo Wi-Fi.
+# En la edición solo Wi-Fi, iniciar.cmd abre directamente el modo Wi-Fi.
+$PanelArchivos = if ($PanelSoloWifi) { $PanelArchivosComunes } else { $PanelArchivosComunes + 'iniciar-wifi.cmd' }
 # server.js usa fetch y AbortSignal.timeout, disponibles desde Node.js 18.
 $PanelNodeMinimo = [version]'18.0.0'
 
@@ -51,7 +58,7 @@ function Get-Requisitos([string]$Raiz, [int]$Puerto = 8787) {
     # 1. Archivos del panel
     $faltan = Get-ArchivosFaltantes $Raiz
     if ($faltan.Count) {
-        $r += New-Requisito 'Archivos del panel' 'FALTA' "faltan: $($faltan -join ', ')" $true 'Vuelve a descomprimir Panel-USB.zip completo, en una carpeta fija (no lo abras desde dentro del .zip).'
+        $r += New-Requisito 'Archivos del panel' 'FALTA' "faltan: $($faltan -join ', ')" $true 'Vuelve a descomprimir el .zip del panel completo, en una carpeta fija (no lo abras desde dentro del .zip).'
     } else { $r += New-Requisito 'Archivos del panel' 'OK' "$($PanelArchivos.Count) archivos" $true }
 
     # 2. Windows
@@ -90,13 +97,16 @@ function Get-Requisitos([string]$Raiz, [int]$Puerto = 8787) {
         }
     }
 
-    # 6. adb (solo para el modo USB)
-    $adb = Find-Adb
-    if ($adb) {
-        $ver = (Invoke-Nativo { & $adb version } | Select-Object -First 1) -replace '.*version ', ''
-        $r += New-Requisito 'adb (modo USB)' 'OK' "versión $ver" $false
-    } else {
-        $r += New-Requisito 'adb (modo USB)' 'AVISO' 'no está instalado; solo hace falta para usar el cable' $false 'Se puede instalar ahora (herramientas oficiales de Google).' 'Adb'
+    # 6. adb (solo para el modo USB; la edición solo Wi-Fi no lo usa)
+    $adb = $null
+    if (-not $PanelSoloWifi) {
+        $adb = Find-Adb
+        if ($adb) {
+            $ver = (Invoke-Nativo { & $adb version } | Select-Object -First 1) -replace '.*version ', ''
+            $r += New-Requisito 'adb (modo USB)' 'OK' "versión $ver" $false
+        } else {
+            $r += New-Requisito 'adb (modo USB)' 'AVISO' 'no está instalado; solo hace falta para usar el cable' $false 'Se puede instalar ahora (herramientas oficiales de Google).' 'Adb'
+        }
     }
 
     # 7. Puerto del panel
@@ -108,10 +118,11 @@ function Get-Requisitos([string]$Raiz, [int]$Puerto = 8787) {
         else { $r += New-Requisito "Puerto $Puerto" 'FALTA' "lo usa otro programa ($($p.Name))" $true "Cierra ese programa o arranca el panel con otro puerto: .\iniciar.ps1 -Puerto 8788" }
     }
 
-    # 8. Red local (solo para el modo Wi-Fi)
+    # 8. Red local (para el modo Wi-Fi; en la edición solo Wi-Fi es obligatoria)
     $cfg = Get-NetIPConfiguration -ErrorAction SilentlyContinue | Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' } |
         Where-Object { $_.IPv4Address.IPAddress -match '^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)' } | Select-Object -First 1
-    if (-not $cfg) { $r += New-Requisito 'Red (modo Wi-Fi)' 'AVISO' 'el PC no está conectado a una red local' $false 'El modo USB funciona igual. Para el Wi-Fi, conecta el PC al router.' }
+    if (-not $cfg -and $PanelSoloWifi) { $r += New-Requisito 'Red (modo Wi-Fi)' 'FALTA' 'el PC no está conectado a una red local' $true 'Conecta el PC al router (por cable o Wi-Fi), en la misma red que el celular.' }
+    elseif (-not $cfg) { $r += New-Requisito 'Red (modo Wi-Fi)' 'AVISO' 'el PC no está conectado a una red local' $false 'El modo USB funciona igual. Para el Wi-Fi, conecta el PC al router.' }
     else {
         $cat = "$((Get-NetConnectionProfile -InterfaceIndex $cfg.InterfaceIndex -ErrorAction SilentlyContinue).NetworkCategory)"
         $ip = @($cfg.IPv4Address.IPAddress)[0]

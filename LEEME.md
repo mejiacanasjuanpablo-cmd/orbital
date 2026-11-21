@@ -51,7 +51,7 @@ Si falta algo obligatorio, el panel tampoco arranca: lo avisa y te manda a `veri
 - Abre **Panel Wi-Fi** desde el menú Inicio (o `iniciar-wifi.cmd`, o `.\iniciar.ps1 -Wifi`). El celular tiene que estar en la misma red que el PC.
 - **La ventana muestra un código QR.** Escanéalo con la cámara del celular: se abre el panel (si se abre en otro navegador,
   usa "Abrir en Chrome"). No hace falta el cable ni el modo desarrollador.
-- **La primera vez, el PC pide permiso:** aparece el aviso "Panel USB: dispositivo nuevo" con la IP y el modelo del celular.
+- **La primera vez, el PC pide permiso:** aparece el aviso "Panel del PC: dispositivo nuevo" con la IP y el modelo del celular.
   Pulsa **Sí** y el panel se abre solo en el celular. Pulsa **No** si no lo reconoces: ese dispositivo no podrá volver a pedir
   acceso hasta que reinicies el panel. Después, en Chrome: ⋮ > **Agregar a pantalla principal**.
 - Para pedir acceso hace falta el token que va dentro del QR: un equipo de la red que no lo tenga no puede ni abrir el aviso.
