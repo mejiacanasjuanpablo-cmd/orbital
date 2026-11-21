@@ -17,6 +17,17 @@ No hay que instalar ninguna app en el celular y no se expone nada a la red Wi-Fi
 - Para detenerlo, pulsa Ctrl+C o cierra la ventana.
 - Si desconectas el cable con el panel en marcha, al volver a conectarlo el panel se recupera solo en unos segundos.
 
+### Por Wi-Fi (sin cable)
+
+- Usa el icono **Panel Wi-Fi** (o `iniciar-wifi.cmd`, o `.\iniciar.ps1 -Wifi`). El celular tiene que estar en la misma red que el PC.
+- La ventana muestra la dirección para abrir en el celular (`http://IP-del-PC:8787/#t=...`). Si el cable está conectado
+  al arrancar, el script se la abre solo y luego puedes desconectarlo.
+- Ábrela una vez así y después agrégala a la pantalla principal desde Chrome; el icono recordará el token.
+- La red debe estar marcada como **Privada** en Windows. Si el router cambia la IP del PC, hay que volver a abrir la
+  dirección nueva (se evita reservando la IP del PC en el router).
+- En este modo el panel queda accesible desde tu red local, siempre con el token. Úsalo solo en redes de confianza
+  (la de tu casa), no en redes públicas. El modo USB normal no expone nada a la red.
+
 ### Si no abre en el celular
 
 - La ventana dice "Esperando al celular…": desbloquea el celular. Si aparece "Permitir depuración USB",
@@ -86,6 +97,7 @@ Si añades `"confirm": true` a un botón, pedirá confirmación antes de ejecuta
 
 ## Seguridad
 
-- El servidor solo escucha en `127.0.0.1`. El celular llega a él únicamente por el túnel `adb reverse`.
+- En modo USB el servidor solo escucha en `127.0.0.1`; el celular llega a él únicamente por el túnel `adb reverse`.
+  En modo Wi-Fi también escucha en la IP local del PC y solo acepta conexiones desde direcciones de red privada.
 - Cada sesión usa un token aleatorio y rechaza peticiones con otro nombre de host (protección contra DNS rebinding).
 - El celular solo puede ejecutar los botones definidos en `config.json`, nunca comandos arbitrarios.

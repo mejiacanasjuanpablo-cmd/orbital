@@ -325,7 +325,7 @@
   <!-- 1 · Inicio -->
   <section class="page" data-name="Inicio">
     <div class="tile clock">
-      <div class="strip"><span class="live" id="live"></span><span id="host">PC</span><span class="sep">·</span><span>USB</span><span class="sep">·</span><span id="stripVol">–</span><span class="sep">·</span><span id="stripStatus">Conectando…</span><button id="fsBtn" class="fs" aria-label="Pantalla completa"><svg class="i"><use id="fsIcon" href="#i-expand"/></svg></button></div>
+      <div class="strip"><span class="live" id="live"></span><span id="host">PC</span><span class="sep">·</span><span id="linkType">USB</span><span class="sep">·</span><span id="stripVol">–</span><span class="sep">·</span><span id="stripStatus">Conectando…</span><button id="fsBtn" class="fs" aria-label="Pantalla completa"><svg class="i"><use id="fsIcon" href="#i-expand"/></svg></button></div>
       <div class="time"><span id="hh">--</span><span class="colon">:</span><span id="mm">--</span><sup id="ss">--</sup></div>
       <div class="date" id="date"></div>
       <div class="meta"><span>Encendido <b id="uptime">–</b></span><span id="cpuModel"></span></div>
@@ -438,6 +438,7 @@
   if (fromHash) history.replaceState(null, '', location.pathname);
 
   const $ = (id) => document.getElementById(id);
+  $('linkType').textContent = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? 'USB' : 'Wi-Fi';
   const api = async (path, opts = {}) => {
     const r = await fetch(path, { ...opts, headers: { 'x-panel-token': token || '', 'Content-Type': 'application/json' } });
     const body = await r.json().catch(() => ({}));

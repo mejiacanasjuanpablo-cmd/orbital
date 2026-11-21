@@ -1,5 +1,5 @@
 // Panel USB — servidor local sin dependencias.
-// Solo escucha en 127.0.0.1; el celular llega por el túnel `adb reverse`.
+// Escucha en 127.0.0.1 (el celular llega por el túnel `adb reverse`) y, en modo Wi-Fi, también en la IP local.
 'use strict';
 
 const http = require('http');
@@ -296,11 +296,17 @@ function readBody(req) {
   });
 }
 
+// Modo Wi-Fi (opcional): además de 127.0.0.1, escucha en la IP de la red local indicada en PANEL_LAN_IP.
+const LAN_IP = /^(10|172\.(1[6-9]|2\d|3[01])|192\.168)\.\d{1,3}\.\d{1,3}(\.\d{1,3})?$/.test(process.env.PANEL_LAN_IP || '') ? process.env.PANEL_LAN_IP : null;
 const allowedHosts = new Set([`localhost:${PORT}`, `127.0.0.1:${PORT}`]);
+if (LAN_IP) allowedHosts.add(`${LAN_IP}:${PORT}`);
+// Solo se aceptan conexiones desde la propia máquina o desde direcciones de red privada.
+const isPrivate = (a) => /^(::ffff:)?(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(a || '') || a === '::1';
 
-const server = http.createServer(async (req, res) => {
-  // Protección contra DNS rebinding: solo se acepta el host local.
+const handler = async (req, res) => {
+  // Protección contra DNS rebinding: solo se aceptan los nombres de host del panel.
   if (!allowedHosts.has(req.headers.host)) return send(res, 403, { error: 'host no permitido' });
+  if (!isPrivate(req.socket.remoteAddress)) return send(res, 403, { error: 'origen no permitido' });
 
   const url = new URL(req.url, `http://${req.headers.host}`);
 
@@ -348,10 +354,14 @@ const server = http.createServer(async (req, res) => {
     if (err) return send(res, 404, 'no encontrado', 'text/plain');
     send(res, 200, data, MIME[path.extname(file)] || 'application/octet-stream');
   });
-});
+};
 
-server.listen(PORT, '127.0.0.1', () => {
+http.createServer(handler).listen(PORT, '127.0.0.1', () => {
   console.log(`Panel USB escuchando en http://localhost:${PORT}`);
   if (!process.env.PANEL_TOKEN) console.log(`Abrir en este PC: http://localhost:${PORT}/#t=${TOKEN}`);
-  console.log('Ctrl+C para detener.');
 });
+if (LAN_IP) {
+  http.createServer(handler)
+    .on('error', (e) => console.log(`No se pudo escuchar en la red Wi-Fi (${LAN_IP}): ${e.message}`))
+    .listen(PORT, LAN_IP, () => console.log(`Modo Wi-Fi: también en http://${LAN_IP}:${PORT}`));
+}
