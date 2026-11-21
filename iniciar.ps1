@@ -62,6 +62,39 @@ if (-not $SoloPC) {
     Write-Host "Celular detectado: $serial" -ForegroundColor Green
 }
 
+function Test-Panel {
+    try { Invoke-WebRequest "http://127.0.0.1:$Puerto/" -UseBasicParsing -TimeoutSec 1 | Out-Null; return $true } catch { return $false }
+}
+
+function Set-Tunel {
+    # Túnel USB: el localhost del celular apunta al localhost del PC. Nada se expone a la red Wi-Fi.
+    # Devuelve $true si el túnel está activo. Se pierde al desconectar el cable, por eso se revisa cada pocos segundos.
+    $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+    try {
+        $list = (& $adb -s $serial reverse --list 2>&1) -join "`n"
+        if ($list -match "tcp:$Puerto") { return $true }
+        & $adb -s $serial reverse "tcp:$Puerto" "tcp:$Puerto" 2>&1 | Out-Null
+        return ($LASTEXITCODE -eq 0)
+    } catch { return $false } finally { $ErrorActionPreference = $prev }
+}
+
+function Open-EnCelular {
+    # application_id hace que Chrome reutilice la misma pestaña en lugar de abrir una nueva cada vez.
+    & $adb -s $serial shell am start -a android.intent.action.VIEW -d "'$url'" --es com.android.browser.application_id panelusb | Out-Null
+}
+
+# Si el panel ya está en marcha (por ejemplo, se pulsó el icono dos veces), solo se vuelve a abrir en el celular.
+if (Test-Panel) {
+    if ($SoloPC) { Start-Process $url }
+    else {
+        if (-not (Set-Tunel)) { Write-Host "No se pudo crear el túnel USB." -ForegroundColor Red; exit 1 }
+        Open-EnCelular
+    }
+    Write-Host "El panel ya estaba en marcha; se volvió a abrir." -ForegroundColor Green
+    Start-Sleep -Seconds 2
+    exit 0
+}
+
 # Arranca el servidor.
 $env:PANEL_TOKEN = $token
 $env:PANEL_PORT = "$Puerto"
@@ -70,7 +103,9 @@ $server = Start-Process node -ArgumentList 'server.js' -NoNewWindow -PassThru
 # Espera a que responda.
 $ok = $false
 for ($i = 0; $i -lt 40; $i++) {
-    try { Invoke-WebRequest "http://127.0.0.1:$Puerto/" -UseBasicParsing -TimeoutSec 1 | Out-Null; $ok = $true; break } catch { Start-Sleep -Milliseconds 250 }
+    if (Test-Panel) { $ok = $true; break }
+    if ($server.HasExited) { break }
+    Start-Sleep -Milliseconds 250
 }
 if (-not $ok) { Write-Host "El servidor no arrancó." -ForegroundColor Red; Stop-Process $server -ErrorAction SilentlyContinue; exit 1 }
 
@@ -78,17 +113,24 @@ try {
     if ($SoloPC) {
         Start-Process $url
     } else {
-        # Túnel USB: el localhost del celular apunta al localhost del PC. Nada se expone a la red Wi-Fi.
-        & $adb -s $serial reverse "tcp:$Puerto" "tcp:$Puerto" | Out-Null
-        # application_id hace que Chrome reutilice la misma pestaña en lugar de abrir una nueva cada vez.
-        & $adb -s $serial shell am start -a android.intent.action.VIEW -d "'$url'" --es com.android.browser.application_id panelusb | Out-Null
-        Write-Host "Panel abierto en el celular. Si se desconecta el cable, vuelve a ejecutar este script." -ForegroundColor Green
+        if (-not (Set-Tunel)) { Write-Host "No se pudo crear el túnel USB." -ForegroundColor Red }
+        Open-EnCelular
+        Write-Host "Panel abierto en el celular. Si desconectas el cable, el túnel se restablece solo al reconectarlo." -ForegroundColor Green
     }
     Write-Host "Ctrl+C para detener."
-    Wait-Process -Id $server.Id
+    $conectado = $true
+    while (-not $server.HasExited) {
+        if (-not $SoloPC) {
+            $ahora = Set-Tunel
+            if ($ahora -and -not $conectado) { Write-Host "Celular reconectado: túnel USB restablecido." -ForegroundColor Green }
+            elseif (-not $ahora -and $conectado) { Write-Host "Celular desconectado; esperando a que vuelva..." -ForegroundColor Yellow }
+            $conectado = $ahora
+        }
+        Start-Sleep -Seconds 3
+    }
 }
 finally {
     if (-not $server.HasExited) { Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue }
-    if ($adb -and $serial) { & $adb -s $serial reverse --remove "tcp:$Puerto" 2>$null | Out-Null }
+    if ($adb -and $serial) { try { & $adb -s $serial reverse --remove "tcp:$Puerto" 2>&1 | Out-Null } catch {} }
     Remove-Item Env:PANEL_TOKEN -ErrorAction SilentlyContinue
 }
