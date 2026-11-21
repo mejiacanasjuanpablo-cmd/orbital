@@ -439,11 +439,19 @@
 
   const $ = (id) => document.getElementById(id);
   $('linkType').textContent = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? 'USB' : 'Wi-Fi';
+  // Cada petición tiene un tiempo máximo: si Chrome congela la pestaña o se corta la red, una petición colgada
+  // no bloquea las siguientes (los comandos pueden tardar hasta 60 s; el resto, 10 s).
   const api = async (path, opts = {}) => {
-    const r = await fetch(path, { ...opts, headers: { 'x-panel-token': token || '', 'Content-Type': 'application/json' } });
-    const body = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(body.error || r.status);
-    return body;
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), path === '/api/action' ? 70000 : 10000);
+    try {
+      const r = await fetch(path, { ...opts, signal: ctl.signal, cache: 'no-store', headers: { 'x-panel-token': token || '', 'Content-Type': 'application/json' } });
+      const body = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(body.error || r.status);
+      return body;
+    } catch (e) {
+      throw e.name === 'AbortError' ? new Error('el PC no respondió a tiempo') : e;
+    } finally { clearTimeout(timer); }
   };
   const buzz = () => { try { navigator.vibrate && navigator.vibrate(10); } catch {} };
   const icon = (name) => `<svg class="i"><use href="#i-${/^[a-z]+$/.test(name || '') ? name : 'dot'}"/></svg>`;
@@ -817,6 +825,8 @@
   let wakeLock = null;
   async function keepAwake() { try { if ('wakeLock' in navigator && !wakeLock && !document.hidden) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => (wakeLock = null)); } } catch {} }
   document.addEventListener('visibilitychange', keepAwake);
+  // Al volver a la pestaña, actualiza enseguida en lugar de esperar al siguiente ciclo.
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
   document.addEventListener('pointerdown', keepAwake);
   keepAwake();
 

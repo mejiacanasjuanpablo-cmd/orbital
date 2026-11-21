@@ -23,6 +23,8 @@ No hay que instalar ninguna app en el celular y no se expone nada a la red Wi-Fi
 - La ventana muestra la dirección para abrir en el celular (`http://IP-del-PC:8787/#t=...`). Si el cable está conectado
   al arrancar, el script se la abre solo y luego puedes desconectarlo.
 - Ábrela una vez así y después agrégala a la pantalla principal desde Chrome; el icono recordará el token.
+- Cierra en Chrome las pestañas viejas del panel que empiezan por `localhost`: son del modo USB y en modo Wi-Fi
+  no se conectan (se ven como "Sin conexión" y los botones no hacen nada).
 - La red debe estar marcada como **Privada** en Windows. Si el router cambia la IP del PC, hay que volver a abrir la
   dirección nueva (se evita reservando la IP del PC en el router).
 - En este modo el panel queda accesible desde tu red local, siempre con el token. Úsalo solo en redes de confianza
