@@ -312,15 +312,24 @@ const LAN_IP = /^(10|172\.(1[6-9]|2\d|3[01])|192\.168)\.\d{1,3}\.\d{1,3}(\.\d{1,
 const allowedHosts = new Set([`localhost:${PORT}`, `127.0.0.1:${PORT}`]);
 if (LAN_IP) allowedHosts.add(`${LAN_IP}:${PORT}`);
 // Solo se aceptan conexiones del propio PC o de los dispositivos de config.json → wifi.dispositivos.
-const { isAllowed, normalize } = require('./lib/allow');
+const { isAllowed, isPrivate, normalize } = require('./lib/allow');
 const wifiDevices = () => { try { return (loadConfig().wifi || {}).dispositivos || []; } catch { return []; } };
 const rejectedLog = new Map();
 function logRejected(addr) {
   const a = normalize(addr), now = Date.now();
   if (now - (rejectedLog.get(a) || 0) < 60000) return;
   rejectedLog.set(a, now);
-  console.log(`[${new Date().toLocaleTimeString()}] Conexión rechazada desde ${a}. Si es tu celular, agrega esa IP en config.json → "wifi" → "dispositivos".`);
+  console.log(`[${new Date().toLocaleTimeString()}] Conexión rechazada desde ${a}. Si es tu celular, escanea el código QR de esta ventana para pedir acceso.`);
 }
+
+// Dispositivos nuevos en modo Wi-Fi: con el token del QR pueden pedir acceso, y el PC pregunta si se permite.
+const { createApprovals, describeDevice } = require('./lib/aprobacion');
+const approvals = LAN_IP ? createApprovals({ configPath: CONFIG_PATH }) : null;
+process.on('exit', () => approvals && approvals.close());
+const tokenOk = (req) => {
+  const given = String(req.headers['x-panel-token'] || '');
+  return given.length === TOKEN.length && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(TOKEN));
+};
 
 const handler = async (req, res) => {
   if (DEBUG && !req.url.startsWith('/api/stats')) {
@@ -328,9 +337,21 @@ const handler = async (req, res) => {
     req.on('end', () => dlog('  cuerpo recibido', req.method, req.url.replace(/[?#].*/, '')));
     res.on('finish', () => dlog('←', res.statusCode, req.method, req.url.replace(/[?#].*/, '')));
   }
-  // Dispositivo no autorizado: se corta la conexión sin responder nada.
-  if (!isAllowed(req.socket.remoteAddress, LAN_IP, wifiDevices())) {
-    logRejected(req.socket.remoteAddress);
+  const remote = normalize(req.socket.remoteAddress);
+  if (!isAllowed(remote, LAN_IP, wifiDevices())) {
+    // Dispositivo nuevo de la red local en modo Wi-Fi: solo puede ver la página de espera y pedir acceso con el token.
+    if (approvals && isPrivate(remote) && allowedHosts.has(req.headers.host)) {
+      const p = req.url.split(/[?#]/)[0];
+      if (req.method === 'GET' && p === '/') {
+        return fs.readFile(path.join(ROOT, 'public', 'espera.html'), (err, data) => (err ? send(res, 500, 'error', 'text/plain') : send(res, 200, data, MIME['.html'])));
+      }
+      if (req.method === 'POST' && p === '/api/solicitar') {
+        if (!tokenOk(req)) { logRejected(remote); return send(res, 401, { error: 'token inválido' }); }
+        return send(res, 200, { estado: approvals.request(remote, describeDevice(req.headers['user-agent'])) });
+      }
+    }
+    // Cualquier otra cosa: se corta la conexión sin responder nada.
+    logRejected(remote);
     req.socket.destroy();
     return;
   }
@@ -340,11 +361,11 @@ const handler = async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
   if (url.pathname.startsWith('/api/')) {
-    const given = req.headers['x-panel-token'] || '';
-    const ok = given.length === TOKEN.length && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(TOKEN));
-    if (!ok) return send(res, 401, { error: 'token inválido' });
+    if (!tokenOk(req)) return send(res, 401, { error: 'token inválido' });
 
     try {
+      // La página de espera sigue preguntando hasta ver que el dispositivo ya está autorizado.
+      if (url.pathname === '/api/solicitar' && req.method === 'POST') return send(res, 200, { estado: 'aprobado' });
       if (url.pathname === '/api/config' && req.method === 'GET') return send(res, 200, publicConfig());
       if (url.pathname === '/api/stats' && req.method === 'GET') return send(res, 200, stats());
       if (url.pathname === '/api/tasks' && req.method === 'GET') return send(res, 200, readTasks());

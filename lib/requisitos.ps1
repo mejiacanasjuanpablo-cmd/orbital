@@ -5,8 +5,8 @@
 $PanelArchivos = @(
     'server.js', 'config.ejemplo.json', 'panel.ico',
     'iniciar.ps1', 'iniciar.cmd', 'iniciar-wifi.cmd',
-    'lib\allow.js', 'lib\keys.ps1', 'lib\media.ps1', 'lib\requisitos.ps1',
-    'public\index.html', 'public\manifest.webmanifest', 'public\icon-192.png', 'public\icon-512.png'
+    'lib\allow.js', 'lib\aprobacion.js', 'lib\qr.js', 'lib\keys.ps1', 'lib\media.ps1', 'lib\requisitos.ps1',
+    'public\index.html', 'public\espera.html', 'public\manifest.webmanifest', 'public\icon-192.png', 'public\icon-512.png'
 )
 # server.js usa fetch y AbortSignal.timeout, disponibles desde Node.js 18.
 $PanelNodeMinimo = [version]'18.0.0'

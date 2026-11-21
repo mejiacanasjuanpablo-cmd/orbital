@@ -89,8 +89,7 @@ if ($Wifi) {
     } elseif ($ipCel -and $cfgTxt -notmatch [regex]::Escape("`"$ipCel`"")) {
         Write-Host "La IP Wi-Fi del celular ($ipCel) no está en config.json → wifi.dispositivos; agrégala para que pueda entrar." -ForegroundColor Yellow
     } elseif (-not $ipCel -and $listaVacia) {
-        Write-Host "Todavía no hay ningún celular autorizado para el modo Wi-Fi." -ForegroundColor Yellow
-        Write-Host "Conéctalo una vez por cable y vuelve a abrir este modo, o pon su IP en config.json → wifi.dispositivos."
+        Write-Host "Todavía no hay ningún celular autorizado para el modo Wi-Fi: escanea el código QR y aprueba el aviso que aparecerá en el PC." -ForegroundColor Yellow
     }
 } elseif (-not $SoloPC) {
     $adb = Find-Adb
@@ -149,10 +148,18 @@ function Open-EnCelular {
 }
 
 function Show-WifiInfo {
+    $wifiUrl = "http://${lanIp}:$Puerto/#t=$token"
     Write-Host ""
-    Write-Host "Modo Wi-Fi. En el celular (conectado a la misma red) abre:" -ForegroundColor Green
-    Write-Host "  http://${lanIp}:$Puerto/#t=$token" -ForegroundColor Cyan
-    Write-Host "Ábrelo una vez con esa dirección y luego usa Chrome > ⋮ > Agregar a pantalla principal."
+    Write-Host "Modo Wi-Fi. Escanea este código con la cámara del celular (en la misma red Wi-Fi que el PC):" -ForegroundColor Green
+    Write-Host ""
+    # El QR se dibuja con Node (lib\qr.js, sin conexión a internet: el token nunca sale del PC).
+    $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+    try { & node (Join-Path $PSScriptRoot 'lib\qr.js') $wifiUrl } catch { }
+    $ErrorActionPreference = $prev
+    Write-Host ""
+    Write-Host "O escribe esta dirección en el navegador del celular:" -ForegroundColor DarkGray
+    Write-Host "  $wifiUrl" -ForegroundColor Cyan
+    Write-Host "Si el celular es nuevo, aparecerá un aviso en el PC para aprobarlo. Después, en Chrome: ⋮ > Agregar a pantalla principal."
     Write-Host ""
 }
 

@@ -12,8 +12,9 @@ No hay que instalar ninguna app en el celular. Funciona en Windows 10 y 11.
      y solo se instala si la firma digital es de Google.
    También crea `config.json` y los iconos **Panel USB** y **Panel Wi-Fi** en el menú Inicio.
    Si Windows avisa de que el archivo viene de internet, elige **Más información → Ejecutar de todas formas**.
-3. En el celular: **Ajustes > Acerca del teléfono**, toca 7 veces **Número de compilación**, y después
-   **Opciones de desarrollador > Depuración USB**. Al conectar el cable, marca **Permitir siempre desde este ordenador** y acepta.
+3. **Solo para el modo con cable (USB):** en el celular, **Ajustes > Acerca del teléfono**, toca 7 veces **Número de compilación**,
+   y después **Opciones de desarrollador > Depuración USB**. Al conectar el cable, marca **Permitir siempre desde este ordenador**
+   y acepta. **Para el modo Wi-Fi no hace falta tocar nada del celular.**
 
 Si mueves la carpeta a otro sitio, vuelve a ejecutar `instalar.cmd` para que los iconos apunten a la nueva ubicación.
 
@@ -48,11 +49,16 @@ Si falta algo obligatorio, el panel tampoco arranca: lo avisa y te manda a `veri
 ### Por Wi-Fi (Panel Wi-Fi)
 
 - Abre **Panel Wi-Fi** desde el menú Inicio (o `iniciar-wifi.cmd`, o `.\iniciar.ps1 -Wifi`). El celular tiene que estar en la misma red que el PC.
-- **La primera vez, ábrelo con el cable conectado.** Así el script autoriza la IP Wi-Fi del celular y le abre el panel.
-  Después puedes desconectar el cable y agregar el panel a la pantalla principal desde Chrome.
-- Solo entran los dispositivos de `config.json` → `"wifi": { "dispositivos": ["192.168.1.50"] }`. A cualquier otro equipo
-  de la red se le corta la conexión sin responderle, y la ventana del panel muestra "Conexión rechazada desde ...".
-  Si cambia la IP del celular, pon la nueva ahí (se aplica al instante); para que no cambie, resérvala en el router.
+- **La ventana muestra un código QR.** Escanéalo con la cámara del celular: se abre el panel (si se abre en otro navegador,
+  usa "Abrir en Chrome"). No hace falta el cable ni el modo desarrollador.
+- **La primera vez, el PC pide permiso:** aparece el aviso "Panel USB: dispositivo nuevo" con la IP y el modelo del celular.
+  Pulsa **Sí** y el panel se abre solo en el celular. Pulsa **No** si no lo reconoces: ese dispositivo no podrá volver a pedir
+  acceso hasta que reinicies el panel. Después, en Chrome: ⋮ > **Agregar a pantalla principal**.
+- Para pedir acceso hace falta el token que va dentro del QR: un equipo de la red que no lo tenga no puede ni abrir el aviso.
+- Los dispositivos aprobados se guardan en `config.json` → `"wifi": { "dispositivos": ["192.168.1.50"] }`. Puedes quitar uno
+  borrando su IP (se aplica al instante). A cualquier otro equipo se le corta la conexión sin responderle.
+- Si cambia la IP del celular, vuelve a escanear el QR y apruébalo otra vez; para que no cambie, resérvala en el router.
+- Si el celular está conectado por cable al abrir Panel Wi-Fi, se autoriza solo y se le abre el panel (sin QR ni aviso).
 - Si el router cambia la IP del PC, el icono del celular deja de funcionar: abre Panel Wi-Fi y usa la dirección nueva que muestra.
 - La red debe estar marcada como **Privada** en Windows. Úsalo solo en redes de confianza (la de tu casa), no en redes públicas:
   la conexión no va cifrada.

@@ -51,9 +51,12 @@ if (-not $listo) {
     Write-Host ""
 }
 Write-Host "Siguientes pasos:" -ForegroundColor Cyan
-Write-Host " 1. En el celular Android: Ajustes > Acerca del teléfono > toca 7 veces 'Número de compilación'."
-Write-Host "    Luego Opciones de desarrollador > activa 'Depuración USB'."
-Write-Host " 2. Conecta el celular por cable y abre 'Panel USB' desde el menú Inicio. Acepta el aviso en el celular."
-Write-Host " 3. Para usarlo sin cable: abre 'Panel Wi-Fi' una vez con el cable conectado (autoriza tu celular)."
-Write-Host " 4. Personaliza los botones en config.json. Todo está explicado en LEEME.md."
+Write-Host " Por Wi-Fi (no hay que tocar nada del celular):"
+Write-Host "   1. Abre 'Panel Wi-Fi' desde el menú Inicio y escanea con la cámara del celular el código QR de la ventana."
+Write-Host "   2. En el PC aparecerá un aviso para aprobar el celular: pulsa Sí."
+Write-Host " Por cable (USB):"
+Write-Host "   1. En el celular: Ajustes > Acerca del teléfono > toca 7 veces 'Número de compilación';"
+Write-Host "      luego Opciones de desarrollador > activa 'Depuración USB'."
+Write-Host "   2. Conecta el cable y abre 'Panel USB' desde el menú Inicio. Acepta el aviso en el celular."
+Write-Host " Personaliza los botones en config.json. Todo está explicado en LEEME.md."
 Write-Host ""

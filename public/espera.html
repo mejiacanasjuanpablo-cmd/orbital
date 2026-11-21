@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0e14">
+<title>Panel del PC</title>
+<style>
+  :root { --bg: #0b0e14; --tile: #131823; --line: #232a38; --text: #e6ebf3; --muted: #8a94a8; --teal: #2dd4bf; --red: #f87171; --orange: #fb923c; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+               font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { min-height: 100%; display: grid; place-items: center; padding: 24px 16px; }
+  .card { width: 100%; max-width: 420px; background: var(--tile); border: 1px solid var(--line); border-radius: 22px; padding: 28px 24px; text-align: center; }
+  .icon { width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 18px; display: grid; place-items: center; background: color-mix(in srgb, var(--c, var(--teal)) 16%, transparent); color: var(--c, var(--teal)); }
+  .icon svg { width: 34px; height: 34px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  h1 { font-size: 20px; margin: 0 0 8px; }
+  p { margin: 0; color: var(--muted); }
+  .spin { width: 22px; height: 22px; margin: 20px auto 0; border: 3px solid var(--line); border-top-color: var(--teal); border-radius: 50%; animation: s 1s linear infinite; }
+  @keyframes s { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation-duration: 3s; } }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <div class="icon" id="icon"><svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="12" rx="2"/><path d="M8.5 20h7M12 16.5V20"/></svg></div>
+    <h1 id="title">Conectando con el PC…</h1>
+    <p id="msg">Un momento.</p>
+    <div class="spin" id="spin"></div>
+  </div>
+</main>
+<script>
+  // Página que ve un dispositivo nuevo en modo Wi-Fi mientras se aprueba en el PC.
+  // Lee el token del código QR (#t=...) y pide acceso; cuando el PC lo aprueba, recarga y aparece el panel.
+  const $ = (id) => document.getElementById(id);
+  const show = (title, msg, color, spinning) => {
+    $('title').textContent = title; $('msg').textContent = msg;
+    $('icon').style.setProperty('--c', color || 'var(--teal)');
+    $('spin').classList.toggle('hidden', !spinning);
+  };
+  const fromHash = (location.hash.match(/t=([0-9a-f]{32,})/) || [])[1];
+  let token = fromHash;
+  try { if (fromHash) localStorage.setItem('panelToken', fromHash); token = fromHash || localStorage.getItem('panelToken'); } catch {}
+
+  async function ask() {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000);
+    try {
+      const r = await fetch('/api/solicitar', { method: 'POST', cache: 'no-store', signal: ctl.signal, headers: { 'x-panel-token': token } });
+      if (r.status === 401) {
+        try { localStorage.removeItem('panelToken'); } catch {}
+        return show('El código no es válido', 'Vuelve a escanear el código QR que aparece en la ventana "Panel Wi-Fi" del PC.', 'var(--red)', false);
+      }
+      const { estado } = await r.json();
+      if (estado === 'aprobado') { show('Acceso aprobado', 'Abriendo el panel…', 'var(--teal)', true); return location.reload(); }
+      if (estado === 'rechazado') return show('El PC rechazó este dispositivo', 'Si fue un error, cierra y vuelve a abrir "Panel Wi-Fi" en el PC y escanea el código otra vez.', 'var(--red)', false);
+      show('Acepta el aviso en el PC', 'En la pantalla del PC apareció la pregunta "¿Permitir este dispositivo?". Pulsa Sí y el panel se abrirá aquí solo.', 'var(--orange)', true);
+    } catch {
+      show('Buscando el PC…', 'Comprueba que el celular esté en la misma red Wi-Fi que el PC y que "Panel Wi-Fi" siga abierto.', 'var(--orange)', true);
+    } finally { clearTimeout(t); }
+    setTimeout(ask, 2000);
+  }
+
+  if (!token) show('Escanea el código QR', 'Abre "Panel Wi-Fi" en el PC y escanea con la cámara del celular el código que aparece en la ventana.', 'var(--teal)', false);
+  else ask();
+</script>
+</body>
+</html>
