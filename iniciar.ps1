@@ -66,6 +66,32 @@ if ($Wifi) {
         $ErrorActionPreference = $prev
         if ($ready) { $serial = (@($ready)[0] -split "`t")[0] }
     }
+
+    # Solo los dispositivos de config.json → wifi.dispositivos pueden entrar. Si la lista está vacía y el celular
+    # está conectado por cable, se autoriza su IP de Wi-Fi automáticamente.
+    $cfgPath = Join-Path $PSScriptRoot 'config.json'
+    if (-not (Test-Path $cfgPath) -and (Test-Path (Join-Path $PSScriptRoot 'config.ejemplo.json'))) {
+        Copy-Item (Join-Path $PSScriptRoot 'config.ejemplo.json') $cfgPath
+    }
+    $cfgTxt = [IO.File]::ReadAllText($cfgPath)
+    $listaVacia = $cfgTxt -notmatch '"dispositivos"\s*:\s*\[\s*"'
+    $ipCel = $null
+    if ($serial) {
+        $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+        try { $wl = (& $adb -s $serial shell "ip -4 addr show wlan0" 2>&1) -join ' ' } catch { $wl = '' }
+        $ErrorActionPreference = $prev
+        if ($wl -match 'inet (\d+\.\d+\.\d+\.\d+)/') { $ipCel = $Matches[1] }
+    }
+    if ($ipCel -and $listaVacia -and $cfgTxt -match '"dispositivos"\s*:\s*\[\s*\]') {
+        $cfgTxt = [regex]::Replace($cfgTxt, '"dispositivos"\s*:\s*\[\s*\]', "`"dispositivos`": [`"$ipCel`"]")
+        [IO.File]::WriteAllText($cfgPath, $cfgTxt, (New-Object Text.UTF8Encoding $false))
+        Write-Host "Celular autorizado para el modo Wi-Fi: $ipCel" -ForegroundColor Green
+    } elseif ($ipCel -and $cfgTxt -notmatch [regex]::Escape("`"$ipCel`"")) {
+        Write-Host "La IP Wi-Fi del celular ($ipCel) no está en config.json → wifi.dispositivos; agrégala para que pueda entrar." -ForegroundColor Yellow
+    } elseif (-not $ipCel -and $listaVacia) {
+        Write-Host "Todavía no hay ningún celular autorizado para el modo Wi-Fi." -ForegroundColor Yellow
+        Write-Host "Conéctalo una vez por cable y vuelve a abrir este modo, o pon su IP en config.json → wifi.dispositivos."
+    }
 } elseif (-not $SoloPC) {
     $adb = Find-Adb
     if (-not $adb) {

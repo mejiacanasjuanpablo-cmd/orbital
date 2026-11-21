@@ -15,8 +15,12 @@ const ROOT = __dirname;
 const CONFIG_PATH = path.join(ROOT, 'config.json');
 
 // ---------- Configuración (se relee en cada petición para editar sin reiniciar)
+// Primera vez (por ejemplo, al recibir el panel en un .zip): se crea config.json a partir del ejemplo.
+if (!fs.existsSync(CONFIG_PATH) && fs.existsSync(path.join(ROOT, 'config.ejemplo.json'))) {
+  fs.copyFileSync(path.join(ROOT, 'config.ejemplo.json'), CONFIG_PATH);
+}
 function loadConfig() {
-  return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+  return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8').replace(/^﻿/, ''));
 }
 function findAction(id) {
   const cfg = loadConfig();

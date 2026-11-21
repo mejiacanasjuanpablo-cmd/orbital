@@ -1,44 +1,50 @@
 # Panel USB
 
-Panel de control del PC que se abre en el Chrome del celular Android a través del cable USB.
-No hay que instalar ninguna app en el celular y no se expone nada a la red Wi-Fi.
+Panel de control del PC que se abre en el Chrome de un celular Android, por cable USB o por la red Wi-Fi de la casa.
+No hay que instalar ninguna app en el celular. Funciona en Windows 10 y 11.
 
-## Requisitos (una sola vez)
+## Instalación (una sola vez)
 
-1. **adb** (herramientas oficiales de Google):
-   `winget install Google.PlatformTools` y luego cierra y vuelve a abrir la terminal.
-2. En el celular: **Ajustes > Acerca del teléfono**, toca 7 veces **Número de compilación**, y después
-   **Opciones de desarrollador > Depuración USB**. Al conectar el cable, acepta "Permitir depuración USB".
+1. Descomprime `Panel-USB.zip` en una carpeta fija (por ejemplo, en Documentos). No lo ejecutes desde dentro del .zip.
+2. Doble clic en **`instalar.cmd`**. Revisa lo que hace falta y ofrece instalarlo:
+   - **Node.js** (obligatorio).
+   - **adb**, las herramientas oficiales de Google (solo para el modo con cable).
+   También crea `config.json` y los iconos **Panel USB** y **Panel Wi-Fi** en el menú Inicio.
+   Si Windows avisa de que el archivo viene de internet, elige **Más información → Ejecutar de todas formas**.
+3. En el celular: **Ajustes > Acerca del teléfono**, toca 7 veces **Número de compilación**, y después
+   **Opciones de desarrollador > Depuración USB**. Al conectar el cable, marca **Permitir siempre desde este ordenador** y acepta.
+
+Si mueves la carpeta a otro sitio, vuelve a ejecutar `instalar.cmd` para que los iconos apunten a la nueva ubicación.
 
 ## Usar
 
-- Doble clic en `iniciar.cmd`, o en una terminal ejecuta `.\iniciar.ps1`.
+### Por cable (Panel USB)
+
+- Abre **Panel USB** desde el menú Inicio (o doble clic en `iniciar.cmd`). El panel se abre solo en el celular.
 - Para probarlo sin celular: `.\iniciar.ps1 -SoloPC`.
-- Para detenerlo, pulsa Ctrl+C o cierra la ventana.
+- Para detenerlo, cierra la ventana (o Ctrl+C).
 - Si desconectas el cable con el panel en marcha, al volver a conectarlo el panel se recupera solo en unos segundos.
+- En este modo no se expone nada a la red: el celular llega al PC solo por el cable.
 
-### Por Wi-Fi (sin cable)
+### Por Wi-Fi (Panel Wi-Fi)
 
-- Usa el icono **Panel Wi-Fi** (o `iniciar-wifi.cmd`, o `.\iniciar.ps1 -Wifi`). El celular tiene que estar en la misma red que el PC.
-- La ventana muestra la dirección para abrir en el celular (`http://IP-del-PC:8787/#t=...`). Si el cable está conectado
-  al arrancar, el script se la abre solo y luego puedes desconectarlo.
-- Ábrela una vez así y después agrégala a la pantalla principal desde Chrome; el icono recordará el token.
-- Cierra en Chrome las pestañas viejas del panel que empiezan por `localhost`: son del modo USB y en modo Wi-Fi
-  no se conectan (se ven como "Sin conexión" y los botones no hacen nada).
-- La red debe estar marcada como **Privada** en Windows. Si el router cambia la IP del PC, hay que volver a abrir la
-  dirección nueva (se evita reservando la IP del PC en el router).
-- Solo entran los dispositivos de `config.json` → `"wifi": { "dispositivos": ["192.168.1.50"] }` (la IP de tu celular).
-  A cualquier otro equipo de la red se le corta la conexión sin responderle, y la ventana del panel muestra
-  "Conexión rechazada desde ...". Si cambia la IP del celular, pon la nueva ahí (se aplica al instante, sin reiniciar);
-  para que no cambie, resérvala en el router.
-- En este modo el panel queda accesible desde tu red local, siempre con el token. Úsalo solo en redes de confianza
-  (la de tu casa), no en redes públicas. El modo USB normal no expone nada a la red.
+- Abre **Panel Wi-Fi** desde el menú Inicio (o `iniciar-wifi.cmd`, o `.\iniciar.ps1 -Wifi`). El celular tiene que estar en la misma red que el PC.
+- **La primera vez, ábrelo con el cable conectado.** Así el script autoriza la IP Wi-Fi del celular y le abre el panel.
+  Después puedes desconectar el cable y agregar el panel a la pantalla principal desde Chrome.
+- Solo entran los dispositivos de `config.json` → `"wifi": { "dispositivos": ["192.168.1.50"] }`. A cualquier otro equipo
+  de la red se le corta la conexión sin responderle, y la ventana del panel muestra "Conexión rechazada desde ...".
+  Si cambia la IP del celular, pon la nueva ahí (se aplica al instante); para que no cambie, resérvala en el router.
+- Si el router cambia la IP del PC, el icono del celular deja de funcionar: abre Panel Wi-Fi y usa la dirección nueva que muestra.
+- La red debe estar marcada como **Privada** en Windows. Úsalo solo en redes de confianza (la de tu casa), no en redes públicas:
+  la conexión no va cifrada.
+- Cierra en Chrome las pestañas viejas del panel que empiezan por `localhost`: son del modo USB y en modo Wi-Fi no se conectan.
 
 ### Si no abre en el celular
 
 - La ventana dice "Esperando al celular…": desbloquea el celular. Si aparece "Permitir depuración USB",
   marca **Permitir siempre desde este ordenador** y acepta. El script espera hasta 60 segundos.
 - Al pulsar el icono con el panel ya abierto, solo se vuelve a abrir en el celular (no se arranca otro).
+- El panel dice "Sin conexión": revisa que la ventana del panel siga abierta en el PC.
 
 ### Pantalla completa
 
@@ -49,7 +55,8 @@ No hay que instalar ninguna app en el celular y no se expone nada a la red Wi-Fi
 ### Como app en la pantalla de inicio
 
 En Chrome del celular: menú ⋮ > **Agregar a pantalla principal**. El icono abre el panel directamente a pantalla completa.
-Solo funciona mientras `iniciar.cmd` está en marcha en el PC con el cable conectado.
+Hazlo desde el modo que vayas a usar (USB o Wi-Fi): cada uno tiene su propia dirección. Solo funciona mientras el panel
+está en marcha en el PC.
 
 El token de acceso se guarda en `.token`. Si lo borras se genera uno nuevo y tendrás que volver a abrir el panel desde el script.
 
@@ -62,8 +69,8 @@ Desliza a los lados (o usa las flechas del teclado) para cambiar de página. Fun
 3. **Rendimiento**: historial de CPU, RAM y red de los últimos 3 minutos, y el uso de cada núcleo.
 4. **Procesos**: los programas que más CPU y memoria usan, agrupados (por ejemplo, todas las ventanas de Chrome juntas).
    Los servicios protegidos de Windows no se pueden medir sin permisos de administrador.
-5. **Enfoque**: temporizador pomodoro (enfoque, descanso y descanso largo, con vibración y sonido al terminar) y lista de tareas.
-   Las tareas se guardan en el PC, en `data/tareas.json`.
+5. **Enfoque**: temporizador pomodoro (enfoque, descanso y descanso largo, con vibración y sonido al terminar), lista de tareas
+   y botones de acceso rápido. Las tareas se guardan en el PC, en `data/tareas.json`.
 6. **Calendario**: el mes actual, relojes del mundo y el clima.
 7. **Discord**: compartir pantalla, silenciar el micrófono, ensordecer, modo streamer y abrir Discord. Indica si Discord está abierto en el PC.
    Los botones envían atajos globales, que hay que configurar una vez en Discord
@@ -77,7 +84,7 @@ Desliza a los lados (o usa las flechas del teclado) para cambiar de página. Fun
 
 - `"relojes"`: lista de `{ "nombre": "...", "zona": "America/New_York" }` (zonas horarias IANA, máximo 6).
 - `"pomodoro"`: minutos de `enfoque`, `descanso` y `largo`.
-- `"clima"`: viene desactivado. Para activarlo pon `"activo": true`, `"ciudad"`, `"lat"` y `"lon"`.
+- `"clima"`: viene desactivado. Para activarlo pon `"activo": true` y tu `"ciudad"`, `"lat"` y `"lon"`.
   El servidor consulta Open-Meteo (gratis, sin cuenta) cada 15 minutos y le envía esas coordenadas redondeadas.
 
 ## Personalizar: `config.json`
@@ -90,7 +97,7 @@ Los botones `prev`, `playpause` y `next` del grupo `media` son los que usa la ta
 
 Cada botón admite `"icon"` y `"color"` (por ejemplo `"#2dd4bf"`). Iconos disponibles:
 `play` `pause` `prev` `next` `vol` `mute` `music` `folder` `download` `briefcase` `globe` `calculator`
-`scissors` `activity` `monitor` `flame` `wifi` `clock` `lock` `moon` `terminal`.
+`scissors` `activity` `monitor` `flame` `wifi` `clock` `lock` `moon` `terminal` `book` `share` `mic` `headphones` `eye` `chat`.
 
 | type      | campos                       | ejemplo                                                |
 |-----------|------------------------------|--------------------------------------------------------|
@@ -101,9 +108,15 @@ Cada botón admite `"icon"` y `"color"` (por ejemplo `"#2dd4bf"`). Iconos dispon
 
 Si añades `"confirm": true` a un botón, pedirá confirmación antes de ejecutarse.
 
+## Compartir el panel
+
+En la carpeta del panel ejecuta `.\empaquetar.ps1`. Crea `Panel-USB.zip` junto a la carpeta, con solo los archivos del programa:
+nunca incluye tu `.token`, tu `config.json` ni tus tareas. Quien lo reciba empieza por la sección **Instalación**.
+
 ## Seguridad
 
 - En modo USB el servidor solo escucha en `127.0.0.1`; el celular llega a él únicamente por el túnel `adb reverse`.
   En modo Wi-Fi también escucha en la IP local del PC y solo acepta los dispositivos de `wifi.dispositivos`.
-- Cada sesión usa un token aleatorio y rechaza peticiones con otro nombre de host (protección contra DNS rebinding).
+- Todas las peticiones necesitan el token de `.token` (48 caracteres aleatorios, distinto en cada PC), y se rechazan
+  las que llegan con otro nombre de host (protección contra DNS rebinding).
 - El celular solo puede ejecutar los botones definidos en `config.json`, nunca comandos arbitrarios.
