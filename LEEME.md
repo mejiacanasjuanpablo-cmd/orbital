@@ -10,7 +10,8 @@ No hay que instalar ninguna app en el celular. Funciona en Windows 10 y 11.
    - **Node.js 18 o superior** (obligatorio). Se instala con winget; si el PC no tiene winget, abre la página oficial.
    - **adb**, las herramientas oficiales de Google (solo para el modo con cable). Se descarga de dl.google.com
      y solo se instala si la firma digital es de Google.
-   También crea `config.json` y los iconos **Panel USB** y **Panel Wi-Fi** en el menú Inicio.
+   También crea `config.json`, la ventana del panel (`Panel del PC.exe`, que se compila en el propio PC con lo que trae
+   Windows) y los iconos **Panel USB** y **Panel Wi-Fi** en el menú Inicio.
    Si Windows avisa de que el archivo viene de internet, elige **Más información → Ejecutar de todas formas**.
 3. **Solo para el modo con cable (USB):** en el celular, **Ajustes > Acerca del teléfono**, toca 7 veces **Número de compilación**,
    y después **Opciones de desarrollador > Depuración USB**. Al conectar el cable, marca **Permitir siempre desde este ordenador**
@@ -38,25 +39,39 @@ Si falta algo obligatorio, el panel tampoco arranca: lo avisa y te manda a `veri
 
 ## Usar
 
+Los iconos abren la **ventana del panel** en el PC, sin consola. Muestra:
+- si el panel está en marcha;
+- en modo Wi-Fi, el código QR y los dispositivos autorizados, con un botón **Quitar** para cada uno;
+- en modo cable, si el celular está conectado;
+- la actividad: los botones que pulsas desde el celular y los dispositivos que piden entrar.
+
+Arriba a la derecha puedes cambiar entre **Wi-Fi** y **Cable USB** sin cerrar nada.
+
+- **Cerrar la ventana no detiene el panel:** sigue funcionando y queda un icono junto al reloj. Para volver a la ventana,
+  haz clic en ese icono o abre otra vez el panel desde el menú Inicio.
+- **Para detenerlo,** pulsa **Detener el panel**, en la ventana o en el menú del icono junto al reloj.
+- **Para ver los mensajes del servidor en una consola** (por ejemplo, para diagnosticar), usa el modo consola de antes:
+  `.\iniciar.ps1` o `.\iniciar.ps1 -Wifi`, y Ctrl+C para detenerlo.
+
 ### Por cable (Panel USB)
 
 - Abre **Panel USB** desde el menú Inicio (o doble clic en `iniciar.cmd`). El panel se abre solo en el celular.
-- Para probarlo sin celular: `.\iniciar.ps1 -SoloPC`.
-- Para detenerlo, cierra la ventana (o Ctrl+C).
+- Para probarlo sin celular: **Abrir en este PC** en la ventana, o `.\iniciar.ps1 -SoloPC`.
 - Si desconectas el cable con el panel en marcha, al volver a conectarlo el panel se recupera solo en unos segundos.
 - En este modo no se expone nada a la red: el celular llega al PC solo por el cable.
 
 ### Por Wi-Fi (Panel Wi-Fi)
 
-- Abre **Panel Wi-Fi** desde el menú Inicio (o `iniciar-wifi.cmd`, o `.\iniciar.ps1 -Wifi`). El celular tiene que estar en la misma red que el PC.
+- Abre **Panel Wi-Fi** desde el menú Inicio (o doble clic en `iniciar-wifi.cmd`). El celular tiene que estar en la misma red que el PC.
 - **La ventana muestra un código QR.** Escanéalo con la cámara del celular: se abre el panel (si se abre en otro navegador,
   usa "Abrir en Chrome"). No hace falta el cable ni el modo desarrollador.
 - **La primera vez, el PC pide permiso:** aparece el aviso "Panel del PC: dispositivo nuevo" con la IP y el modelo del celular.
   Pulsa **Sí** y el panel se abre solo en el celular. Pulsa **No** si no lo reconoces: ese dispositivo no podrá volver a pedir
   acceso hasta que reinicies el panel. Después, en Chrome: ⋮ > **Agregar a pantalla principal**.
 - Para pedir acceso hace falta el token que va dentro del QR: un equipo de la red que no lo tenga no puede ni abrir el aviso.
-- Los dispositivos aprobados se guardan en `config.json` → `"wifi": { "dispositivos": ["192.168.1.50"] }`. Puedes quitar uno
-  borrando su IP (se aplica al instante). A cualquier otro equipo se le corta la conexión sin responderle.
+- Los dispositivos aprobados se guardan en `config.json` → `"wifi": { "dispositivos": ["192.168.1.50"] }`. Para quitar uno,
+  pulsa **Quitar** en la ventana (o borra su IP del archivo; se aplica al instante). A cualquier otro equipo se le corta
+  la conexión sin responderle.
 - Si cambia la IP del celular, vuelve a escanear el QR y apruébalo otra vez; para que no cambie, resérvala en el router.
 - Si el celular está conectado por cable al abrir Panel Wi-Fi, se autoriza solo y se le abre el panel (sin QR ni aviso).
 - Si el router cambia la IP del PC, el icono del celular deja de funcionar: abre Panel Wi-Fi y usa la dirección nueva que muestra.
@@ -66,10 +81,13 @@ Si falta algo obligatorio, el panel tampoco arranca: lo avisa y te manda a `veri
 
 ### Si no abre en el celular
 
-- La ventana dice "Esperando al celular…": desbloquea el celular. Si aparece "Permitir depuración USB",
-  marca **Permitir siempre desde este ordenador** y acepta. El script espera hasta 60 segundos.
-- Al pulsar el icono con el panel ya abierto, solo se vuelve a abrir en el celular (no se arranca otro).
-- El panel dice "Sin conexión": revisa que la ventana del panel siga abierta en el PC.
+- La ventana dice "Esperando al celular" o "Acepta el aviso en el celular": desbloquea el celular. Si aparece
+  "Permitir depuración USB", marca **Permitir siempre desde este ordenador** y acepta. La ventana espera lo que haga falta
+  y abre el panel en cuanto el celular responde.
+- Al pulsar el icono con el panel ya abierto, solo se muestra la ventana y se vuelve a abrir en el celular (no se arranca otro).
+- El panel dice "Sin conexión": revisa que el panel siga en marcha en el PC (la ventana o el icono junto al reloj).
+- La ventana dice que hay otra copia del panel abierta: es una ventana de consola de una versión anterior.
+  Pulsa **Cerrarla y continuar**.
 
 ### Pantalla completa
 

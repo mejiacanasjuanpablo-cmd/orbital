@@ -1,5 +1,6 @@
 ﻿# Panel del PC: instalación en un PC nuevo (después de descomprimir el .zip).
-# Revisa los requisitos (y ofrece instalar lo que falte), prepara config.json y crea los iconos en el menú Inicio:
+# Revisa los requisitos (y ofrece instalar lo que falte), prepara config.json, crea "Panel del PC.exe" (la ventana del
+# panel, sin consola) y los iconos en el menú Inicio:
 #  - edición completa: "Panel USB" (cable) y "Panel Wi-Fi";
 #  - edición solo Wi-Fi (con EDICION-WIFI.txt): solo "Panel Wi-Fi".
 # Uso:  doble clic en instalar.cmd   (o .\instalar.ps1)
@@ -13,10 +14,11 @@ Set-Location $PSScriptRoot
 # 1. Quitar la marca de "descargado de internet" de los archivos del panel, para que Windows no avise en cada uso.
 Get-ChildItem $PSScriptRoot -Recurse -File | Unblock-File -ErrorAction SilentlyContinue
 
-if (-not (Test-Path (Join-Path $PSScriptRoot 'lib\requisitos.ps1'))) {
-    Write-Host "Falta lib\requisitos.ps1. Vuelve a descomprimir el .zip del panel completo." -ForegroundColor Red; exit 1
+if (-not (Test-Path (Join-Path $PSScriptRoot 'lib\requisitos.ps1')) -or -not (Test-Path (Join-Path $PSScriptRoot 'lib\arranque.ps1'))) {
+    Write-Host "Faltan archivos del panel. Vuelve a descomprimir el .zip del panel completo." -ForegroundColor Red; exit 1
 }
 . (Join-Path $PSScriptRoot 'lib\requisitos.ps1')
+. (Join-Path $PSScriptRoot 'lib\arranque.ps1')
 
 Write-Host ""
 Write-Host "=== Instalación del Panel del PC$(if ($PanelSoloWifi) { ' (edición Wi-Fi)' }) ===" -ForegroundColor Cyan
@@ -31,18 +33,29 @@ $cfg = Join-Path $PSScriptRoot 'config.json'
 if (Test-Path $cfg) { Write-Host "[OK] config.json ya existe (no se toca)" -ForegroundColor Green }
 else { Copy-Item (Join-Path $PSScriptRoot 'config.ejemplo.json') $cfg; Write-Host "[OK] config.json creado a partir del ejemplo" -ForegroundColor Green }
 
-# 4. Iconos en el menú Inicio
+# 4. La ventana del panel: Panel del PC.exe se compila aquí con el compilador de C# que trae Windows.
+$exe = Build-PanelVentana $PSScriptRoot
+if ($exe) { Write-Host "[OK] Ventana del panel lista: Panel del PC.exe" -ForegroundColor Green }
+else { Write-Host "[AVISO] No se pudo crear Panel del PC.exe; los iconos abrirán la ventana con PowerShell (funciona igual)." -ForegroundColor Yellow }
+
+# 5. Iconos en el menú Inicio: abren la ventana del panel, sin consola.
 $iconos = if ($PanelSoloWifi) {
-    @(@{ n = 'Panel Wi-Fi'; f = 'iniciar.cmd'; d = 'Panel del PC en el celular por Wi-Fi' })
+    @(@{ n = 'Panel Wi-Fi'; a = '';      d = 'Panel del PC en el celular por Wi-Fi' })
 } else {
-    @(@{ n = 'Panel USB';   f = 'iniciar.cmd';      d = 'Panel del PC en el celular por cable USB' },
-      @{ n = 'Panel Wi-Fi'; f = 'iniciar-wifi.cmd'; d = 'Panel del PC en el celular por Wi-Fi' })
+    @(@{ n = 'Panel USB';   a = '';      d = 'Panel del PC en el celular por cable USB' },
+      @{ n = 'Panel Wi-Fi'; a = '-Wifi'; d = 'Panel del PC en el celular por Wi-Fi' })
 }
 $shell = New-Object -ComObject WScript.Shell
 foreach ($a in $iconos) {
     $lnk = $shell.CreateShortcut((Join-Path $CarpetaAccesos "$($a.n).lnk"))
-    $lnk.TargetPath = Join-Path $env:WINDIR 'System32\cmd.exe'
-    $lnk.Arguments = "/c `"$(Join-Path $PSScriptRoot $a.f)`""
+    if ($exe) {
+        $lnk.TargetPath = $exe
+        $lnk.Arguments = $a.a
+    } else {
+        $lnk.TargetPath = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
+        $lnk.Arguments = "-NoProfile -ExecutionPolicy Bypass -STA -WindowStyle Hidden -File `"$(Join-Path $PSScriptRoot 'ventana.ps1')`" $($a.a)".Trim()
+        $lnk.WindowStyle = 7   # minimizada: así la consola de PowerShell no llega a verse
+    }
     $lnk.WorkingDirectory = $PSScriptRoot
     $lnk.IconLocation = "$(Join-Path $PSScriptRoot 'panel.ico'),0"
     $lnk.Description = $a.d

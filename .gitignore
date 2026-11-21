@@ -4,3 +4,5 @@ config.json
 data/
 debug.log
 *.zip
+# La ventana del panel: instalar.cmd la compila en cada PC
+Panel del PC.exe

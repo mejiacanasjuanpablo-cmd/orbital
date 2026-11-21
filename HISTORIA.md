@@ -1,11 +1,13 @@
 # Historia del Panel del PC
 
-Recorrido por las cinco versiones del panel. Las capturas se tomaron ejecutando cada versión tal como quedó, en el PC y a tamaño de celular.
+Recorrido por las seis versiones del panel. Las capturas se tomaron ejecutando cada versión tal como quedó, en el PC y a tamaño de celular.
 
-> **Cómo se armó este historial.** El proyecto se hizo sin git. Este historial se reconstruyó el 21 de noviembre de 2026 a partir del registro de la sesión de Claude Code en la que se construyó.
+> **Cómo se armó este historial.** Las versiones 1 a 5 se hicieron sin git. Su historial se reconstruyó el 21 de noviembre de 2026 a partir del registro de la sesión de Claude Code en la que se construyó.
 > - Cada commit es el estado real de los archivos después de cada pedido, con su fecha y hora de Colombia.
 > - La última versión coincide byte a byte con la carpeta original.
 > - Antes del paquete para compartir no existía `config.ejemplo.json`. En esos commits es una copia de la configuración de ese momento, sin datos personales.
+>
+> Desde la v6.0, cada cambio se guarda en git en el momento en que se hace.
 
 ## Cómo abrir una versión anterior
 
@@ -164,3 +166,26 @@ El panel pasa de 3 a 7 páginas:
 |---|---|
 | 21/11 07:52 | Wi-Fi sin modo desarrollador: código QR y aprobación en el PC |
 | 21/11 08:02 | Edición solo Wi-Fi para compartir |
+
+## v6.0 · Ventana propia, sin consola
+
+**21 nov 2026** · Pedido: *«¿Podemos crearle una interfaz visual para evitar que se vea esa pantalla de cmd?»*
+
+- **Ya no aparece la consola.** Los iconos del menú Inicio abren una ventana con el mismo diseño oscuro del panel:
+  - el estado del panel;
+  - en Wi-Fi, el código QR y la dirección, con un botón para copiarla;
+  - por cable, si el celular está conectado;
+  - los dispositivos autorizados, cada uno con un botón **Quitar**;
+  - la actividad: los botones pulsados desde el celular y los dispositivos que piden entrar.
+- **Selector Wi-Fi / Cable USB** para cambiar de modo sin cerrar nada. La edición solo Wi-Fi no lo muestra.
+- **Cerrar la ventana no detiene el panel:** queda un icono junto al reloj. Para detenerlo, se pulsa **Detener el panel**.
+- **Una sola copia a la vez:** si se vuelve a pulsar el icono, se muestra la ventana que ya estaba abierta. Si hay una consola de una versión anterior en el mismo puerto, la ventana ofrece cerrarla.
+- **El servidor se cierra solo** si la ventana desaparece de golpe; así no quedan procesos sueltos.
+- **`Panel del PC.exe`:** lo crea `instalar.cmd` en cada PC con el compilador de C# que trae Windows, así que no se descarga nada. Ejecuta `ventana.ps1` dentro de su propio proceso, y por eso aparece en la barra de tareas con su nombre y su icono. Si no se puede crear, la ventana se abre con PowerShell oculto.
+- **El modo consola sigue existiendo** (`iniciar.ps1`) para diagnosticar. La lógica de arranque que comparten la consola y la ventana pasó a `lib/arranque.ps1`.
+
+![v6: ventana en modo Wi-Fi](docs/historia/v6-ventana-wifi.png)
+
+![v6: ventana en modo cable USB](docs/historia/v6-ventana-usb.png)
+
+*Las capturas usan una IP, un celular y una actividad de ejemplo.*

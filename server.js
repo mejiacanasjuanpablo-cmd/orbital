@@ -44,6 +44,23 @@ function publicConfig() {
   };
 }
 
+// ---------- Actividad reciente: sale en la consola y la muestra la ventana del panel en el PC
+const actividad = [];
+function evento(tipo, msg) {
+  const t = Date.now();
+  actividad.push({ t, tipo, msg });
+  if (actividad.length > 30) actividad.shift();
+  console.log(`[${new Date(t).toLocaleTimeString()}] ${msg}`);
+}
+
+// Si la ventana del panel se cierra de golpe (por ejemplo, desde el Administrador de tareas), el servidor también se cierra.
+const PADRE = Number(process.env.PANEL_PADRE) || 0;
+if (PADRE) {
+  setInterval(() => {
+    try { process.kill(PADRE, 0); } catch (e) { if (e.code === 'ESRCH') process.exit(0); }
+  }, 3000).unref();
+}
+
 // ---------- Ejecución de acciones
 function runPowerShell(script, { cwd, timeoutMs = 60000 } = {}) {
   return new Promise((resolve) => {
@@ -319,13 +336,36 @@ function logRejected(addr) {
   const a = normalize(addr), now = Date.now();
   if (now - (rejectedLog.get(a) || 0) < 60000) return;
   rejectedLog.set(a, now);
-  console.log(`[${new Date().toLocaleTimeString()}] Conexión rechazada desde ${a}. Si es tu celular, escanea el código QR de esta ventana para pedir acceso.`);
+  evento('rechazo', `Conexión rechazada desde ${a}. Si es tu celular, escanea el código QR del panel para pedir acceso.`);
 }
 
 // Dispositivos nuevos en modo Wi-Fi: con el token del QR pueden pedir acceso, y el PC pregunta si se permite.
-const { createApprovals, describeDevice } = require('./lib/aprobacion');
-const approvals = LAN_IP ? createApprovals({ configPath: CONFIG_PATH }) : null;
+const { createApprovals, describeDevice, removeDevice } = require('./lib/aprobacion');
+const approvals = LAN_IP ? createApprovals({ configPath: CONFIG_PATH, log: (m) => evento('aprobacion', m) }) : null;
 process.on('exit', () => approvals && approvals.close());
+const isLocal = (addr) => addr === '127.0.0.1' || addr === '::1';
+
+// ---------- Estado para la ventana del panel (solo se consulta desde este PC)
+const vistos = new Map(); // IP → { t, equipo }: última vez que cada dispositivo de la red usó el panel
+let qrFilas = null;
+function estadoPc() {
+  const url = LAN_IP ? `http://${LAN_IP}:${PORT}/#t=${TOKEN}` : null;
+  if (url && !qrFilas) qrFilas = require('./lib/qr').encode(url).modules.map((fila) => fila.map((on) => (on ? '1' : '0')).join(''));
+  const ahora = Date.now();
+  return {
+    modo: LAN_IP ? 'wifi' : 'usb',
+    puerto: PORT,
+    lanIp: LAN_IP,
+    url,
+    qr: qrFilas,
+    dispositivos: wifiDevices().map(String).map((ip) => {
+      const v = vistos.get(ip);
+      return { ip, haceMs: v ? ahora - v.t : null, equipo: v ? v.equipo : null };
+    }),
+    pendiente: approvals ? approvals.pending() : null,
+    actividad: actividad.slice(-12),
+  };
+}
 const tokenOk = (req) => {
   const given = String(req.headers['x-panel-token'] || '');
   return given.length === TOKEN.length && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(TOKEN));
@@ -357,6 +397,7 @@ const handler = async (req, res) => {
   }
   // Protección contra DNS rebinding: solo se aceptan los nombres de host del panel.
   if (!allowedHosts.has(req.headers.host)) return send(res, 403, { error: 'host no permitido' });
+  if (LAN_IP && !isLocal(remote) && remote !== LAN_IP) vistos.set(remote, { t: Date.now(), equipo: describeDevice(req.headers['user-agent']) });
 
   const url = new URL(req.url, `http://${req.headers.host}`);
 
@@ -364,6 +405,25 @@ const handler = async (req, res) => {
     if (!tokenOk(req)) return send(res, 401, { error: 'token inválido' });
 
     try {
+      // Ventana del panel en el PC: estado, quitar un dispositivo y detener el panel.
+      if (url.pathname.startsWith('/api/pc')) {
+        if (!isLocal(remote)) return send(res, 403, { error: 'solo desde este PC' });
+        if (url.pathname === '/api/pc' && req.method === 'GET') return send(res, 200, estadoPc());
+        if (url.pathname === '/api/pc/quitar' && req.method === 'POST') {
+          const ip = String(JSON.parse((await readBody(req)) || '{}').ip || '');
+          const ok = removeDevice(CONFIG_PATH, ip);
+          if (ok) {
+            vistos.delete(ip);
+            evento('aprobacion', `Dispositivo quitado: ${ip}. Si vuelve a escanear el código, el PC te preguntará otra vez.`);
+          }
+          return send(res, 200, { ok });
+        }
+        if (url.pathname === '/api/pc/detener' && req.method === 'POST') {
+          send(res, 200, { ok: true });
+          setTimeout(() => process.exit(0), 100);
+          return;
+        }
+      }
       // La página de espera sigue preguntando hasta ver que el dispositivo ya está autorizado.
       if (url.pathname === '/api/solicitar' && req.method === 'POST') return send(res, 200, { estado: 'aprobado' });
       if (url.pathname === '/api/config' && req.method === 'GET') return send(res, 200, publicConfig());
@@ -387,7 +447,7 @@ const handler = async (req, res) => {
         if (!action) return send(res, 404, { error: 'acción no encontrada' });
         const started = Date.now();
         const result = await runPowerShell(scriptFor(action), { cwd: action.cwd, timeoutMs: (action.timeout || 60) * 1000 });
-        console.log(`[${new Date().toLocaleTimeString()}] ${action.label} -> código ${result.code}`);
+        evento(result.code === 0 ? 'accion' : 'error', result.code === 0 ? action.label : `${action.label}: falló (código ${result.code})`);
         return send(res, 200, { ...result, ms: Date.now() - started, showOutput: action.type === 'command' });
       }
       return send(res, 404, { error: 'no encontrado' });

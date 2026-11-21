@@ -1,4 +1,4 @@
-﻿# Verificación de requisitos del panel. La usan verificar.ps1, instalar.ps1, iniciar.ps1 y empaquetar.ps1.
+﻿# Verificación de requisitos del panel. La usan verificar.ps1, instalar.ps1, iniciar.ps1, ventana.ps1 y empaquetar.ps1.
 # Solo define funciones y listas; no hace nada al cargarse.
 
 # Edición "solo Wi-Fi": la copia que se comparte en Panel-WiFi.zip trae el archivo EDICION-WIFI.txt.
@@ -8,8 +8,9 @@ $PanelSoloWifi = Test-Path (Join-Path (Split-Path $PSScriptRoot -Parent) $PanelM
 
 # Archivos sin los que el panel no funciona (también son los que se empaquetan, junto con la guía y los instaladores).
 $PanelArchivosComunes = @(
-    'server.js', 'config.ejemplo.json', 'panel.ico', 'iniciar.ps1', 'iniciar.cmd',
+    'server.js', 'config.ejemplo.json', 'panel.ico', 'ventana.ps1', 'iniciar.ps1', 'iniciar.cmd',
     'lib\allow.js', 'lib\aprobacion.js', 'lib\qr.js', 'lib\keys.ps1', 'lib\media.ps1', 'lib\requisitos.ps1',
+    'lib\arranque.ps1', 'lib\lanzador.cs',
     'public\index.html', 'public\espera.html', 'public\manifest.webmanifest', 'public\icon-192.png', 'public\icon-512.png'
 )
 # En la edición completa, iniciar.cmd abre el modo USB e iniciar-wifi.cmd el modo Wi-Fi.
@@ -29,8 +30,28 @@ function Find-Adb {
 }
 
 function Get-NodeVersion {
-    try { $v = (& node --version 2>$null) -replace '^v', ''; if ($v) { return [version]$v } } catch { }
+    try { $v = (Invoke-Oculto 'node' @('--version') -EsperaMs 10000).Salida -replace '^v', ''; if ($v -match '^\d+\.\d+\.\d+') { return [version]$Matches[0] } } catch { }
     return $null
+}
+
+# Ejecuta un programa sin abrir ninguna ventana de consola (también desde la ventana del panel) y devuelve
+# su código de salida y lo que escribió. -SinSalida no captura nada: para "adb start-server", cuyo proceso
+# de fondo heredaría la salida y nunca la cerraría.
+function Invoke-Oculto {
+    param([string]$Programa, [string[]]$Argumentos = @(), [int]$EsperaMs = 15000, [switch]$SinSalida)
+    $psi = New-Object Diagnostics.ProcessStartInfo $Programa
+    $psi.Arguments = ($Argumentos | ForEach-Object { if ($_ -eq '' -or $_ -match '[\s"]') { '"' + ($_ -replace '"', '\"') + '"' } else { $_ } }) -join ' '
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+    if (-not $SinSalida) {
+        $psi.RedirectStandardOutput = $true; $psi.RedirectStandardError = $true
+        $psi.StandardOutputEncoding = [Text.Encoding]::UTF8; $psi.StandardErrorEncoding = [Text.Encoding]::UTF8
+    }
+    try { $p = [Diagnostics.Process]::Start($psi) } catch { return [pscustomobject]@{ Codigo = -1; Salida = $_.Exception.Message } }
+    if (-not $SinSalida) { $out = $p.StandardOutput.ReadToEndAsync(); $err = $p.StandardError.ReadToEndAsync() }
+    if (-not $p.WaitForExit($EsperaMs)) { try { $p.Kill() } catch { }; return [pscustomobject]@{ Codigo = -1; Salida = 'tiempo agotado' } }
+    $texto = if ($SinSalida) { '' } else { "$($out.Result)$($err.Result)".Trim() }
+    [pscustomobject]@{ Codigo = $p.ExitCode; Salida = $texto }
 }
 
 function Get-ArchivosFaltantes([string]$Raiz) {
@@ -60,6 +81,8 @@ function Get-Requisitos([string]$Raiz, [int]$Puerto = 8787) {
     if ($faltan.Count) {
         $r += New-Requisito 'Archivos del panel' 'FALTA' "faltan: $($faltan -join ', ')" $true 'Vuelve a descomprimir el .zip del panel completo, en una carpeta fija (no lo abras desde dentro del .zip).'
     } else { $r += New-Requisito 'Archivos del panel' 'OK' "$($PanelArchivos.Count) archivos" $true }
+    if (Test-Path (Join-Path $Raiz 'Panel del PC.exe')) { $r += New-Requisito 'Ventana del panel' 'OK' 'Panel del PC.exe' $false }
+    else { $r += New-Requisito 'Ventana del panel' 'INFO' 'todavía no se ha creado Panel del PC.exe' $false 'Se crea al ejecutar instalar.cmd. Sin él, el panel abre su ventana con PowerShell.' }
 
     # 2. Windows
     $build = [Environment]::OSVersion.Version.Build
