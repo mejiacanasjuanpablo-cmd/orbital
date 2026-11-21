@@ -27,6 +27,10 @@ No hay que instalar ninguna app en el celular y no se expone nada a la red Wi-Fi
   no se conectan (se ven como "Sin conexión" y los botones no hacen nada).
 - La red debe estar marcada como **Privada** en Windows. Si el router cambia la IP del PC, hay que volver a abrir la
   dirección nueva (se evita reservando la IP del PC en el router).
+- Solo entran los dispositivos de `config.json` → `"wifi": { "dispositivos": ["192.168.1.50"] }` (la IP de tu celular).
+  A cualquier otro equipo de la red se le corta la conexión sin responderle, y la ventana del panel muestra
+  "Conexión rechazada desde ...". Si cambia la IP del celular, pon la nueva ahí (se aplica al instante, sin reiniciar);
+  para que no cambie, resérvala en el router.
 - En este modo el panel queda accesible desde tu red local, siempre con el token. Úsalo solo en redes de confianza
   (la de tu casa), no en redes públicas. El modo USB normal no expone nada a la red.
 
@@ -100,6 +104,6 @@ Si añades `"confirm": true` a un botón, pedirá confirmación antes de ejecuta
 ## Seguridad
 
 - En modo USB el servidor solo escucha en `127.0.0.1`; el celular llega a él únicamente por el túnel `adb reverse`.
-  En modo Wi-Fi también escucha en la IP local del PC y solo acepta conexiones desde direcciones de red privada.
+  En modo Wi-Fi también escucha en la IP local del PC y solo acepta los dispositivos de `wifi.dispositivos`.
 - Cada sesión usa un token aleatorio y rechaza peticiones con otro nombre de host (protección contra DNS rebinding).
 - El celular solo puede ejecutar los botones definidos en `config.json`, nunca comandos arbitrarios.

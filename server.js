@@ -307,8 +307,16 @@ const dlog = (...a) => { if (DEBUG) fs.appendFile(path.join(ROOT, 'data', 'debug
 const LAN_IP = /^(10|172\.(1[6-9]|2\d|3[01])|192\.168)\.\d{1,3}\.\d{1,3}(\.\d{1,3})?$/.test(process.env.PANEL_LAN_IP || '') ? process.env.PANEL_LAN_IP : null;
 const allowedHosts = new Set([`localhost:${PORT}`, `127.0.0.1:${PORT}`]);
 if (LAN_IP) allowedHosts.add(`${LAN_IP}:${PORT}`);
-// Solo se aceptan conexiones desde la propia máquina o desde direcciones de red privada.
-const isPrivate = (a) => /^(::ffff:)?(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(a || '') || a === '::1';
+// Solo se aceptan conexiones del propio PC o de los dispositivos de config.json → wifi.dispositivos.
+const { isAllowed, normalize } = require('./lib/allow');
+const wifiDevices = () => { try { return (loadConfig().wifi || {}).dispositivos || []; } catch { return []; } };
+const rejectedLog = new Map();
+function logRejected(addr) {
+  const a = normalize(addr), now = Date.now();
+  if (now - (rejectedLog.get(a) || 0) < 60000) return;
+  rejectedLog.set(a, now);
+  console.log(`[${new Date().toLocaleTimeString()}] Conexión rechazada desde ${a}. Si es tu celular, agrega esa IP en config.json → "wifi" → "dispositivos".`);
+}
 
 const handler = async (req, res) => {
   if (DEBUG && !req.url.startsWith('/api/stats')) {
@@ -316,9 +324,14 @@ const handler = async (req, res) => {
     req.on('end', () => dlog('  cuerpo recibido', req.method, req.url.replace(/[?#].*/, '')));
     res.on('finish', () => dlog('←', res.statusCode, req.method, req.url.replace(/[?#].*/, '')));
   }
+  // Dispositivo no autorizado: se corta la conexión sin responder nada.
+  if (!isAllowed(req.socket.remoteAddress, LAN_IP, wifiDevices())) {
+    logRejected(req.socket.remoteAddress);
+    req.socket.destroy();
+    return;
+  }
   // Protección contra DNS rebinding: solo se aceptan los nombres de host del panel.
   if (!allowedHosts.has(req.headers.host)) return send(res, 403, { error: 'host no permitido' });
-  if (!isPrivate(req.socket.remoteAddress)) return send(res, 403, { error: 'origen no permitido' });
 
   const url = new URL(req.url, `http://${req.headers.host}`);
 

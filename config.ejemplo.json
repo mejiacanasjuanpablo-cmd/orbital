@@ -7,6 +7,7 @@
   ],
   "clima": { "activo": true, "ciudad": "Medellín", "lat": 6.25, "lon": -75.56 },
   "pomodoro": { "enfoque": 25, "descanso": 5, "largo": 15 },
+  "wifi": { "dispositivos": [] },
   "groups": [
     {
       "name": "Multimedia",
