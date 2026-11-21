@@ -80,7 +80,9 @@ function Set-Tunel {
 
 function Open-EnCelular {
     # application_id hace que Chrome reutilice la misma pestaña en lugar de abrir una nueva cada vez.
-    & $adb -s $serial shell am start -a android.intent.action.VIEW -d "'$url'" --es com.android.browser.application_id panelusb | Out-Null
+    # ?v= cambia en cada apertura para que Chrome recargue la página y muestre siempre la última versión.
+    $abrir = "http://localhost:$Puerto/?v=$([DateTime]::Now.Ticks)#t=$token"
+    & $adb -s $serial shell am start -a android.intent.action.VIEW -d "'$abrir'" --es com.android.browser.application_id panelusb | Out-Null
 }
 
 # Si el panel ya está en marcha (por ejemplo, se pulsó el icono dos veces), solo se vuelve a abrir en el celular.

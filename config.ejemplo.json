@@ -35,6 +35,7 @@
       "name": "Discord",
       "place": "discord",
       "items": [
+        { "id": "dc_share", "label": "Compartir pantalla", "icon": "share", "color": "#4ade80", "type": "keys", "keys": "^+{F11}", "hint": "Ctrl+Shift+F11 → Activar/desactivar compartir pantalla" },
         { "id": "dc_mute", "label": "Micrófono", "icon": "mic", "color": "#f87171", "type": "keys", "keys": "^+{F7}", "hint": "Ctrl+Shift+F7 → Activar/desactivar silencio" },
         { "id": "dc_deafen", "label": "Ensordecer", "icon": "headphones", "color": "#fb923c", "type": "keys", "keys": "^+{F8}", "hint": "Ctrl+Shift+F8 → Activar/desactivar ensordecer" },
         { "id": "dc_streamer", "label": "Modo streamer", "icon": "eye", "color": "#a78bfa", "type": "keys", "keys": "^+{F9}", "hint": "Ctrl+Shift+F9 → Activar/desactivar modo streamer" },
