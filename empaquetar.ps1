@@ -6,12 +6,10 @@ param([string]$Salida = (Join-Path (Split-Path $PSScriptRoot -Parent) 'Panel-USB
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
 
-$incluir = @(
-    'server.js', 'config.ejemplo.json', 'LEEME.md', 'panel.ico',
-    'iniciar.ps1', 'iniciar.cmd', 'iniciar-wifi.cmd', 'instalar.ps1', 'instalar.cmd',
-    'lib\allow.js', 'lib\keys.ps1', 'lib\media.ps1',
-    'public\index.html', 'public\manifest.webmanifest', 'public\icon-192.png', 'public\icon-512.png'
-)
+# Los archivos del programa salen de lib\requisitos.ps1 (la misma lista que se verifica al instalar y al arrancar),
+# más la guía, el instalador y el verificador.
+. (Join-Path $PSScriptRoot 'lib\requisitos.ps1')
+$incluir = @($PanelArchivos) + @('LEEME.md', 'instalar.ps1', 'instalar.cmd', 'verificar.ps1', 'verificar.cmd')
 $prohibidos = '\.token$|(^|\\)config\.json$|(^|\\)data\\|debug\.log$'
 
 foreach ($f in $incluir) {

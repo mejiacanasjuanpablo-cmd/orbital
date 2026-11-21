@@ -1,5 +1,6 @@
 ﻿# Panel USB: instalación en un PC nuevo (después de descomprimir el .zip).
-# Revisa Node.js y adb, prepara config.json y crea los iconos "Panel USB" y "Panel Wi-Fi" en el menú Inicio.
+# Revisa los requisitos (y ofrece instalar Node.js y adb), prepara config.json y crea los iconos
+# "Panel USB" y "Panel Wi-Fi" en el menú Inicio.
 # Uso:  doble clic en instalar.cmd   (o .\instalar.ps1)
 param(
     [string]$CarpetaAccesos = (Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'),
@@ -8,62 +9,23 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
-function Confirm-Paso([string]$pregunta) {
-    if ($SinPreguntas) { return $false }
-    $r = Read-Host "$pregunta (S/N)"
-    return $r -match '^(s|si|sí|y|yes)$'
-}
-function Update-RutaSesion {
-    $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
-}
-function Find-Adb {
-    $cmd = Get-Command adb -ErrorAction SilentlyContinue
-    if ($cmd) { return $cmd.Source }
-    $candidates = @("$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe", "$env:LOCALAPPDATA\Microsoft\WinGet\Links\adb.exe")
-    $candidates += Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\Google.PlatformTools*" -Recurse -Filter adb.exe -ErrorAction SilentlyContinue |
-        Select-Object -ExpandProperty FullName
-    foreach ($c in $candidates) { if ($c -and (Test-Path $c)) { return $c } }
-    return $null
-}
-$hayWinget = [bool](Get-Command winget -ErrorAction SilentlyContinue)
-
 Write-Host ""
 Write-Host "=== Instalación de Panel USB ===" -ForegroundColor Cyan
 Write-Host "Carpeta: $PSScriptRoot"
-Write-Host ""
 
 # 1. Quitar la marca de "descargado de internet" de los archivos del panel, para que Windows no avise en cada uso.
 Get-ChildItem $PSScriptRoot -Recurse -File | Unblock-File -ErrorAction SilentlyContinue
 
-# 2. Node.js (obligatorio)
-$node = Get-Command node -ErrorAction SilentlyContinue
-if ($node) {
-    Write-Host "[OK] Node.js $(& node --version)" -ForegroundColor Green
-} else {
-    Write-Host "[FALTA] Node.js: es obligatorio para que funcione el panel." -ForegroundColor Yellow
-    if ($hayWinget -and (Confirm-Paso "¿Instalar Node.js LTS ahora con winget?")) {
-        winget install -e --id OpenJS.NodeJS.LTS --accept-package-agreements
-        Update-RutaSesion
-    }
-    if (Get-Command node -ErrorAction SilentlyContinue) { Write-Host "[OK] Node.js instalado" -ForegroundColor Green }
-    else { Write-Host "       Descárgalo de https://nodejs.org (versión LTS) y vuelve a ejecutar este instalador." }
+if (-not (Test-Path (Join-Path $PSScriptRoot 'lib\requisitos.ps1'))) {
+    Write-Host "Falta lib\requisitos.ps1. Vuelve a descomprimir Panel-USB.zip completo." -ForegroundColor Red; exit 1
 }
+. (Join-Path $PSScriptRoot 'lib\requisitos.ps1')
 
-# 3. adb (solo para el modo USB)
-$adb = Find-Adb
-if ($adb) {
-    Write-Host "[OK] adb: $adb" -ForegroundColor Green
-} else {
-    Write-Host "[FALTA] adb (Android platform-tools): solo se necesita para el modo USB (con cable)." -ForegroundColor Yellow
-    if ($hayWinget -and (Confirm-Paso "¿Instalar adb ahora con winget?")) {
-        winget install -e --id Google.PlatformTools --accept-package-agreements
-        Update-RutaSesion
-    }
-    if (Find-Adb) { Write-Host "[OK] adb instalado" -ForegroundColor Green }
-    else { Write-Host "       Si lo necesitas: https://developer.android.com/tools/releases/platform-tools (descomprime y deja adb.exe en el PATH)." }
-}
+# 2. Requisitos: revisa todo y ofrece instalar Node.js y adb si faltan.
+$listo = Invoke-Verificacion -Raiz $PSScriptRoot -Instalar -SinPreguntas:$SinPreguntas
+Write-Host ""
 
-# 4. Configuración propia
+# 3. Configuración propia
 $cfg = Join-Path $PSScriptRoot 'config.json'
 if (Test-Path $cfg) { Write-Host "[OK] config.json ya existe (no se toca)" -ForegroundColor Green }
 else { Copy-Item (Join-Path $PSScriptRoot 'config.ejemplo.json') $cfg; Write-Host "[OK] config.json creado a partir del ejemplo" -ForegroundColor Green }
@@ -84,6 +46,10 @@ foreach ($a in @(
 Write-Host "[OK] Iconos 'Panel USB' y 'Panel Wi-Fi' creados en el menú Inicio" -ForegroundColor Green
 
 Write-Host ""
+if (-not $listo) {
+    Write-Host "Atención: falta algo obligatorio (ver arriba). Cuando lo resuelvas, ejecuta verificar.cmd para comprobarlo." -ForegroundColor Red
+    Write-Host ""
+}
 Write-Host "Siguientes pasos:" -ForegroundColor Cyan
 Write-Host " 1. En el celular Android: Ajustes > Acerca del teléfono > toca 7 veces 'Número de compilación'."
 Write-Host "    Luego Opciones de desarrollador > activa 'Depuración USB'."

@@ -10,21 +10,21 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
-function Find-Adb {
-    $cmd = Get-Command adb -ErrorAction SilentlyContinue
-    if ($cmd) { return $cmd.Source }
-    $candidates = @(
-        "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe",
-        "$env:LOCALAPPDATA\Microsoft\WinGet\Links\adb.exe"
-    )
-    $candidates += Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\Google.PlatformTools*" -Recurse -Filter adb.exe -ErrorAction SilentlyContinue |
-        Select-Object -ExpandProperty FullName
-    foreach ($c in $candidates) { if ($c -and (Test-Path $c)) { return $c } }
-    return $null
+# Comprobación rápida de lo imprescindible (la revisión completa está en verificar.cmd).
+if (-not (Test-Path (Join-Path $PSScriptRoot 'lib\requisitos.ps1'))) {
+    Write-Host "Faltan archivos del panel. Vuelve a descomprimir Panel-USB.zip completo." -ForegroundColor Red; exit 1
 }
-
-if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-    Write-Host "No se encontró Node.js. Instálalo desde https://nodejs.org" -ForegroundColor Red; exit 1
+. (Join-Path $PSScriptRoot 'lib\requisitos.ps1')   # Find-Adb, Get-NodeVersion, Get-ArchivosFaltantes
+$faltanArchivos = Get-ArchivosFaltantes $PSScriptRoot
+if ($faltanArchivos.Count) {
+    Write-Host "Faltan archivos del panel: $($faltanArchivos -join ', ')" -ForegroundColor Red
+    Write-Host "Vuelve a descomprimir Panel-USB.zip completo."; exit 1
+}
+$nodeVer = Get-NodeVersion
+if (-not $nodeVer -or $nodeVer -lt $PanelNodeMinimo) {
+    $que = if ($nodeVer) { "Node.js $nodeVer es muy antiguo (se necesita $($PanelNodeMinimo.Major) o superior)" } else { 'No se encontró Node.js' }
+    Write-Host "$que." -ForegroundColor Red
+    Write-Host "Haz doble clic en verificar.cmd: revisa todo y ofrece instalarlo."; exit 1
 }
 
 # Token fijo guardado en .token, para que el icono de la pantalla de inicio siga funcionando.

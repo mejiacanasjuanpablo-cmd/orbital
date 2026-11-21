@@ -6,15 +6,34 @@ No hay que instalar ninguna app en el celular. Funciona en Windows 10 y 11.
 ## Instalación (una sola vez)
 
 1. Descomprime `Panel-USB.zip` en una carpeta fija (por ejemplo, en Documentos). No lo ejecutes desde dentro del .zip.
-2. Doble clic en **`instalar.cmd`**. Revisa lo que hace falta y ofrece instalarlo:
-   - **Node.js** (obligatorio).
-   - **adb**, las herramientas oficiales de Google (solo para el modo con cable).
+2. Doble clic en **`instalar.cmd`**. Revisa los requisitos y pregunta antes de instalar lo que falte:
+   - **Node.js 18 o superior** (obligatorio). Se instala con winget; si el PC no tiene winget, abre la página oficial.
+   - **adb**, las herramientas oficiales de Google (solo para el modo con cable). Se descarga de dl.google.com
+     y solo se instala si la firma digital es de Google.
    También crea `config.json` y los iconos **Panel USB** y **Panel Wi-Fi** en el menú Inicio.
    Si Windows avisa de que el archivo viene de internet, elige **Más información → Ejecutar de todas formas**.
 3. En el celular: **Ajustes > Acerca del teléfono**, toca 7 veces **Número de compilación**, y después
    **Opciones de desarrollador > Depuración USB**. Al conectar el cable, marca **Permitir siempre desde este ordenador** y acepta.
 
 Si mueves la carpeta a otro sitio, vuelve a ejecutar `instalar.cmd` para que los iconos apunten a la nueva ubicación.
+
+### Verificar requisitos
+
+Doble clic en **`verificar.cmd`** en cualquier momento. Revisa y muestra con `[OK]`, `[FALTA]`, `[AVISO]` o `[INFO]`:
+
+| Qué revisa | ¿Obligatorio? |
+|---|---|
+| Archivos del panel completos | Sí |
+| Windows 10/11, PowerShell 5.1 y .NET Framework 4.5+ | Sí |
+| Node.js 18 o superior (ofrece instalarlo o actualizarlo) | Sí |
+| Componentes de Windows que usa el panel: atajos de teclado, volumen y música | Sí (volumen y música, opcionales) |
+| Puerto 8787 libre (o ya en uso por el panel) | Sí |
+| adb, para el modo USB (ofrece instalarlo) | Solo para USB |
+| Red local marcada como Privada y permiso de Node.js en el firewall | Solo para Wi-Fi |
+| Celular conectado por cable, autorizado y con Chrome | Opcional |
+| Discord instalado | Opcional |
+
+Si falta algo obligatorio, el panel tampoco arranca: lo avisa y te manda a `verificar.cmd`.
 
 ## Usar
 
