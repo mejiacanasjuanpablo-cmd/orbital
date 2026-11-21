@@ -15,6 +15,13 @@ No hay que instalar ninguna app en el celular y no se expone nada a la red Wi-Fi
 - Doble clic en `iniciar.cmd`, o en una terminal ejecuta `.\iniciar.ps1`.
 - Para probarlo sin celular: `.\iniciar.ps1 -SoloPC`.
 - Para detenerlo, pulsa Ctrl+C o cierra la ventana.
+- Si desconectas el cable con el panel en marcha, al volver a conectarlo el panel se recupera solo en unos segundos.
+
+### Si no abre en el celular
+
+- La ventana dice "Esperando al celular…": desbloquea el celular. Si aparece "Permitir depuración USB",
+  marca **Permitir siempre desde este ordenador** y acepta. El script espera hasta 60 segundos.
+- Al pulsar el icono con el panel ya abierto, solo se vuelve a abrir en el celular (no se arranca otro).
 
 ### Pantalla completa
 
