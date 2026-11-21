@@ -46,9 +46,19 @@ if (-not $SoloPC) {
         Write-Host "Instálalo con:  winget install Google.PlatformTools   y vuelve a abrir la terminal."
         Write-Host "O ejecuta  .\iniciar.ps1 -SoloPC  para probar el panel en este PC." ; exit 1
     }
-    & $adb start-server | Out-Null
-    $devices = & $adb devices | Select-Object -Skip 1 | Where-Object { $_ -match '\S' }
-    $ready = $devices | Where-Object { $_ -match '\tdevice$' }
+    $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+    & $adb start-server 2>&1 | Out-Null
+    $ErrorActionPreference = $prev
+    # Recién conectado (o con adb recién iniciado) el celular aparece unos segundos como "unauthorized" u "offline"
+    # aunque ya haya dado permiso, o hasta que se desbloquee y se acepte el aviso. Se espera hasta 60 s.
+    $ready = $null; $avisado = $false
+    for ($i = 0; $i -lt 60; $i++) {
+        $devices = & $adb devices | Select-Object -Skip 1 | Where-Object { $_ -match '\S' }
+        $ready = $devices | Where-Object { $_ -match '\tdevice$' }
+        if ($ready) { break }
+        if (-not $avisado) { Write-Host "Esperando al celular (desbloquéalo si te pide permiso)..."; $avisado = $true }
+        Start-Sleep -Seconds 1
+    }
     if (-not $ready) {
         if ($devices -match 'unauthorized') {
             Write-Host "El celular no ha autorizado este PC: desbloquéalo y acepta 'Permitir depuración USB'." -ForegroundColor Yellow
