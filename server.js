@@ -285,16 +285,23 @@ function send(res, status, body, type = 'application/json; charset=utf-8') {
   res.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body));
 }
 
+// Lee el cuerpo de la petición. Si no termina de llegar en 10 s, falla en lugar de quedarse esperando para siempre.
 function readBody(req) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let data = '';
+    const timer = setTimeout(() => reject(new Error('el cuerpo de la petición no llegó completo')), 10000);
     req.on('data', (c) => {
       data += c;
       if (data.length > 1e5) req.destroy();
     });
-    req.on('end', () => resolve(data));
+    req.on('end', () => { clearTimeout(timer); resolve(data); });
+    req.on('error', (e) => { clearTimeout(timer); reject(e); });
   });
 }
+
+// Registro de depuración opcional (PANEL_DEBUG=1): data/debug.log, sin el token.
+const DEBUG = process.env.PANEL_DEBUG === '1';
+const dlog = (...a) => { if (DEBUG) fs.appendFile(path.join(ROOT, 'data', 'debug.log'), `[${new Date().toLocaleTimeString()}] ${a.join(' ')}\n`, () => {}); };
 
 // Modo Wi-Fi (opcional): además de 127.0.0.1, escucha en la IP de la red local indicada en PANEL_LAN_IP.
 const LAN_IP = /^(10|172\.(1[6-9]|2\d|3[01])|192\.168)\.\d{1,3}\.\d{1,3}(\.\d{1,3})?$/.test(process.env.PANEL_LAN_IP || '') ? process.env.PANEL_LAN_IP : null;
@@ -304,6 +311,11 @@ if (LAN_IP) allowedHosts.add(`${LAN_IP}:${PORT}`);
 const isPrivate = (a) => /^(::ffff:)?(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(a || '') || a === '::1';
 
 const handler = async (req, res) => {
+  if (DEBUG && !req.url.startsWith('/api/stats')) {
+    dlog('→', req.method, req.url.replace(/[?#].*/, ''), 'desde', req.socket.remoteAddress, 'host', req.headers.host, 'len', req.headers['content-length'] || '-', 'te', req.headers['transfer-encoding'] || '-');
+    req.on('end', () => dlog('  cuerpo recibido', req.method, req.url.replace(/[?#].*/, '')));
+    res.on('finish', () => dlog('←', res.statusCode, req.method, req.url.replace(/[?#].*/, '')));
+  }
   // Protección contra DNS rebinding: solo se aceptan los nombres de host del panel.
   if (!allowedHosts.has(req.headers.host)) return send(res, 403, { error: 'host no permitido' });
   if (!isPrivate(req.socket.remoteAddress)) return send(res, 403, { error: 'origen no permitido' });
@@ -342,6 +354,7 @@ const handler = async (req, res) => {
       }
       return send(res, 404, { error: 'no encontrado' });
     } catch (e) {
+      dlog('ERROR', req.method, url.pathname, String(e.message || e));
       return send(res, 500, { error: String(e.message || e) });
     }
   }
