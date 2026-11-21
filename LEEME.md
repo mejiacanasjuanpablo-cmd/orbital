@@ -60,7 +60,8 @@ Desliza a los lados (o usa las flechas del teclado) para cambiar de página. Fun
 
 Los cambios se aplican sin reiniciar; basta con recargar la página en el celular.
 
-Cada grupo tiene `"place"`: `"atajos"` (página 2, hasta 12 botones), `"comandos"` (página 3) o `"media"`.
+Cada grupo tiene `"place"`: `"atajos"` (página Sistema, hasta 12 botones), `"enfoque"` (página Enfoque, debajo de las tareas, hasta 4),
+`"discord"`, `"comandos"` o `"media"`.
 Los botones `prev`, `playpause` y `next` del grupo `media` son los que usa la tarjeta de música.
 
 Cada botón admite `"icon"` y `"color"` (por ejemplo `"#2dd4bf"`). Iconos disponibles:

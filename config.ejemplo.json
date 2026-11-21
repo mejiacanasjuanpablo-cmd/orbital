@@ -32,6 +32,13 @@
       ]
     },
     {
+      "name": "Enfoque",
+      "place": "enfoque",
+      "items": [
+        { "id": "ixdf", "label": "Cursos IxDF", "icon": "book", "color": "#2dd4bf", "type": "open", "target": "https://ixdf.org/courses" }
+      ]
+    },
+    {
       "name": "Discord",
       "place": "discord",
       "items": [

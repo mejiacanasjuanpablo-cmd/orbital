@@ -172,6 +172,10 @@
   .pctl { display: flex; gap: 10px; align-items: center; }
   .pctl .cbtn { border: 1px solid var(--line-2); }
   .tasks { grid-column: 7 / 13; grid-row: 1 / 7; display: flex; flex-direction: column; }
+  /* Botones del grupo "enfoque" (config.json) debajo de las tareas. */
+  .fkeys { grid-column: 7 / 13; grid-row: 6 / 7; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--gap); }
+  .fkeys:empty { display: none; }
+  .page:has(.fkeys:not(:empty)) .tasks { grid-row: 1 / 6; }
   .tasks .head { display: flex; justify-content: space-between; align-items: baseline; }
   .tasks .head span:last-child { color: var(--muted); font-size: 11px; }
   .tasks form { display: flex; gap: 8px; margin-top: 8px; }
@@ -250,7 +254,8 @@
     .perf-cores { min-height: 260px; }
     .plist { min-height: 330px; }
     .pomo { min-height: 420px; } .pring { flex: none; width: 240px; }
-    .tasks { min-height: 360px; }
+    .tasks, .page:has(.fkeys:not(:empty)) .tasks { min-height: 360px; grid-row: auto; }
+    .fkeys { grid-column: 1 / 13; grid-row: auto; min-height: 64px; }
     .cal { min-height: 330px; } .wclocks { min-height: 140px; } .wx { min-height: 190px; }
     .dkeys, .dstat { grid-column: 1 / 13; grid-row: auto; } .dkeys, .dkeys:has(> :nth-child(5):last-child) { grid-auto-rows: 130px; grid-template-columns: 1fr 1fr; }
   }
@@ -309,7 +314,8 @@
     <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/></symbol>
     <symbol id="i-headphones" viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3.5" y="14" width="4.5" height="6" rx="1.5"/><rect x="16" y="14" width="4.5" height="6" rx="1.5"/></symbol>
     <symbol id="i-share" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="12" rx="2"/><path d="M8.5 20h7M12 16.5V20M12 13.5V8M9.5 10.5 12 8l2.5 2.5"/></symbol>
-    <symbol id="i-eye"viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 0 4 20.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5a1.5 1.5 0 0 1 1.5 1.5z"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></symbol>
     <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 6.5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H10l-4.5 3.5V16.5H6a2 2 0 0 1-2-2z"/><path d="M8.5 10.5h.01M12 10.5h.01M15.5 10.5h.01"/></symbol>
     <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none"/></symbol>
   </defs>
@@ -387,6 +393,7 @@
       <form id="taskForm" autocomplete="off"><input id="taskInput" maxlength="200" placeholder="Nueva tarea…" enterkeyhint="done"><button aria-label="Agregar">+</button></form>
       <div class="tlist" id="taskList"></div>
     </div>
+    <div class="fkeys" id="focusKeys"></div>
   </section>
 
   <!-- 6 · Calendario -->
@@ -489,6 +496,7 @@
     const by = (p) => cfg.groups.filter((g) => g.place === p).flatMap((g) => g.items);
     $('deck').replaceChildren(...by('atajos').slice(0, 12).map(keyBtn));
     $('cmds').replaceChildren(...by('comandos').map(keyBtn));
+    $('focusKeys').replaceChildren(...by('enfoque').slice(0, 4).map(keyBtn));
     const dc = by('discord');
     $('dcKeys').replaceChildren(...dc.map(keyBtn));
     $('dcBinds').innerHTML = dc.filter((i) => i.hint).map((i) => { const [k, a] = i.hint.split('→'); return `<div class="dbind"><kbd>${esc(k.trim())}</kbd><br>${esc((a || '').trim())}</div>`; }).join('');
