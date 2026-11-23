@@ -43,10 +43,16 @@ No hay que instalar ninguna app en el celular ni activar nada en sus ajustes. Fu
 
 Desliza a los lados para cambiar de página. Funciona mejor con el celular en horizontal.
 
-**Elegir qué páginas ves y en qué orden:** en la ventana del panel, en el PC, pulsa **Páginas del celular**. Activa o
-quita cada página con su interruptor y muévela con las flechas; la primera es la que aparece al conectar el celular
-(si solo recargas la página, vuelves a la que estabas viendo). Cada cambio llega al celular al momento, sin recargar,
-y se guarda en el PC, en `data/paginas.json`. **Restablecer** vuelve al orden de abajo, con todas las páginas.
+**Elegir qué páginas ves y en qué orden:** en la ventana del panel, en el PC, pulsa **Páginas del celular**. Cada página
+es una tarjeta con su vista previa, en el orden en que salen en el celular:
+- el interruptor de la tarjeta la muestra u oculta (las ocultas se ven tenues, con «Oculta»);
+- para cambiar el orden, arrastra la tarjeta sobre otra: ocupa su lugar. También puedes usar las flechas que aparecen
+  al pasar el ratón por la tarjeta (o al llegar a ellas con Tab);
+- la primera, marcada «Al conectar», es la que aparece al conectar el celular (si solo recargas la página, vuelves a la
+  que estabas viendo).
+
+Cada cambio llega al celular al momento, sin recargar, y se guarda en el PC, en `data/paginas.json`. **Restablecer**
+vuelve al orden de abajo, con todas las páginas.
 
 1. **Inicio**: reloj, la canción que suena en el PC (con carátula, progreso y controles), volumen, y CPU, RAM, red y disco.
 2. **Mezclador**: el volumen de cada aplicación que usa el sonido del PC, como el mezclador de Windows: una columna por

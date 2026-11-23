@@ -13,6 +13,10 @@ $PanelArchivosComunes = @(
     'lib\arranque.ps1', 'lib\lanzador.cs', 'lib\mezclador.ps1',
     'public\index.html', 'public\espera.html', 'public\manifest.webmanifest', 'public\icon-192.png', 'public\icon-512.png'
 )
+# Vistas previas de las páginas del celular (ventana → Páginas del celular). Van en el .zip, pero no se exigen para
+# arrancar: si falta alguna, la ventana lo indica en esa tarjeta. Las genera herramientas\miniaturas.js.
+$PanelMiniaturas = @('inicio', 'mezclador', 'sistema', 'rendimiento', 'procesos', 'enfoque', 'calendario', 'discord', 'comandos') |
+    ForEach-Object { "public\miniaturas\$_.jpg" }
 # En la edición completa, iniciar.cmd abre el modo USB e iniciar-wifi.cmd el modo Wi-Fi.
 # En la edición solo Wi-Fi, iniciar.cmd abre directamente el modo Wi-Fi.
 $PanelArchivos = if ($PanelSoloWifi) { $PanelArchivosComunes } else { $PanelArchivosComunes + 'iniciar-wifi.cmd' }

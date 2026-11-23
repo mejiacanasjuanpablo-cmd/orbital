@@ -18,6 +18,7 @@ $carpeta = if ($soloWifi) { 'Panel-WiFi' } else { 'Panel-USB' }
 # Origen → nombre dentro del .zip
 $mapa = [ordered]@{}
 $programa = if ($soloWifi) { $PanelArchivosComunes } else { $PanelArchivosComunes + 'iniciar-wifi.cmd' }
+$programa += $PanelMiniaturas
 foreach ($f in $programa) { $mapa[$f] = $f }
 $mapa['instalar.ps1'] = 'instalar.ps1'; $mapa['instalar.cmd'] = 'instalar.cmd'
 $mapa['verificar.ps1'] = 'verificar.ps1'; $mapa['verificar.cmd'] = 'verificar.cmd'

@@ -115,19 +115,20 @@ $xaml = @'
     <Style x:Key="Segmento" TargetType="Button" BasedOn="{StaticResource BotonEnlace}">
       <Setter Property="Padding" Value="14,6"/>
     </Style>
-    <Style x:Key="BotonIcono" TargetType="Button" BasedOn="{StaticResource BotonEnlace}">
+    <!-- Botón redondo sobre la vista previa de una página (mover antes o después) -->
+    <Style x:Key="BotonFlotante" TargetType="Button" BasedOn="{StaticResource Boton}">
+      <Setter Property="Background" Value="#E607090C"/>
+      <Setter Property="BorderBrush" Value="#33FFFFFF"/>
       <Setter Property="Padding" Value="0"/>
-      <Setter Property="Width" Value="32"/>
-      <Setter Property="Height" Value="28"/>
-      <Style.Triggers>
-        <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="{StaticResource Tile}"/></Trigger>
-      </Style.Triggers>
+      <Setter Property="Width" Value="30"/>
+      <Setter Property="Height" Value="30"/>
     </Style>
     <!-- Interruptor (activar o quitar una página del celular); el texto va a la derecha y también se puede pulsar. -->
     <Style x:Key="Interruptor" TargetType="CheckBox">
       <Setter Property="Foreground" Value="{StaticResource Texto}"/>
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+      <Setter Property="Padding" Value="12,0,0,0"/>
       <Setter Property="Template">
         <Setter.Value>
           <ControlTemplate TargetType="CheckBox">
@@ -136,7 +137,7 @@ $xaml = @'
                       BorderBrush="{StaticResource Linea2}" BorderThickness="1" VerticalAlignment="Center">
                 <Ellipse x:Name="Bola" Width="14" Height="14" Fill="#7D8696" HorizontalAlignment="Left" Margin="2,0,0,0"/>
               </Border>
-              <ContentPresenter Margin="12,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="False"/>
+              <ContentPresenter Margin="{TemplateBinding Padding}" VerticalAlignment="Center" RecognizesAccessKey="False"/>
             </DockPanel>
             <ControlTemplate.Triggers>
               <Trigger Property="IsChecked" Value="True">
@@ -196,25 +197,23 @@ $xaml = @'
       </DockPanel>
     </Border>
 
-    <!-- Páginas del celular: cuáles se ven y en qué orden (ocupa el lugar de la vista de conexión mientras está abierta) -->
+    <!-- Páginas del celular: una tarjeta por página, con su vista previa, en el orden en que salen en el celular
+         (ocupa el lugar de la vista de conexión mientras está abierta) -->
     <DockPanel x:Name="VistaPaginas" Grid.Row="2" Visibility="Collapsed" LastChildFill="True">
-      <DockPanel DockPanel.Dock="Bottom" Margin="0,14,0,0" LastChildFill="False">
-        <Button x:Name="RestablecerPaginas" DockPanel.Dock="Left" Content="Restablecer" Style="{StaticResource Boton}"
-                ToolTip="Vuelve al orden original, con todas las páginas"/>
-        <Button x:Name="ListoPaginas" DockPanel.Dock="Right" Content="Listo" Style="{StaticResource BotonPrincipal}" Padding="26,8"/>
-        <TextBlock DockPanel.Dock="Left" Margin="16,0,0,0" VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource Tenue}"
-                   Text="Cada cambio llega al celular al momento, sin recargar."/>
+      <DockPanel DockPanel.Dock="Top" Margin="0,0,0,16" LastChildFill="True">
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0,0,0">
+          <Button x:Name="RestablecerPaginas" Content="Restablecer" Style="{StaticResource Boton}" Margin="0,0,10,0"
+                  ToolTip="Vuelve al orden original, con todas las páginas"/>
+          <Button x:Name="ListoPaginas" Content="Listo" Style="{StaticResource BotonPrincipal}" Padding="26,8"/>
+        </StackPanel>
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Text="Páginas del celular" FontSize="16" FontWeight="SemiBold"/>
+          <TextBlock Margin="0,3,0,0" Foreground="{StaticResource Tenue}" FontSize="12" TextWrapping="Wrap" LineHeight="17"
+                     Text="Activa las que quieres ver y arrástralas para cambiar el orden. La primera es la que aparece al conectar el celular, y cada cambio le llega al momento."/>
+        </StackPanel>
       </DockPanel>
-      <Border Style="{StaticResource Tarjeta}">
-        <DockPanel>
-          <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
-            <TextBlock Text="PÁGINAS DEL CELULAR" Style="{StaticResource Etiqueta}" Margin="0,0,0,6"/>
-            <TextBlock Foreground="{StaticResource Tenue}" TextWrapping="Wrap" LineHeight="19"
-                       Text="Activa las páginas que quieres ver y ordénalas con las flechas. La primera es la que aparece al conectar el celular."/>
-          </StackPanel>
-          <StackPanel x:Name="ListaPaginas"/>
-        </DockPanel>
-      </Border>
+      <!-- El margen negativo compensa el espacio que cada tarjeta deja a su derecha y debajo -->
+      <UniformGrid x:Name="ListaPaginas" Columns="3" Margin="0,0,-16,-16"/>
     </DockPanel>
 
     <Grid x:Name="VistaConexion" Grid.Row="2">
@@ -764,6 +763,9 @@ function Open-EnPc { if ($script:token) { Start-Process "http://localhost:$Puert
 # las recibe con cada lectura del estado, así que cada cambio se guarda en el acto.
 $script:paginas = @()
 $script:enPaginas = $false
+$script:miniaturas = @{}                                              # id → imagen de la vista previa (o $null)
+$script:tarjetasDe = @{}; $script:marcosDe = @{}; $script:flechasDe = @{} # id → partes de su tarjeta
+$script:arrastre = $null; $script:movimiento = $null; $script:destino = ''
 
 function Show-Paginas {
     $r = Invoke-PanelApi 'GET' '/api/pc/paginas'
@@ -812,54 +814,167 @@ function Reset-Paginas {
     if ("$r" -eq 'Yes') { Save-Paginas @() }
 }
 
+# Arrastrar y soltar: la página arrastrada ocupa el lugar de la tarjeta sobre la que se suelta.
+function Move-PaginaA([string]$Id, [string]$DestinoId) {
+    $l = New-Object Collections.ArrayList
+    $l.AddRange(@($script:paginas))
+    $i = -1; $j = -1
+    for ($k = 0; $k -lt $l.Count; $k++) { if ($l[$k].id -eq $Id) { $i = $k }; if ($l[$k].id -eq $DestinoId) { $j = $k } }
+    if ($i -lt 0 -or $j -lt 0 -or $i -eq $j) { return }
+    $p = $l[$i]; $l.RemoveAt($i); $l.Insert($j, $p)
+    Save-Paginas @($l) ''
+}
+
+# Mientras se arrastra, la tarjeta se ve tenue; si se suelta sobre otra, el cambio se hace al terminar el arrastre.
+function Start-ArrastrePagina($Marco, [string]$Id) {
+    $tarjeta = $script:tarjetasDe[$Id]
+    if ($tarjeta) { $tarjeta.Opacity = 0.4 }
+    $script:movimiento = $null
+    try { [void][Windows.DragDrop]::DoDragDrop($Marco, (New-Object Windows.DataObject('PanelPagina', $Id)), [Windows.DragDropEffects]::Move) }
+    finally { if ($tarjeta) { $tarjeta.Opacity = 1 }; Set-DestinoPagina '' }
+    $m = $script:movimiento; $script:movimiento = $null
+    if ($m) { Move-PaginaA $m[0] $m[1] }
+}
+
+function Set-DestinoPagina([string]$Id) {
+    $antes = $script:destino
+    if ($antes -eq $Id) { return }
+    $script:destino = $Id
+    Update-TarjetaPagina $antes; Update-TarjetaPagina $Id
+}
+
+# Las flechas aparecen al pasar el ratón por la tarjeta o al llegar a ella con el teclado; el borde se ilumina igual,
+# y en verde azulado si es donde se va a soltar la que se arrastra.
+function Update-TarjetaPagina([string]$Id) {
+    if (-not $Id -or -not $script:tarjetasDe[$Id]) { return }
+    $t = $script:tarjetasDe[$Id]; $m = $script:marcosDe[$Id]
+    $activa = $t.IsMouseOver -or $t.IsKeyboardFocusWithin
+    $script:flechasDe[$Id].Opacity = if ($activa) { 1 } else { 0 }
+    if ($script:destino -eq $Id) { $m.BorderBrush = Get-Pincel $C.Teal; $m.BorderThickness = 2 }
+    else { $m.BorderBrush = Get-Pincel $(if ($activa) { '#59FFFFFF' } else { '#1FFFFFFF' }); $m.BorderThickness = 1 }
+}
+
+# Vista previa de cada página (public\miniaturas\<página>.jpg, las genera herramientas\miniaturas.js). Se cargan una vez;
+# si falta alguna, la tarjeta lo dice y todo lo demás funciona igual.
+function Get-Miniatura([string]$Id) {
+    if ($script:miniaturas.ContainsKey($Id)) { return $script:miniaturas[$Id] }
+    $img = $null
+    $ruta = Join-Path $Raiz "public\miniaturas\$Id.jpg"
+    if (Test-Path $ruta) {
+        try {
+            $img = New-Object Windows.Media.Imaging.BitmapImage
+            $img.BeginInit(); $img.UriSource = New-Object Uri $ruta; $img.DecodePixelWidth = 480; $img.CacheOption = 'OnLoad'; $img.EndInit()
+            $img.Freeze()
+        } catch { $img = $null }
+    }
+    $script:miniaturas[$Id] = $img
+    $img
+}
+
+# Pastilla sobre la vista previa ("Al conectar", "Oculta").
+function New-Pastilla([string]$Texto, [string]$Color, [string]$Punto) {
+    $b = New-Object Windows.Controls.Border
+    $b.Background = Get-Pincel '#E607090C'; $b.BorderBrush = Get-Pincel '#33FFFFFF'; $b.BorderThickness = 1
+    $b.CornerRadius = 99; $b.Padding = '9,3,10,4'; $b.IsHitTestVisible = $false
+    $sp = New-Object Windows.Controls.StackPanel
+    $sp.Orientation = 'Horizontal'
+    if ($Punto) {
+        $o = New-Object Windows.Shapes.Ellipse
+        $o.Width = 6; $o.Height = 6; $o.Fill = Get-Pincel $Punto; $o.Margin = '0,1,6,0'; $o.VerticalAlignment = 'Center'
+        [void]$sp.Children.Add($o)
+    }
+    $t = New-Texto $Texto $Color 11 ([Windows.FontWeights]::SemiBold)
+    $t.TextWrapping = 'NoWrap'
+    [void]$sp.Children.Add($t)
+    $b.Child = $sp
+    $b
+}
+
 function New-Flecha([string]$Id, [int]$Paso, [bool]$Activa, [string]$Nombre) {
     $b = New-Object Windows.Controls.Button
-    $b.Style = $w.FindResource('BotonIcono')
+    $b.Style = $w.FindResource('BotonFlotante')
     $p = New-Object Windows.Shapes.Path
-    $p.Data = [Windows.Media.Geometry]::Parse($(if ($Paso -lt 0) { 'M6,15 L12,9 L18,15' } else { 'M6,9 L12,15 L18,9' }))
-    $p.Stroke = Get-Pincel $C.Texto; $p.StrokeThickness = 2; $p.Width = 12; $p.Height = 12; $p.Stretch = 'Uniform'
+    $p.Data = [Windows.Media.Geometry]::Parse($(if ($Paso -lt 0) { 'M15,6 L9,12 L15,18' } else { 'M9,6 L15,12 L9,18' }))
+    $p.Stroke = Get-Pincel $C.Texto; $p.StrokeThickness = 2; $p.Width = 11; $p.Height = 11; $p.Stretch = 'Uniform'
     $p.StrokeStartLineCap = 'Round'; $p.StrokeEndLineCap = 'Round'; $p.StrokeLineJoin = 'Round'
     $b.Content = $p
     $b.IsEnabled = $Activa
     $b.Tag = "$Paso|$Id"
-    $texto = if ($Paso -lt 0) { "Subir $Nombre" } else { "Bajar $Nombre" }
-    [Windows.Automation.AutomationProperties]::SetName($b, $texto)
-    $b.ToolTip = $texto
+    [Windows.Automation.AutomationProperties]::SetName($b, $(if ($Paso -lt 0) { "Mover $Nombre antes" } else { "Mover $Nombre después" }))
+    $b.ToolTip = if ($Paso -lt 0) { 'Mover antes' } else { 'Mover después' }
     $b.Add_Click({ param($s) Invoke-Seguro { $t = ([string]$s.Tag).Split('|', 2); Move-Pagina $t[1] ([int]$t[0]) } })
     $b
 }
 
-# Una fila por página: número en el celular (o «–» si está oculta), interruptor con el nombre, y flechas para moverla.
+# Una tarjeta por página, en el orden del celular: la vista previa (tenue y con «Oculta» si no se ve; «Al conectar» en la
+# primera), con flechas para moverla; debajo, su número en el celular (o «–»), el nombre y el interruptor.
 # $Foco ("-1|id", "1|id" o "ver|id") devuelve el foco al mismo control si el cambio se hizo con el teclado.
 function Update-ListaPaginas([string]$Foco) {
     $ui.ListaPaginas.Children.Clear()
+    $script:tarjetasDe = @{}; $script:marcosDe = @{}; $script:flechasDe = @{}; $script:destino = ''
     $l = @($script:paginas)
     $visibles = @($l | Where-Object { $_.ver }).Count
     $n = 0; $controles = @{}
     for ($i = 0; $i -lt $l.Count; $i++) {
-        $p = $l[$i]; $ver = [bool]$p.ver; $id = [string]$p.id
+        $p = $l[$i]; $ver = [bool]$p.ver; $id = [string]$p.id; $nombre = [string]$p.nombre
         if ($ver) { $n++ }
-        $fila = New-Object Windows.Controls.Border
-        $fila.Background = Get-Pincel $C.Tile2; $fila.CornerRadius = 10; $fila.Padding = '10,2,4,2'
-        if ($i -lt $l.Count - 1) { $fila.Margin = '0,0,0,5' }
-        $dock = New-Object Windows.Controls.DockPanel
+        $tarjeta = New-Object Windows.Controls.StackPanel
+        $tarjeta.Margin = '0,0,16,16'; $tarjeta.Tag = $id; $tarjeta.AllowDrop = $true; $tarjeta.Background = Get-Pincel '#00000000'
+        $tarjeta.ToolTip = [string]$p.detalle
+
+        # Vista previa
+        $vista = New-Object Windows.Controls.Grid
+        $vista.Height = 104
+        $marco = New-Object Windows.Controls.Border
+        $marco.CornerRadius = 14; $marco.BorderThickness = 1; $marco.BorderBrush = Get-Pincel '#1FFFFFFF'; $marco.Tag = $id
+        $marco.Cursor = [Windows.Input.Cursors]::Hand
+        $img = Get-Miniatura $id
+        if ($img) {
+            $pincel = New-Object Windows.Media.ImageBrush $img
+            $pincel.Stretch = 'UniformToFill'; $pincel.AlignmentY = 'Top'
+            $marco.Background = $pincel
+        } else {
+            $marco.Background = Get-Pincel $C.Tile2
+            $sin = New-Texto 'Sin vista previa' $C.Apagado 12
+            $sin.HorizontalAlignment = 'Center'; $sin.VerticalAlignment = 'Center'
+            $marco.Child = $sin
+        }
+        if (-not $ver) { $marco.Opacity = 0.3 }
+        [void]$vista.Children.Add($marco)
+        if ($ver -and $n -eq 1) {
+            $primera = New-Pastilla 'Al conectar' $C.Texto $C.Teal
+            $primera.HorizontalAlignment = 'Left'; $primera.VerticalAlignment = 'Top'; $primera.Margin = '8'
+            [void]$vista.Children.Add($primera)
+        }
+        if (-not $ver) {
+            $oculta = New-Pastilla 'Oculta' $C.Texto $null
+            $oculta.HorizontalAlignment = 'Center'; $oculta.VerticalAlignment = 'Center'
+            [void]$vista.Children.Add($oculta)
+        }
+        $flechas = New-Object Windows.Controls.StackPanel
+        $flechas.Orientation = 'Horizontal'; $flechas.HorizontalAlignment = 'Right'; $flechas.VerticalAlignment = 'Top'
+        $flechas.Margin = '0,8,8,0'; $flechas.Opacity = 0
+        $antes = New-Flecha $id -1 ($i -gt 0) $nombre
+        $antes.Margin = '0,0,6,0'
+        $despues = New-Flecha $id 1 ($i -lt $l.Count - 1) $nombre
+        [void]$flechas.Children.Add($antes); [void]$flechas.Children.Add($despues)
+        [void]$vista.Children.Add($flechas)
+
+        # Pie
+        $pie = New-Object Windows.Controls.DockPanel
+        $pie.Margin = '2,10,0,0'
+        $avatar = New-Object Windows.Controls.Border
+        $avatar.Width = 26; $avatar.Height = 26; $avatar.CornerRadius = 13; $avatar.BorderThickness = 1
+        $avatar.Background = Get-Pincel $(if ($ver) { '#262DD4BF' } else { $C.Tile2 })
+        $avatar.BorderBrush = Get-Pincel $(if ($ver) { '#592DD4BF' } else { '#1FFFFFFF' })
         $num = New-Texto $(if ($ver) { "$n" } else { '–' }) $(if ($ver) { $C.Teal } else { $C.Apagado }) 12 ([Windows.FontWeights]::SemiBold)
-        $num.Width = 24; $num.FontFamily = 'Cascadia Mono, Consolas'; $num.VerticalAlignment = 'Center'; $num.TextWrapping = 'NoWrap'
-        [Windows.Controls.DockPanel]::SetDock($num, 'Left')
-        $abajo = New-Flecha $id 1 ($i -lt $l.Count - 1) $p.nombre
-        $arriba = New-Flecha $id -1 ($i -gt 0) $p.nombre
-        [Windows.Controls.DockPanel]::SetDock($abajo, 'Right'); [Windows.Controls.DockPanel]::SetDock($arriba, 'Right')
+        $num.TextWrapping = 'NoWrap'; $num.HorizontalAlignment = 'Center'; $num.VerticalAlignment = 'Center'
+        $avatar.Child = $num
+        [Windows.Controls.DockPanel]::SetDock($avatar, 'Left')
         $chk = New-Object Windows.Controls.CheckBox
-        $chk.Style = $w.FindResource('Interruptor'); $chk.IsChecked = $ver; $chk.Tag = $id
-        $textos = New-Object Windows.Controls.StackPanel
-        $textos.Orientation = 'Horizontal'
-        $nombre = New-Texto ([string]$p.nombre) $(if ($ver) { $C.Texto } else { $C.Tenue }) 13 ([Windows.FontWeights]::SemiBold)
-        $nombre.TextWrapping = 'NoWrap'
-        $detalle = New-Texto ([string]$p.detalle) $(if ($ver) { $C.Tenue } else { $C.Apagado }) 12
-        $detalle.TextWrapping = 'NoWrap'; $detalle.Margin = '10,1,0,0'
-        [void]$textos.Children.Add($nombre); [void]$textos.Children.Add($detalle)
-        $chk.Content = $textos
-        [Windows.Automation.AutomationProperties]::SetName($chk, "Mostrar $($p.nombre)")
+        $chk.Style = $w.FindResource('Interruptor'); $chk.Padding = '0'; $chk.IsChecked = $ver; $chk.Tag = $id; $chk.VerticalAlignment = 'Center'
+        [Windows.Controls.DockPanel]::SetDock($chk, 'Right')
+        [Windows.Automation.AutomationProperties]::SetName($chk, "Mostrar $nombre")
         if ($ver -and $visibles -eq 1) {
             $chk.IsEnabled = $false
             $chk.ToolTip = 'Tiene que quedar al menos una página'
@@ -868,10 +983,47 @@ function Update-ListaPaginas([string]$Foco) {
         # Checked/Unchecked (y no Click): así también funciona desde el teclado y con lectores de pantalla.
         $chk.Add_Checked({ param($s) Invoke-Seguro { Set-PaginaVisible ([string]$s.Tag) $true } })
         $chk.Add_Unchecked({ param($s) Invoke-Seguro { Set-PaginaVisible ([string]$s.Tag) $false } })
-        [void]$dock.Children.Add($num); [void]$dock.Children.Add($abajo); [void]$dock.Children.Add($arriba); [void]$dock.Children.Add($chk)
-        $fila.Child = $dock
-        [void]$ui.ListaPaginas.Children.Add($fila)
-        $controles["-1|$id"] = $arriba; $controles["1|$id"] = $abajo; $controles["ver|$id"] = $chk
+        $titulo = New-Texto $nombre $(if ($ver) { $C.Texto } else { $C.Tenue }) 14 ([Windows.FontWeights]::SemiBold)
+        $titulo.TextWrapping = 'NoWrap'; $titulo.TextTrimming = 'CharacterEllipsis'; $titulo.Margin = '10,0,8,1'; $titulo.VerticalAlignment = 'Center'
+        [void]$pie.Children.Add($avatar); [void]$pie.Children.Add($chk); [void]$pie.Children.Add($titulo)
+        [void]$tarjeta.Children.Add($vista); [void]$tarjeta.Children.Add($pie)
+
+        # Pasar el ratón o llegar con el teclado
+        $tarjeta.Add_MouseEnter({ param($s) Update-TarjetaPagina ([string]$s.Tag) })
+        $tarjeta.Add_MouseLeave({ param($s) Update-TarjetaPagina ([string]$s.Tag) })
+        $tarjeta.Add_IsKeyboardFocusWithinChanged({ param($s) Update-TarjetaPagina ([string]$s.Tag) })
+        # Arrastrar desde la vista previa (las flechas y las pastillas no empiezan un arrastre)
+        $marco.Add_PreviewMouseLeftButtonDown({ param($s, $e) $script:arrastre = @{ Id = [string]$s.Tag; Punto = $e.GetPosition($w) } })
+        $marco.Add_PreviewMouseLeftButtonUp({ $script:arrastre = $null })
+        $marco.Add_PreviewMouseMove({ param($s, $e)
+            $a = $script:arrastre
+            if (-not $a -or $e.LeftButton -ne [Windows.Input.MouseButtonState]::Pressed) { return }
+            $q = $e.GetPosition($w)
+            if ([math]::Abs($q.X - $a.Punto.X) -lt [Windows.SystemParameters]::MinimumHorizontalDragDistance -and
+                [math]::Abs($q.Y - $a.Punto.Y) -lt [Windows.SystemParameters]::MinimumVerticalDragDistance) { return }
+            $script:arrastre = $null
+            Invoke-Seguro { Start-ArrastrePagina $s $a.Id }
+        })
+        # Soltar sobre otra tarjeta
+        $tarjeta.Add_DragOver({ param($s, $e)
+            $o = if ($e.Data.GetDataPresent('PanelPagina')) { [string]$e.Data.GetData('PanelPagina') } else { '' }
+            if ($o -and $o -ne [string]$s.Tag) { $e.Effects = [Windows.DragDropEffects]::Move; Set-DestinoPagina ([string]$s.Tag) }
+            else { $e.Effects = [Windows.DragDropEffects]::None; Set-DestinoPagina '' }
+            $e.Handled = $true
+        })
+        $tarjeta.Add_DragLeave({ param($s, $e)
+            $q = $e.GetPosition($s)
+            if (($q.X -lt 0 -or $q.Y -lt 0 -or $q.X -ge $s.ActualWidth -or $q.Y -ge $s.ActualHeight) -and $script:destino -eq [string]$s.Tag) { Set-DestinoPagina '' }
+        })
+        $tarjeta.Add_Drop({ param($s, $e)
+            $o = if ($e.Data.GetDataPresent('PanelPagina')) { [string]$e.Data.GetData('PanelPagina') } else { '' }
+            if ($o -and $o -ne [string]$s.Tag) { $script:movimiento = @($o, [string]$s.Tag) }
+            $e.Handled = $true
+        })
+
+        [void]$ui.ListaPaginas.Children.Add($tarjeta)
+        $script:tarjetasDe[$id] = $tarjeta; $script:marcosDe[$id] = $marco; $script:flechasDe[$id] = $flechas
+        $controles["-1|$id"] = $antes; $controles["1|$id"] = $despues; $controles["ver|$id"] = $chk
     }
     if ($Foco -and [Windows.Input.InputManager]::Current.MostRecentInputDevice -is [Windows.Input.KeyboardDevice]) {
         $c = $controles[$Foco]

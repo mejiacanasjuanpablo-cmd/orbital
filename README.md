@@ -41,6 +41,7 @@ El recorrido por cada versión, con capturas y todos los cambios, está en **[HI
 |---|---|
 | `server.js` | Servidor HTTP en Node, sin dependencias |
 | `public/` | La página del celular (`index.html`), la de espera de aprobación (`espera.html`) y el manifest de la app |
+| `public/miniaturas/` | Vistas previas de las páginas, para elegirlas en la ventana (con datos de ejemplo) |
 | `lib/media.ps1` | Música que suena en el PC, controles de música y volumen |
 | `lib/mezclador.ps1` | Mezclador: volumen, silencio y nivel de sonido de cada aplicación, y salida de audio |
 | `lib/keys.ps1` | Atajos de teclado (SendInput con scan codes) |
@@ -53,6 +54,7 @@ El recorrido por cada versión, con capturas y todos los cambios, está en **[HI
 | `iniciar.cmd`, `iniciar-wifi.cmd` | Abren la ventana del panel por USB o por Wi-Fi |
 | `iniciar.ps1` | Modo consola, con los mensajes del servidor a la vista |
 | `instalar.*`, `verificar.*`, `empaquetar.ps1` | Instalación, verificación de requisitos y .zip para compartir |
+| `herramientas/miniaturas.js` | Vuelve a generar `public/miniaturas/` con datos de ejemplo (Node 22+ y Edge); no va en el .zip |
 
 ## Datos personales
 
