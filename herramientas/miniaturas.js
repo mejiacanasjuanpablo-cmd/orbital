@@ -74,6 +74,9 @@ const RESPUESTAS = {
     .map((text, i) => ({ id: String(i + 1), text, done: i === 0 })),
   '/api/weather': () => ({ activo: true, ciudad: 'Madrid', now: { temp: 18, feels: 17, hum: 62, code: 2, wind: 9, day: true },
     days: [2, 3, 61, 1, 0].map((code, i) => ({ date: dia(i), code, max: 19 + i, min: 9 + (i % 3), rain: 10 })) }),
+  // Días con algo agendado (el punto bajo el número en la página Calendario)
+  '/api/agenda': () => ({ conectado: true, nombre: en() ? 'My calendar' : 'Mi calendario',
+    eventos: [-6, -2, 0, 1, 3, 8, 12].map((d, i) => ({ titulo: `${i}`, lugar: '', dia: dia(d), dias: 1 })) }),
   '/api/art': () => ({ key: null, data: null }),
   '/api/mixer': () => {
     const s = (k) => `{0.0.0.00000000}.{0000000${k}-0000-0000-0000-000000000000}`;

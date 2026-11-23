@@ -5,7 +5,7 @@ Panel de control del PC que se abre en el navegador del celular. Incluye:
 - música y volumen, y un mezclador con el volumen de cada aplicación y la salida de audio;
 - CPU, RAM, red y disco, con su historial y los procesos que más consumen;
 - pomodoro y lista de tareas;
-- calendario, relojes del mundo y clima;
+- calendario con tu agenda de Google Calendar (u otro con enlace iCal), relojes del mundo y el clima de donde está el PC;
 - controles de Discord;
 - botones de atajos y de comandos.
 
@@ -50,6 +50,7 @@ El recorrido por cada versión, con capturas y todos los cambios, está en **[HI
 | `lib/keys.ps1` | Atajos de teclado (SendInput con scan codes) |
 | `lib/qr.js` | Generador de códigos QR, hecho desde cero |
 | `lib/aprobacion.js`, `lib/allow.js` | Aprobación de dispositivos nuevos y lista de dispositivos permitidos |
+| `lib/agenda.js` | Lee el calendario desde su enlace iCal (.ics), con repeticiones y zonas horarias, para la agenda de la página Calendario |
 | `lib/requisitos.ps1` | Revisión de requisitos (la usan `verificar`, `instalar`, `iniciar` y la ventana) |
 | `ventana.ps1` | La ventana del panel en el PC: QR, estado, dispositivos, actividad, páginas del celular, idioma e icono junto al reloj |
 | `lib/lanzador.cs` | `Panel del PC.exe`, que abre la ventana sin consola (lo compila `instalar` en cada PC) |

@@ -137,7 +137,15 @@ vuelve al orden de abajo, con todas las páginas.
    Los servicios protegidos de Windows no se pueden medir sin permisos de administrador.
 6. **Enfoque**: temporizador pomodoro (enfoque, descanso y descanso largo, con vibración y sonido al terminar), lista de tareas
    y botones de acceso rápido. Las tareas se guardan en el PC, en `data/tareas.json`.
-7. **Calendario**: el mes actual, relojes del mundo y el clima.
+7. **Calendario**: el mes actual con tu agenda, relojes del mundo y el clima.
+   - **Agenda:** los días con algo agendado llevan un punto. Toca un día (por ejemplo, el de hoy) y se abre una ventana
+     con lo que tienes ese día: lo de todo el día arriba y lo demás por hora, con su lugar. En el de hoy, lo que ya pasó
+     se ve más tenue y la lista empieza en lo siguiente. Ver [Conectar tu calendario](#conectar-tu-calendario).
+   - **Clima:** pulsa **Mostrar el clima de aquí** en su tarjeta. Usa la ubicación de Windows de este PC, que es
+     aproximada (unos km), así que puede salir el municipio de al lado. Si Windows tiene la ubicación apagada, la tarjeta
+     dice dónde activarla: Configuración > Privacidad y seguridad > Ubicación, también para las aplicaciones de escritorio.
+     Desde el celular no se puede tomar la ubicación: el navegador solo la da en páginas seguras (https), y el panel va
+     por http en la red de casa.
 8. **Discord**: compartir pantalla, silenciar el micrófono, ensordecer, modo streamer y abrir Discord. Indica si Discord está abierto en el PC.
    Los botones envían atajos globales, que hay que configurar una vez en Discord
    (Ajustes de usuario → Atajos de teclado → Añadir un atajo):
@@ -150,8 +158,30 @@ vuelve al orden de abajo, con todas las páginas.
 
 - `"relojes"`: lista de `{ "nombre": "...", "zona": "America/New_York" }` (zonas horarias IANA, máximo 6).
 - `"pomodoro"`: minutos de `enfoque`, `descanso` y `largo`.
-- `"clima"`: viene desactivado. Para activarlo pon `"activo": true` y tu `"ciudad"`, `"lat"` y `"lon"`.
-  El servidor consulta Open-Meteo (gratis, sin cuenta) cada 15 minutos y le envía esas coordenadas redondeadas.
+- `"clima"`: viene desactivado; el botón de la tarjeta del clima lo deja en `{ "activo": true, "ubicacion": "pc" }`.
+  Para una ciudad fija en vez de la ubicación del PC: `{ "activo": true, "ciudad": "Medellín", "lat": 6.25, "lon": -75.56 }`.
+  El servidor consulta Open-Meteo (gratis, sin cuenta) cada 15 minutos y le envía las coordenadas redondeadas a 2
+  decimales (alrededor de 1 km). Con la ubicación del PC, también se las envía a OpenStreetMap, para el nombre de la
+  ciudad, y pregunta la ubicación a Windows como mucho cada 3 horas.
+- `"calendario"`: `{ "ics": "…" }`, el enlace privado del calendario. Lo guarda el panel al conectarlo desde la página
+  Calendario; para quitarlo, **Cambiar enlace → Desconectar**.
+
+### Conectar tu calendario
+
+La agenda se lee desde el enlace privado de tu calendario en formato iCal: solo lectura, sin iniciar sesión.
+
+1. En el PC, abre Google Calendar en el navegador → ⚙ **Configuración** → en la columna izquierda, tu calendario →
+   **Integrar el calendario** → copia la **Dirección secreta en formato iCal** (termina en `.ics`).
+2. En la ventana del panel pulsa **Abrir en este PC**, ve a la página Calendario y toca cualquier día.
+3. Pega el enlace y pulsa **Conectar**. El panel lo prueba antes de guardarlo.
+
+También sirven Outlook.com (Configuración → Calendario → Calendarios compartidos → Publicar un calendario → enlace ICS) e
+iCloud (calendario público, enlace `webcal://`). La agenda se actualiza cada 10 minutos, y al abrir un día si pasaron
+más de 2. Google puede tardar un rato en reflejar lo que acabas de agendar en ese enlace.
+
+El enlace se guarda solo en `config.json`, en este PC: no va al celular, ni a git, ni al `.zip`, ni al ejecutable para
+compartir. **Quien lo tenga puede ver tu calendario.** Si alguna vez lo compartes por error, en Google Calendar pulsa
+**Restablecer** junto a la dirección secreta y vuelve a conectar el nuevo.
 
 ## Personalizar: `config.json`
 

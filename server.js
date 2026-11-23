@@ -23,6 +23,22 @@ if (!fs.existsSync(CONFIG_PATH) && fs.existsSync(path.join(ROOT, 'config.ejemplo
 function loadConfig() {
   return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8').replace(/^﻿/, ''));
 }
+// Cambia (o añade) una sección de una sola línea de config.json, como "clima": { … }, sin tocar el formato del resto.
+function guardarEnConfig(clave, valor) {
+  let txt = fs.readFileSync(CONFIG_PATH, 'utf8').replace(/^﻿/, '');
+  const eol = txt.includes('\r\n') ? '\r\n' : '\n';
+  const linea = '{ ' + Object.entries(valor).map(([k, v]) => `${JSON.stringify(k)}: ${JSON.stringify(v)}`).join(', ') + ' }';
+  const seccion = (k) => new RegExp(`("${k}"\\s*:\\s*)\\{[^{}]*\\}`);
+  if (seccion(clave).test(txt)) txt = txt.replace(seccion(clave), (m, inicio) => inicio + linea);
+  else if (seccion('clima').test(txt)) txt = txt.replace(seccion('clima'), (m) => `${m},${eol}  ${JSON.stringify(clave)}: ${linea}`);
+  else txt = txt.replace(/^\s*\{/, (m) => `${m}${eol}  ${JSON.stringify(clave)}: ${linea},`);
+  let cfg;
+  try { cfg = JSON.parse(txt); } catch { cfg = null; }
+  if (!cfg || JSON.stringify(cfg[clave]) !== JSON.stringify(valor)) { // formato inesperado: se reescribe entero
+    cfg = loadConfig(); cfg[clave] = valor; txt = JSON.stringify(cfg, null, 2) + eol;
+  }
+  fs.writeFileSync(CONFIG_PATH, txt);
+}
 function findAction(id) {
   const cfg = loadConfig();
   for (const group of cfg.groups || []) {
@@ -60,7 +76,15 @@ const EN = {
   'idioma inválido': 'invalid language',
   'tiene que quedar al menos una página': 'at least one page has to stay',
   'lista de tareas inválida': 'invalid task list',
-  'faltan lat/lon en config.json': 'lat/lon missing in config.json',
+  'la ubicación de Windows está desactivada. Actívala en Configuración > Privacidad y seguridad > Ubicación, también para las aplicaciones de escritorio.':
+    'Windows location is turned off. Turn it on in Settings > Privacy & security > Location, also for desktop apps.',
+  'Windows todavía no sabe dónde está este PC. Prueba otra vez en un momento.': "Windows doesn't know where this PC is yet. Try again in a moment.",
+  'no se pudo preguntar la ubicación a Windows': "couldn't ask Windows for the location",
+  'Ese enlace no sirve: tiene que empezar por https:// (la dirección secreta en formato iCal de tu calendario).':
+    "That link won't work: it has to start with https:// (your calendar's secret address in iCal format).",
+  'No se pudo leer el calendario: {0}': "Couldn't read the calendar: {0}",
+  'tiempo agotado': 'timed out', 'sin conexión': 'no connection', 'enlace no válido': 'invalid link', 'no es un calendario': "it isn't a calendar",
+  'fechas inválidas': 'invalid dates',
   'falta level o muted': 'level or muted is missing',
   'el mezclador no está disponible': "the mixer isn't available",
   'salida inválida': 'invalid output',
@@ -392,7 +416,7 @@ const PAGINAS = [
   { id: 'rendimiento', nombre: 'Rendimiento', detalle: 'Historial de CPU, RAM y red, y cada núcleo' },
   { id: 'procesos', nombre: 'Procesos', detalle: 'Los programas que más CPU y memoria usan' },
   { id: 'enfoque', nombre: 'Enfoque', detalle: 'Pomodoro, tareas y accesos rápidos' },
-  { id: 'calendario', nombre: 'Calendario', detalle: 'El mes, relojes del mundo y el clima' },
+  { id: 'calendario', nombre: 'Calendario', detalle: 'El mes con tu agenda, relojes del mundo y el clima' },
   { id: 'discord', nombre: 'Discord', detalle: 'Compartir pantalla, micrófono y más' },
   { id: 'comandos', nombre: 'Comandos', detalle: 'Botones de comandos y su consola' },
 ];
@@ -427,13 +451,58 @@ function guardarPaginas(lista) {
 const paginasVisibles = () => paginas.filter((p) => p.ver).map((p) => p.id);
 const paginasPc = () => ({ paginas: paginas.map((p) => ({ ...PAGINAS.find((x) => x.id === p.id), ver: p.ver })) });
 
-// ---------- Clima (Open-Meteo, solo si está activado en config.json; caché de 15 min)
+// ---------- Ubicación del PC, para el clima: la da el servicio de ubicación de Windows (normalmente con unos km de
+// precisión, por la red Wi-Fi). Se pregunta con PowerShell y se guarda 3 horas (si falla, se vuelve a probar a los 2 min).
+// El nombre de la ciudad lo da OpenStreetMap (Nominatim). A los dos servicios solo se les mandan las coordenadas
+// redondeadas a 2 decimales (alrededor de 1 km).
+let ubicacion = { at: 0, data: null, error: null };
+let ubicacionEnCurso = null;
+async function ubicacionPc() {
+  if (ubicacion.data && Date.now() - ubicacion.at < 3 * 3600e3) return ubicacion.data;
+  if (ubicacion.error && Date.now() - ubicacion.at < 2 * 60e3) throw new Error(tr(ubicacion.error));
+  if (!ubicacionEnCurso) ubicacionEnCurso = leerUbicacion().finally(() => { ubicacionEnCurso = null; });
+  return ubicacionEnCurso;
+}
+async function leerUbicacion() {
+  const script = `Add-Type -AssemblyName System.Device
+$w = New-Object System.Device.Location.GeoCoordinateWatcher
+[void]$w.TryStart($false, [TimeSpan]::FromSeconds(10))
+$hasta = (Get-Date).AddSeconds(10)
+while ($w.Status -ne 'Ready' -and $w.Status -ne 'Disabled' -and $w.Permission -ne 'Denied' -and (Get-Date) -lt $hasta) { Start-Sleep -Milliseconds 200 }
+$l = $w.Position.Location
+$estado = if ($w.Permission -eq 'Denied' -or $w.Status -eq 'Disabled') { 'apagada' } elseif ($l.IsUnknown) { 'desconocida' } else { 'ok' }
+$w.Stop()
+$c = [Globalization.CultureInfo]::InvariantCulture
+'{0};{1};{2}' -f $estado, $l.Latitude.ToString($c), $l.Longitude.ToString($c)`;
+  const r = await runPowerShell(script, { timeoutMs: 25000 });
+  const [estado, lat, lon] = (r.stdout.split(/\r?\n/).pop() || '').split(';');
+  const falla = (motivo) => { ubicacion = { at: Date.now(), data: null, error: motivo }; throw new Error(tr(motivo)); };
+  if (estado === 'apagada') falla('la ubicación de Windows está desactivada. Actívala en Configuración > Privacidad y seguridad > Ubicación, también para las aplicaciones de escritorio.');
+  if (estado === 'desconocida') falla('Windows todavía no sabe dónde está este PC. Prueba otra vez en un momento.');
+  if (estado !== 'ok' || !Number.isFinite(+lat) || !Number.isFinite(+lon)) falla('no se pudo preguntar la ubicación a Windows');
+  const data = { lat: Math.round(+lat * 100) / 100, lon: Math.round(+lon * 100) / 100, ciudad: '' };
+  try {
+    const u = new URL('https://nominatim.openstreetmap.org/reverse');
+    u.search = new URLSearchParams({ format: 'jsonv2', lat: data.lat.toFixed(2), lon: data.lon.toFixed(2), zoom: '10', 'accept-language': idioma }).toString();
+    const g = await fetch(u, { signal: AbortSignal.timeout(6000), headers: { 'User-Agent': 'PanelDelPC/1.0' } });
+    if (g.ok) {
+      const a = (await g.json()).address || {};
+      data.ciudad = a.city || a.town || a.village || a.municipality || a.county || a.state || '';
+    }
+  } catch {} // sin nombre de ciudad, el clima se muestra igual
+  ubicacion = { at: Date.now(), data, error: null };
+  return data;
+}
+
+// ---------- Clima (Open-Meteo, solo si está activado en config.json; caché de 15 min). Con "ubicacion": "pc" (o sin
+// lat y lon) usa la ubicación del PC; si no, las coordenadas de config.json.
 let weatherCache = { at: 0, key: '', data: null };
 async function getWeather() {
   const c = loadConfig().clima || {};
   if (!c.activo) return { activo: false };
-  const lat = Number(c.lat), lon = Number(c.lon);
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return { activo: false, error: tr('faltan lat/lon en config.json') };
+  let lat = Number(c.lat), lon = Number(c.lon), ciudad = c.ciudad || '';
+  const auto = c.ubicacion === 'pc' || c.lat == null || c.lon == null || !Number.isFinite(lat) || !Number.isFinite(lon);
+  if (auto) ({ lat, lon, ciudad } = await ubicacionPc());
   const key = `${lat},${lon}`;
   if (weatherCache.data && weatherCache.key === key && Date.now() - weatherCache.at < 15 * 60 * 1000) return weatherCache.data;
   const u = new URL('https://api.open-meteo.com/v1/forecast');
@@ -446,12 +515,45 @@ async function getWeather() {
   if (!r.ok) throw new Error(`clima: HTTP ${r.status}`);
   const j = await r.json();
   const data = {
-    activo: true, ciudad: c.ciudad || '',
+    activo: true, ciudad, auto,
     now: { temp: j.current.temperature_2m, feels: j.current.apparent_temperature, hum: j.current.relative_humidity_2m, code: j.current.weather_code, wind: j.current.wind_speed_10m, day: !!j.current.is_day },
     days: j.daily.time.map((d, i) => ({ date: d, code: j.daily.weather_code[i], max: j.daily.temperature_2m_max[i], min: j.daily.temperature_2m_min[i], rain: j.daily.precipitation_probability_max[i] })),
   };
   weatherCache = { at: Date.now(), key, data };
   return data;
+}
+
+// ---------- Agenda (página Calendario): el calendario se lee desde su enlace privado iCal, guardado en config.json →
+// "calendario": { "ics": "…" }. Ese enlace nunca se manda al celular ni sale en la actividad: da acceso al calendario.
+// Se descarga como mucho cada 5 min; si falla, se usa la última copia (hasta 1 h).
+const agenda = require('./lib/agenda');
+let agendaCache = { url: '', at: 0, cal: null };
+let agendaEnCurso = null;
+const enlaceAgenda = () => { try { return agenda.enlaceValido((loadConfig().calendario || {}).ics); } catch { return null; } };
+async function calendario(url, forzar = false) {
+  const fresco = agendaCache.cal && agendaCache.url === url && Date.now() - agendaCache.at < 5 * 60e3;
+  if (fresco && !forzar) return agendaCache.cal;
+  if (!agendaEnCurso) {
+    agendaEnCurso = agenda.descargarIcs(url)
+      .then((cal) => { agendaCache = { url, at: Date.now(), cal }; return cal; })
+      .finally(() => { agendaEnCurso = null; });
+  }
+  try { return await agendaEnCurso; } catch (e) {
+    if (!forzar && agendaCache.cal && agendaCache.url === url && Date.now() - agendaCache.at < 3600e3) return agendaCache.cal;
+    throw new Error(tr('No se pudo leer el calendario: {0}', tr(e.motivo || 'sin conexión')));
+  }
+}
+// "AAAA-MM-DD" → medianoche de ese día en la hora del PC
+const diaLocal = (s) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || '')); return m ? new Date(+m[1], +m[2] - 1, +m[3]).getTime() : NaN; };
+async function eventosAgenda(desdeTxt, hastaTxt) {
+  const url = enlaceAgenda();
+  if (!url) return { conectado: false };
+  const desde = diaLocal(desdeTxt), hasta = diaLocal(hastaTxt) + 86400000;
+  if (!Number.isFinite(desde) || !Number.isFinite(hasta) || hasta <= desde || hasta - desde > 70 * 86400000) throw Object.assign(new Error(tr('fechas inválidas')), { status: 400 });
+  try {
+    const cal = await calendario(url);
+    return { conectado: true, nombre: cal.nombre, eventos: agenda.eventosEntre(cal, desde, hasta).slice(0, 500) };
+  } catch (e) { return { conectado: true, error: e.message }; }
 }
 
 // ---------- HTTP
@@ -603,6 +705,28 @@ const handler = async (req, res) => {
       if (url.pathname === '/api/stats' && req.method === 'GET') return send(res, 200, stats());
       if (url.pathname === '/api/tasks' && req.method === 'GET') return send(res, 200, readTasks());
       if (url.pathname === '/api/tasks' && req.method === 'PUT') return send(res, 200, writeTasks(JSON.parse((await readBody(req)) || '[]')));
+      // Activar el clima con la ubicación del PC (o apagarlo): botón de la página Calendario.
+      if (url.pathname === '/api/clima' && req.method === 'POST') {
+        const b = JSON.parse((await readBody(req)) || '{}');
+        guardarEnConfig('clima', b.activo === false ? { activo: false, ubicacion: 'pc' } : { activo: true, ubicacion: 'pc' });
+        weatherCache = { at: 0, key: '', data: null };
+        try { return send(res, 200, await getWeather()); } catch (e) { return send(res, 200, { activo: true, auto: true, error: String(e.message || e) }); }
+      }
+      if (url.pathname === '/api/agenda' && req.method === 'GET') {
+        try { return send(res, 200, await eventosAgenda(url.searchParams.get('desde'), url.searchParams.get('hasta'))); }
+        catch (e) { return send(res, e.status || 500, { error: e.message }); }
+      }
+      // Conectar (o desconectar, con un enlace vacío) el calendario: se prueba antes de guardarlo.
+      if (url.pathname === '/api/agenda/enlace' && req.method === 'POST') {
+        const texto = String(JSON.parse((await readBody(req)) || '{}').enlace || '').trim();
+        if (!texto) { guardarEnConfig('calendario', { ics: '' }); agendaCache = { url: '', at: 0, cal: null }; return send(res, 200, { conectado: false }); }
+        const enlace = agenda.enlaceValido(texto);
+        if (!enlace) return send(res, 400, { error: tr('Ese enlace no sirve: tiene que empezar por https:// (la dirección secreta en formato iCal de tu calendario).') });
+        let cal;
+        try { cal = await calendario(enlace, true); } catch (e) { return send(res, 400, { error: e.message }); }
+        guardarEnConfig('calendario', { ics: enlace });
+        return send(res, 200, { conectado: true, nombre: cal.nombre, eventos: cal.eventos.length });
+      }
       if (url.pathname === '/api/weather' && req.method === 'GET') {
         try { return send(res, 200, await getWeather()); } catch (e) { return send(res, 200, { activo: true, error: String(e.message || e) }); }
       }
@@ -676,3 +800,5 @@ if (LAN_IP) {
     .on('error', (e) => console.log(`No se pudo escuchar en la red Wi-Fi (${LAN_IP}): ${e.message}`))
     .listen(PORT, LAN_IP, () => console.log(`Y en la red local: http://${LAN_IP}:${PORT}`));
 }
+// Si el clima usa la ubicación del PC, se pregunta ya, para que la página Calendario no tenga que esperarla.
+try { const c = loadConfig().clima || {}; if (c.activo && c.ubicacion === 'pc') ubicacionPc().catch(() => {}); } catch {}

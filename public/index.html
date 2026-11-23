@@ -217,6 +217,44 @@
   .wx .days b { color: var(--text); font-weight: 600; }
   .wx .off { color: var(--muted); font-size: 12px; margin-top: 8px; line-height: 1.5; }
   .wx .off code { color: var(--text); font-size: 11px; }
+  .wx .cap { display: flex; gap: 8px; align-items: baseline; }
+  .wx .src { margin-left: auto; color: var(--dim); font-size: 9px; font-weight: 500; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+  .wx .usar { margin-top: 10px; align-self: flex-start; border: 0; border-radius: 10px; padding: 8px 12px; background: var(--orange); color: #1a0d03;
+              font-weight: 700; font-size: 12px; cursor: pointer; }
+  .wx .usar:disabled { opacity: .6; cursor: default; }
+  /* Días del mes: se tocan para ver su agenda; los que tienen algo agendado llevan un punto */
+  .grid7 .d { position: relative; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .grid7 .d:active { background: var(--tile-2); }
+  .grid7 .d.ev::after { content: ''; position: absolute; left: 50%; bottom: 8%; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--teal); }
+  .grid7 .d.today.ev::after { background: #04110f; }
+  .grid7 .d.out.ev::after { opacity: .5; }
+  /* Agenda de un día (hoja emergente) */
+  .sheet .box.ancha { width: min(420px, 100%); }
+  .ag { display: grid; gap: 6px; max-height: min(400px, calc(100svh - 190px)); overflow-y: auto; margin-bottom: 14px; }
+  .ag .ev { display: flex; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--tile-2); border: 1px solid var(--line); border-left: 3px solid var(--teal); }
+  .ag .ev.dia { border-left-color: var(--violet); }
+  .ag .ev.pasado { opacity: .5; }
+  .ag .ev.ahora { background: linear-gradient(90deg, rgba(45,212,191,.12), transparent 70%), var(--tile-2); }
+  .ag .h { flex: none; width: 54px; font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 600; line-height: 1.35; }
+  .ag .h small { display: block; color: var(--muted); font-weight: 400; font-size: 11px; }
+  .ag .ev.dia .h { font-size: 11px; color: var(--violet); }
+  .ag .tx { min-width: 0; font-size: 13px; line-height: 1.35; overflow-wrap: anywhere; }
+  .ag .tx b { display: block; font-weight: 600; }
+  .ag .tx small { display: block; color: var(--muted); font-size: 11px; }
+  .ag .vacio, .ag .nota { color: var(--muted); font-size: 13px; line-height: 1.5; padding: 2px; }
+  .ag .nota b { color: var(--text); font-weight: 600; }
+  .ag .nota.chica { font-size: 11px; color: var(--dim); }
+  .ag form { display: flex; gap: 8px; }
+  .ag input { flex: 1; min-width: 0; background: var(--tile-2); border: 1px solid var(--line); color: var(--text); border-radius: 10px; padding: 9px 10px;
+              font: inherit; font-size: 13px; outline: none; -webkit-user-select: text; user-select: text; }
+  .ag input:focus { border-color: var(--teal); }
+  .ag form button { border: 0; background: var(--teal); color: #04110f; font-weight: 700; border-radius: 10px; padding: 0 12px; cursor: pointer; }
+  .ag form button:disabled { opacity: .6; cursor: default; }
+  .ag .error { color: var(--red); font-size: 12px; line-height: 1.45; }
+  .ag .error:empty { display: none; }
+  .ag .pie { display: flex; justify-content: space-between; align-items: center; gap: 10px; color: var(--dim); font-size: 11px; padding: 4px 2px 0; }
+  .ag .pie span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ag .pie button { flex: none; border: 0; background: none; color: var(--muted); text-decoration: underline; cursor: pointer; font-size: 11px; padding: 0; }
 
   /* ---------- Discord */
   .dkeys { grid-column: 1 / 9; grid-row: 1 / 7; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: var(--gap); }
@@ -323,6 +361,7 @@
 
   /* ---------- Hoja de confirmación y aviso */
   .sheet { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; place-items: center; z-index: 20; padding: 16px; }
+  #sheet { z-index: 25; } /* la confirmación, por encima de las demás hojas */
   .sheet.open { display: grid; }
   .sheet .box { background: var(--tile); border: 1px solid var(--line-2); border-radius: 20px; padding: 20px; width: min(360px, 100%); }
   .sheet h3 { margin: 0 0 16px; font-size: 17px; font-weight: 600; }
@@ -499,6 +538,7 @@
 
 <div class="sheet" id="sheet"><div class="box"><h3 id="sheetTitle"></h3><div class="row"><button id="sheetNo">Cancelar</button><button class="go" id="sheetYes">Sí, hacerlo</button></div></div></div>
 <div class="sheet" id="outSheet"><div class="box"><h3>Salida de audio</h3><div class="outs" id="outList"></div><div class="row"><button id="outClose">Cerrar</button></div></div></div>
+<div class="sheet" id="agSheet"><div class="box ancha"><h3 id="agTitle"></h3><div class="ag" id="agList"></div><div class="row"><button id="agClose">Cerrar</button></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -548,9 +588,18 @@
     'Relojes del mundo': 'World clocks', 'Aquí': 'Here', 'igual': 'same',
     'Despejado': 'Clear', 'Mayormente despejado': 'Mostly clear', 'Parcialmente nublado': 'Partly cloudy', 'Nublado': 'Cloudy',
     'Niebla': 'Fog', 'Llovizna': 'Drizzle', 'Lluvia': 'Rain', 'Nieve': 'Snow', 'Tormenta': 'Storm',
-    'Desactivado. Para verlo, pon tu ciudad en <code>config.json</code> → <code>"clima"</code> con <code>"activo": true</code>, <code>lat</code> y <code>lon</code>. Los datos vienen de Open-Meteo.':
-      'Turned off. To see it, put your city in <code>config.json</code> → <code>"clima"</code> with <code>"activo": true</code>, <code>lat</code> and <code>lon</code>. The data comes from Open-Meteo.',
+    'Usa la ubicación de Windows de este PC, que es aproximada. Sus coordenadas, redondeadas, se envían a Open-Meteo (el clima) y a OpenStreetMap (el nombre de la ciudad).':
+      "Uses this PC's Windows location, which is approximate. Its rounded coordinates are sent to Open-Meteo (the weather) and OpenStreetMap (the city name).",
+    'Mostrar el clima de aquí': 'Show the weather here', 'Buscando la ubicación…': 'Finding the location…',
     'No disponible: {0}': 'Not available: {0}', 'Sensación {0}° · Humedad {1}%': 'Feels like {0}° · Humidity {1}%',
+    'Hoy · {0}': 'Today · {0}', 'Todo el día': 'All day', 'No tienes nada agendado este día.': 'Nothing scheduled for this day.',
+    'Cargando la agenda…': 'Loading the schedule…', 'Conecta tu calendario para ver aquí lo que tienes agendado.': 'Connect your calendar to see what you have scheduled here.',
+    'En Google Calendar, en el PC: <b>Configuración</b> → tu calendario → <b>Integrar el calendario</b> → copia la <b>Dirección secreta en formato iCal</b> y pégala aquí. Es más fácil desde el PC, con <b>Abrir en este PC</b> en la ventana del panel.':
+      'In Google Calendar, on the PC: <b>Settings</b> → your calendar → <b>Integrate calendar</b> → copy the <b>Secret address in iCal format</b> and paste it here. It\'s easier from the PC, with <b>Open on this PC</b> in the panel window.',
+    'Enlace iCal (https://…)': 'iCal link (https://…)', 'Conectar': 'Connect', 'Calendario conectado': 'Calendar connected',
+    'El enlace se guarda solo en este PC. Quien lo tenga puede ver tu calendario: no lo compartas.': "The link is saved only on this PC. Anyone who has it can see your calendar: don't share it.",
+    'Cambiar enlace': 'Change link', 'Volver': 'Back', 'Desconectar': 'Disconnect', '¿Desconectar el calendario?': 'Disconnect the calendar?',
+    'Ver lo agendado: {0}': 'See what is scheduled: {0}',
   };
   let lang = 'es';
   try { lang = localStorage.getItem('panelLang') || (/^en\b/i.test(navigator.language) ? 'en' : 'es'); } catch {}
@@ -594,7 +643,8 @@
   // no bloquea las siguientes (los comandos pueden tardar hasta 60 s; el resto, 10 s).
   const api = async (path, opts = {}) => {
     const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), path === '/api/action' ? 70000 : 10000);
+    // El clima y la agenda pueden esperar a la ubicación del PC o a descargar el calendario: 30 s.
+    const timer = setTimeout(() => ctl.abort(), path === '/api/action' ? 70000 : /^\/api\/(weather|clima|agenda)/.test(path) ? 30000 : 10000);
     try {
       const r = await fetch(path, { ...opts, signal: ctl.signal, cache: 'no-store', headers: { 'x-panel-token': token || '', 'Content-Type': 'application/json' } });
       const body = await r.json().catch(() => ({}));
@@ -978,7 +1028,7 @@
   let cfgLoaded = false, busy = false;
   async function tick() {
     if (busy) return; busy = true;
-    try { if (!cfgLoaded) { await loadConfig(); cfgLoaded = true; loadTasks(); loadWeather(); } render(await api('/api/stats')); online(true, t('Conectado')); }
+    try { if (!cfgLoaded) { await loadConfig(); cfgLoaded = true; loadTasks(); loadWeather(); loadAgenda(); } render(await api('/api/stats')); online(true, t('Conectado')); }
     catch (e) { online(false, String(e.message).includes('token') ? t('Token inválido') : t('Sin conexión')); }
     busy = false;
   }
@@ -1108,16 +1158,111 @@
     $('calTitle').textContent = mt.charAt(0).toUpperCase() + mt.slice(1);
     const start = (base.getDay() + 6) % 7, first = new Date(base); first.setDate(1 - start);
     let html = (lang === 'en' ? ['M', 'T', 'W', 'T', 'F', 'S', 'S'] : ['L', 'M', 'X', 'J', 'V', 'S', 'D']).map((d) => `<div class="dn">${d}</div>`).join('');
+    const largo = new Intl.DateTimeFormat(locale(), { weekday: 'long', day: 'numeric', month: 'long' });
     for (let i = 0; i < 42; i++) {
       const d = new Date(first); d.setDate(first.getDate() + i);
-      const cls = ['d', d.getMonth() !== base.getMonth() && 'out', (d.getDay() === 0 || d.getDay() === 6) && 'we', d.toDateString() === now.toDateString() && 'today'].filter(Boolean).join(' ');
-      html += `<div class="${cls}">${d.getDate()}</div>`;
+      const f = fechaTxt(d);
+      const cls = ['d', d.getMonth() !== base.getMonth() && 'out', (d.getDay() === 0 || d.getDay() === 6) && 'we', d.toDateString() === now.toDateString() && 'today',
+        eventosDel(f).length && 'ev'].filter(Boolean).join(' ');
+      html += `<div class="${cls}" data-f="${f}" role="button" aria-label="${esc(t('Ver lo agendado: {0}', largo.format(d)))}">${d.getDate()}</div>`;
     }
     $('calGrid').innerHTML = html;
   }
-  $('calPrev').onclick = () => { calOffset--; renderCal(); };
-  $('calNext').onclick = () => { calOffset++; renderCal(); };
-  $('calToday').onclick = () => { calOffset = 0; renderCal(); };
+  $('calPrev').onclick = () => { calOffset--; renderCal(); loadAgenda(); };
+  $('calNext').onclick = () => { calOffset++; renderCal(); loadAgenda(); };
+  $('calToday').onclick = () => { const otro = calOffset !== 0; calOffset = 0; renderCal(); if (otro) loadAgenda(); };
+  $('calGrid').onclick = (e) => { const c = e.target.closest('.d[data-f]'); if (c) { buzz(); openAgenda(c.dataset.f); } };
+
+  // ---------- Agenda: lo agendado en el calendario (Google Calendar u otro, con su enlace privado iCal, que se guarda en
+  // el PC). Se piden los días que se ven en el mes; los que tienen algo llevan un punto y, al tocarlos, se ve su agenda.
+  let agenda = null, agendaPeticion = 0, agendaDia = '', agendaForm = false;
+  function fechaTxt(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+  const sumarDias = (dia, n) => { const [y, m, d] = dia.split('-').map(Number); return fechaTxt(new Date(y, m - 1, d + n)); };
+  function rangoMes() {
+    const now = new Date(), base = new Date(now.getFullYear(), now.getMonth() + calOffset, 1);
+    const first = new Date(base); first.setDate(1 - (base.getDay() + 6) % 7);
+    return [fechaTxt(first), sumarDias(fechaTxt(first), 41)];
+  }
+  function eventosDel(dia) {
+    if (!agenda || !agenda.eventos) return [];
+    const [y, m, d] = dia.split('-').map(Number), ini = new Date(y, m - 1, d).getTime(), fin = new Date(y, m - 1, d + 1).getTime();
+    return agenda.eventos.filter((e) => (e.dia ? e.dia <= dia && dia < sumarDias(e.dia, e.dias || 1) : e.inicio < fin && Math.max(e.fin, e.inicio + 1) > ini));
+  }
+  async function loadAgenda() {
+    const n = ++agendaPeticion, [desde, hasta] = rangoMes();
+    let a;
+    try { a = await api(`/api/agenda?desde=${desde}&hasta=${hasta}`); } catch (e) { a = { conectado: agenda ? agenda.conectado : true, error: e.message }; }
+    if (n !== agendaPeticion) return; // mientras tanto se pidió otro mes
+    if (a.error && agenda && agenda.eventos && agenda.rango === desde + hasta) a = { ...agenda, error: a.error }; // se queda lo que había
+    agenda = { ...a, rango: a.eventos ? desde + hasta : agenda && agenda.rango, t: Date.now() };
+    renderCal();
+    if ($('agSheet').classList.contains('open')) renderAgenda();
+  }
+  setInterval(loadAgenda, 10 * 60 * 1000);
+  function openAgenda(dia) {
+    agendaDia = dia; agendaForm = false;
+    $('agSheet').classList.add('open'); renderAgenda(); // abierta primero: si no, la lista no se puede desplazar
+    if (!agenda || Date.now() - agenda.t > 2 * 60 * 1000) loadAgenda();
+  }
+  const closeAgenda = () => $('agSheet').classList.remove('open');
+  $('agClose').onclick = closeAgenda;
+  $('agSheet').onclick = (e) => { if (e.target.id === 'agSheet') closeAgenda(); };
+  function renderAgenda() {
+    const [y, m, d] = agendaDia.split('-').map(Number);
+    let titulo = new Intl.DateTimeFormat(locale(), { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(y, m - 1, d));
+    titulo = titulo.charAt(0).toUpperCase() + titulo.slice(1);
+    $('agTitle').textContent = agendaDia === fechaTxt(new Date()) ? t('Hoy · {0}', titulo) : titulo;
+    const box = $('agList');
+    if (!agenda) { box.innerHTML = `<div class="vacio">${t('Cargando la agenda…')}</div>`; return; }
+    if (agenda.conectado === false || agendaForm) return renderFormAgenda(box);
+    const pie = `<div class="pie"><span>${esc(agenda.nombre || '')}</span><button id="agCambiar">${t('Cambiar enlace')}</button></div>`;
+    let html;
+    if (!agenda.eventos) html = `<div class="error">${esc(agenda.error || '')}</div>`;
+    else {
+      const hm = (ms) => new Intl.DateTimeFormat(locale(), { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(ms));
+      const lista = eventosDel(agendaDia), ahora = Date.now();
+      const lugar = (e) => (e.lugar ? `<small>${esc(e.lugar)}</small>` : '');
+      // Lo que ya terminó se ve más tenue y lo que está pasando ahora, resaltado.
+      const estado = (e) => (e.dia ? '' : Math.max(e.fin, e.inicio + 1) <= ahora ? ' pasado' : e.inicio <= ahora ? ' ahora' : '');
+      html = lista.length ? lista.map((e) => (e.dia
+        ? `<div class="ev dia"><span class="h">${t('Todo el día')}</span><span class="tx"><b>${esc(e.titulo || '—')}</b>${lugar(e)}</span></div>`
+        : `<div class="ev${estado(e)}"><span class="h">${hm(e.inicio)}${e.fin > e.inicio ? `<small>${hm(e.fin)}</small>` : ''}</span><span class="tx"><b>${esc(e.titulo || '—')}</b>${lugar(e)}</span></div>`)).join('')
+        : `<div class="vacio">${t('No tienes nada agendado este día.')}</div>`;
+      if (agenda.error) html += `<div class="error">${esc(agenda.error)}</div>`;
+    }
+    box.innerHTML = html + pie;
+    $('agCambiar').onclick = () => { agendaForm = true; renderAgenda(); };
+    // Hoy, la lista empieza en lo que viene (si lo anterior ya pasó).
+    const siguiente = box.querySelector('.ev:not(.pasado):not(.dia)');
+    box.scrollTop = siguiente && box.querySelector('.ev.pasado') ? siguiente.offsetTop - box.offsetTop - 40 : 0;
+  }
+  function renderFormAgenda(box) {
+    const conectado = agenda && agenda.conectado;
+    box.innerHTML = `<div class="nota">${t('Conecta tu calendario para ver aquí lo que tienes agendado.')}</div>
+      <div class="nota">${t('En Google Calendar, en el PC: <b>Configuración</b> → tu calendario → <b>Integrar el calendario</b> → copia la <b>Dirección secreta en formato iCal</b> y pégala aquí. Es más fácil desde el PC, con <b>Abrir en este PC</b> en la ventana del panel.')}</div>
+      <form id="agForm" autocomplete="off"><input id="agEnlace" type="url" inputmode="url" spellcheck="false" placeholder="${esc(t('Enlace iCal (https://…)'))}" enterkeyhint="go"><button>${t('Conectar')}</button></form>
+      <div class="error" id="agError"></div>
+      <div class="nota chica">${t('El enlace se guarda solo en este PC. Quien lo tenga puede ver tu calendario: no lo compartas.')}</div>
+      ${conectado ? `<div class="pie"><button id="agVolver">${t('Volver')}</button><button id="agQuitar">${t('Desconectar')}</button></div>` : ''}`;
+    $('agForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const b = $('agForm').querySelector('button'), enlace = $('agEnlace').value.trim();
+      if (!enlace) return;
+      b.disabled = true; b.textContent = t('Conectando…'); $('agError').textContent = '';
+      try {
+        await api('/api/agenda/enlace', { method: 'POST', body: JSON.stringify({ enlace }) });
+        toast(t('Calendario conectado')); agendaForm = false; agenda = null; renderAgenda(); loadAgenda();
+      } catch (err) { $('agError').textContent = err.message; b.disabled = false; b.textContent = t('Conectar'); }
+    };
+    if (conectado) {
+      $('agVolver').onclick = () => { agendaForm = false; renderAgenda(); };
+      $('agQuitar').onclick = async () => {
+        if (!(await confirmSheet(t('¿Desconectar el calendario?')))) return;
+        try { await api('/api/agenda/enlace', { method: 'POST', body: JSON.stringify({ enlace: '' }) }); } catch (err) { $('agError').textContent = err.message; return; }
+        agendaForm = false; agenda = { conectado: false, t: Date.now() }; renderCal(); renderAgenda();
+      };
+    }
+  }
   function renderClocks() {
     const now = new Date(), localOff = -now.getTimezoneOffset();
     const list = [{ nombre: t('Aquí'), zona: Intl.DateTimeFormat().resolvedOptions().timeZone, aqui: true }, ...clocks];
@@ -1154,8 +1299,18 @@
   function renderWeather() {
     const w = lastWx, box = $('wx');
     if (!w) return;
-    const cap = `<span class="cap" style="color:var(--orange)">${t('Clima')}${w.ciudad ? ' · ' + esc(w.ciudad) : ''}</span>`;
-    if (!w.activo) { box.innerHTML = `${cap}<div class="off">${t('Desactivado. Para verlo, pon tu ciudad en <code>config.json</code> → <code>"clima"</code> con <code>"activo": true</code>, <code>lat</code> y <code>lon</code>. Los datos vienen de Open-Meteo.')}</div>`; return; }
+    const fuente = w.activo && !w.error ? `<small class="src">Open-Meteo${w.auto ? ' · OpenStreetMap' : ''}</small>` : '';
+    const cap = `<span class="cap" style="color:var(--orange)"><span>${t('Clima')}${w.ciudad ? ' · ' + esc(w.ciudad) : ''}</span>${fuente}</span>`;
+    if (!w.activo) {
+      box.innerHTML = `${cap}<div class="off">${t('Usa la ubicación de Windows de este PC, que es aproximada. Sus coordenadas, redondeadas, se envían a Open-Meteo (el clima) y a OpenStreetMap (el nombre de la ciudad).')}</div>
+        <button class="usar" id="wxUsar">${t('Mostrar el clima de aquí')}</button>`;
+      $('wxUsar').onclick = async () => {
+        buzz(); const b = $('wxUsar'); b.disabled = true; b.textContent = t('Buscando la ubicación…');
+        try { lastWx = await api('/api/clima', { method: 'POST', body: JSON.stringify({ activo: true }) }); } catch (e) { lastWx = { activo: true, error: e.message }; }
+        renderWeather();
+      };
+      return;
+    }
     if (w.error) { box.innerHTML = `${cap}<div class="off">${esc(t('No disponible: {0}', w.error))}</div>`; return; }
     const [ic, txt] = WX(w.now.code, w.now.day);
     const dayFmt = new Intl.DateTimeFormat(locale(), { weekday: 'short' });
@@ -1173,6 +1328,7 @@
     try { localStorage.setItem('panelLang', l); } catch {}
     traducirFijos(); linkType(); buildDots(); markDot();
     clock(); renderCal(); renderClocks(); renderPomo(); renderTasks(); renderWeather(); resetMixer();
+    if ($('agSheet').classList.contains('open')) renderAgenda();
     if (lastMedia) renderMedia(lastMedia, true); else renderMedia(null);
   }
 

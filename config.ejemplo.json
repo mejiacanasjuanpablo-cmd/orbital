@@ -5,7 +5,8 @@
     { "nombre": "San Francisco", "zona": "America/Los_Angeles" },
     { "nombre": "Madrid", "zona": "Europe/Madrid" }
   ],
-  "clima": { "activo": false, "ciudad": "Medellín", "lat": 6.25, "lon": -75.56 },
+  "clima": { "activo": false, "ubicacion": "pc" },
+  "calendario": { "ics": "" },
   "pomodoro": { "enfoque": 25, "descanso": 5, "largo": 15 },
   "wifi": { "dispositivos": [] },
   "groups": [

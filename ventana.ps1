@@ -118,7 +118,7 @@ Indicadores y botones de atajos ⇒ Gauges and shortcut buttons
 Historial de CPU, RAM y red, y cada núcleo ⇒ CPU, RAM and network history, and each core
 Los programas que más CPU y memoria usan ⇒ The programs using the most CPU and memory
 Pomodoro, tareas y accesos rápidos ⇒ Pomodoro, tasks and quick links
-El mes, relojes del mundo y el clima ⇒ The month, world clocks and the weather
+El mes con tu agenda, relojes del mundo y el clima ⇒ The month with your schedule, world clocks and the weather
 Compartir pantalla, micrófono y más ⇒ Screen sharing, microphone and more
 Botones de comandos y su consola ⇒ Command buttons and their console
 '@ -split "`r?`n") {

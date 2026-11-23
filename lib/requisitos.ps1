@@ -4,7 +4,7 @@
 # Archivos sin los que el panel no funciona (también son los que se empaquetan, junto con la guía y los instaladores).
 $PanelArchivosComunes = @(
     'server.js', 'config.ejemplo.json', 'panel.ico', 'ventana.ps1', 'iniciar.ps1', 'iniciar.cmd',
-    'lib\allow.js', 'lib\aprobacion.js', 'lib\qr.js', 'lib\keys.ps1', 'lib\media.ps1', 'lib\requisitos.ps1',
+    'lib\allow.js', 'lib\aprobacion.js', 'lib\agenda.js', 'lib\qr.js', 'lib\keys.ps1', 'lib\media.ps1', 'lib\requisitos.ps1',
     'lib\arranque.ps1', 'lib\lanzador.cs', 'lib\mezclador.ps1',
     'public\index.html', 'public\espera.html', 'public\manifest.webmanifest', 'public\icon-192.png', 'public\icon-512.png'
 )
