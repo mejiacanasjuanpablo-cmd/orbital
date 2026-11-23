@@ -871,11 +871,12 @@ function Get-Miniatura([string]$Id) {
     $img
 }
 
-# Pastilla sobre la vista previa ("Al conectar", "Oculta").
+# Etiqueta sobre la vista previa ("Al conectar", "Oculta"). Radio 6: el del marco (14) menos los 8 px que la separan de su
+# esquina, para que las dos curvas vayan paralelas.
 function New-Pastilla([string]$Texto, [string]$Color, [string]$Punto) {
     $b = New-Object Windows.Controls.Border
     $b.Background = Get-Pincel '#E607090C'; $b.BorderBrush = Get-Pincel '#33FFFFFF'; $b.BorderThickness = 1
-    $b.CornerRadius = 99; $b.Padding = '9,3,10,4'; $b.IsHitTestVisible = $false
+    $b.CornerRadius = 6; $b.Padding = '9,3,10,4'; $b.IsHitTestVisible = $false
     $sp = New-Object Windows.Controls.StackPanel
     $sp.Orientation = 'Horizontal'
     if ($Punto) {
@@ -964,7 +965,7 @@ function Update-ListaPaginas([string]$Foco) {
         $pie = New-Object Windows.Controls.DockPanel
         $pie.Margin = '2,10,0,0'
         $avatar = New-Object Windows.Controls.Border
-        $avatar.Width = 26; $avatar.Height = 26; $avatar.CornerRadius = 13; $avatar.BorderThickness = 1
+        $avatar.Width = 26; $avatar.Height = 26; $avatar.CornerRadius = 8; $avatar.BorderThickness = 1 # cuadrado redondeado, como los marcos
         $avatar.Background = Get-Pincel $(if ($ver) { '#262DD4BF' } else { $C.Tile2 })
         $avatar.BorderBrush = Get-Pincel $(if ($ver) { '#592DD4BF' } else { '#1FFFFFFF' })
         $num = New-Texto $(if ($ver) { "$n" } else { '–' }) $(if ($ver) { $C.Teal } else { $C.Apagado }) 12 ([Windows.FontWeights]::SemiBold)
