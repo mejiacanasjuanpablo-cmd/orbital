@@ -108,20 +108,23 @@ El token de acceso se guarda en `.token`. Si lo borras se genera uno nuevo y ten
 Desliza a los lados (o usa las flechas del teclado) para cambiar de página. Funciona mejor con el celular en horizontal.
 
 1. **Inicio**: reloj, la canción que suena en el PC (con carátula, progreso y controles), volumen, y CPU, RAM, red y disco con gráficas.
-2. **Sistema**: indicadores circulares y los botones de atajos.
-3. **Rendimiento**: historial de CPU, RAM y red de los últimos 3 minutos, y el uso de cada núcleo.
-4. **Procesos**: los programas que más CPU y memoria usan, agrupados (por ejemplo, todas las ventanas de Chrome juntas).
+2. **Mezclador**: el volumen de cada aplicación que usa el sonido del PC, como el mezclador de Windows: una columna por
+   aplicación, con su icono, un control para subir o bajar, el botón de silencio y un medidor que se mueve con el sonido.
+   La primera columna es el volumen general; arriba se ve la salida de audio (por ejemplo, los altavoces).
+3. **Sistema**: indicadores circulares y los botones de atajos.
+4. **Rendimiento**: historial de CPU, RAM y red de los últimos 3 minutos, y el uso de cada núcleo.
+5. **Procesos**: los programas que más CPU y memoria usan, agrupados (por ejemplo, todas las ventanas de Chrome juntas).
    Los servicios protegidos de Windows no se pueden medir sin permisos de administrador.
-5. **Enfoque**: temporizador pomodoro (enfoque, descanso y descanso largo, con vibración y sonido al terminar), lista de tareas
+6. **Enfoque**: temporizador pomodoro (enfoque, descanso y descanso largo, con vibración y sonido al terminar), lista de tareas
    y botones de acceso rápido. Las tareas se guardan en el PC, en `data/tareas.json`.
-6. **Calendario**: el mes actual, relojes del mundo y el clima.
-7. **Discord**: compartir pantalla, silenciar el micrófono, ensordecer, modo streamer y abrir Discord. Indica si Discord está abierto en el PC.
+7. **Calendario**: el mes actual, relojes del mundo y el clima.
+8. **Discord**: compartir pantalla, silenciar el micrófono, ensordecer, modo streamer y abrir Discord. Indica si Discord está abierto en el PC.
    Los botones envían atajos globales, que hay que configurar una vez en Discord
    (Ajustes de usuario → Atajos de teclado → Añadir un atajo):
    `Ctrl+Shift+F11` compartir pantalla, `Ctrl+Shift+F7` silencio, `Ctrl+Shift+F8` ensordecer, `Ctrl+Shift+F9` modo streamer.
    Compartir pantalla solo funciona estando en un canal de voz, y transmite la ventana o el juego que esté al frente en el PC.
    Puedes cambiar los atajos en `config.json` (grupo `"discord"`, campo `"keys"` en formato SendKeys).
-8. **Comandos**: botones de comandos y la consola donde se ve su resultado.
+9. **Comandos**: botones de comandos y la consola donde se ve su resultado.
 
 ### Ajustes de estas páginas en `config.json`
 

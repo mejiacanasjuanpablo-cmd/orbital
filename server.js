@@ -143,22 +143,48 @@ const PS_PRELUDE = `[Console]::OutputEncoding = [Text.Encoding]::UTF8; [Console]
 `;
 
 // Proceso permanente para cambiar el volumen al instante (sin recompilar en cada pulsación).
+// Recibe una orden por línea. Solo "mixer" responde, con exactamente una línea JSON (el estado del mezclador);
+// las demás no escriben nada, así que las respuestas llegan en el mismo orden en que se pidieron.
 let ctl = null;
+let ctlBuffer = '';
+const ctlEspera = []; // funciones que esperan la respuesta de cada "mixer" pendiente
 function startControlWorker() {
   const script = `
+try { . ${psQuote(path.join(ROOT, 'lib', 'mezclador.ps1'))} } catch { }
 while (Get-Process -Id ${process.pid} -ErrorAction SilentlyContinue) {
   $line = [Console]::In.ReadLine(); if ($null -eq $line) { break }
-  $p = $line.Split(' ')
+  $p = $line.Split(' ', 3)
+  if ($p[0] -eq 'mixer') {
+    try { $j = [PanelMx.Mezclador]::Estado([int][math]::Round([PanelAudio]::Volume * 100), [PanelAudio]::Mute) }
+    catch { $j = '{"error":"no se pudo leer el mezclador"}' }
+    [Console]::Out.WriteLine($j); [Console]::Out.Flush(); continue
+  }
   try {
     switch ($p[0]) {
       'vol'  { [PanelAudio]::Mute = $false; [PanelAudio]::Volume = [float]([math]::Min([math]::Max([int]$p[1], 0), 100) / 100) }
       'mute' { [PanelAudio]::Mute = ($p[1] -eq '1') }
       'media' { $n = [math]::Min([math]::Max([int]$p[2], 1), 20); for ($i = 0; $i -lt $n; $i++) { [void](Invoke-PanelMedia $p[1]) } }
+      'appvol' { [void][PanelMx.Mezclador]::Volumen($p[2], [int]$p[1]) }
+      'appmute' { [void][PanelMx.Mezclador]::Silenciar($p[2], ($p[1] -eq '1')) }
     }
   } catch { }
 }`;
   ctl = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', PS_PRELUDE + script], { windowsHide: true });
-  ctl.on('exit', () => { ctl = null; setTimeout(startControlWorker, 3000); });
+  ctl.stdout.setEncoding('utf8');
+  ctl.stdout.on('data', (d) => {
+    ctlBuffer += d;
+    let i;
+    while ((i = ctlBuffer.indexOf('\n')) >= 0) {
+      const line = ctlBuffer.slice(0, i).trim();
+      ctlBuffer = ctlBuffer.slice(i + 1);
+      if (line) { const responder = ctlEspera.shift(); if (responder) responder(line); }
+    }
+  });
+  ctl.on('exit', () => {
+    ctl = null; ctlBuffer = '';
+    ctlEspera.splice(0).forEach((responder) => responder(null));
+    setTimeout(startControlWorker, 3000);
+  });
   process.on('exit', () => ctl && ctl.kill());
 }
 startControlWorker();
@@ -166,6 +192,31 @@ function control(cmd) {
   if (!ctl || !ctl.stdin.writable) return false;
   ctl.stdin.write(cmd + '\n');
   return true;
+}
+
+// ---------- Mezclador de volumen (lib/mezclador.ps1): volumen, silencio y nivel de cada aplicación
+const iconosMezclador = new Map(); // ruta del programa → icono (data URL); el proceso de control lo manda una sola vez
+let mezcladorEnCurso = null;       // si varias peticiones llegan a la vez, comparten la misma lectura
+function pedirMezclador() {
+  if (mezcladorEnCurso) return mezcladorEnCurso;
+  mezcladorEnCurso = new Promise((resolve) => {
+    let hecho = false;
+    const fin = (v) => { if (!hecho) { hecho = true; resolve(v); } };
+    // Aunque se agote el tiempo, la función sigue en la cola y se queda con su línea: así no se desordenan las respuestas.
+    ctlEspera.push((line) => { try { fin(line ? JSON.parse(line) : null); } catch { fin(null); } });
+    if (!control('mixer')) { ctlEspera.pop(); fin(null); return; }
+    setTimeout(() => fin(null), 3000);
+  }).then((m) => {
+    mezcladorEnCurso = null;
+    if (m && Array.isArray(m.apps)) {
+      for (const a of m.apps) {
+        if (a.icono) iconosMezclador.set(a.clave, a.icono);
+        a.icono = iconosMezclador.has(a.clave);
+      }
+    }
+    return m;
+  });
+  return mezcladorEnCurso;
 }
 
 function startStatsWorker() {
@@ -441,6 +492,22 @@ const handler = async (req, res) => {
         if (typeof body.muted === 'boolean') control(`mute ${body.muted ? 1 : 0}`);
         else if (Number.isFinite(body.level)) control(`vol ${Math.round(body.level)}`);
         else return send(res, 400, { error: 'falta level o muted' });
+        return send(res, 200, { ok: true });
+      }
+      if (url.pathname === '/api/mixer' && req.method === 'GET') {
+        const m = await pedirMezclador();
+        return m ? send(res, 200, m) : send(res, 503, { error: 'el mezclador no está disponible' });
+      }
+      if (url.pathname === '/api/mixer/icono' && req.method === 'GET') {
+        return send(res, 200, { data: iconosMezclador.get(url.searchParams.get('k')) || null });
+      }
+      if (url.pathname === '/api/mixer' && req.method === 'POST') {
+        const body = JSON.parse((await readBody(req)) || '{}');
+        const clave = String(body.clave || '');
+        if (!clave || clave.length > 500 || /[\r\n]/.test(clave)) return send(res, 400, { error: 'aplicación inválida' });
+        if (typeof body.silencio === 'boolean') control(`appmute ${body.silencio ? 1 : 0} ${clave}`);
+        else if (Number.isFinite(body.nivel)) control(`appvol ${Math.min(100, Math.max(0, Math.round(body.nivel)))} ${clave}`);
+        else return send(res, 400, { error: 'falta nivel o silencio' });
         return send(res, 200, { ok: true });
       }
       if (url.pathname === '/api/action' && req.method === 'POST') {

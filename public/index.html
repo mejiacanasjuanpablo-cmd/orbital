@@ -235,6 +235,41 @@
   .dbind { font-size: clamp(10px, 1.8vmin, 12px); color: var(--muted); line-height: 1.35; }
   .dbind kbd { display: inline-block; font: 600 .95em "Cascadia Mono", Consolas, monospace; color: var(--text); background: var(--tile-2); border: 1px solid var(--line-2); border-radius: 5px; padding: 1px 5px; margin-bottom: 2px; }
 
+  /* ---------- Mezclador */
+  .mixer { grid-column: 1 / 13; grid-row: 1 / 7; display: flex; flex-direction: column; }
+  .mixer .head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; min-width: 0; }
+  .mixer .head span:last-child { color: var(--muted); font-size: clamp(9px, 1.6vmin, 11px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chans { flex: 1; min-height: 0; display: flex; gap: clamp(6px, 1.4vmin, 10px); margin-top: clamp(8px, 1.6vmin, 12px);
+           overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .chans::-webkit-scrollbar { display: none; }
+  .chan { flex: 1 0 clamp(62px, 13vmin, 92px); max-width: 124px; min-height: 0; display: flex; flex-direction: column; align-items: center;
+          gap: clamp(4px, 1vmin, 7px); padding: clamp(7px, 1.4vmin, 10px) 4px; border-radius: 14px; background: var(--tile-2); border: 1px solid var(--line); --c: var(--teal); }
+  .chan.master { --c: var(--sky); margin-right: clamp(4px, 1.2vmin, 10px); background: linear-gradient(180deg, rgba(56,189,248,.10), transparent 55%), var(--tile-2); border-color: rgba(56,189,248,.28); }
+  .chan .ico { width: clamp(24px, 6vmin, 34px); height: clamp(24px, 6vmin, 34px); flex: none; display: grid; place-items: center; color: var(--muted); font-size: clamp(16px, 4vmin, 22px); }
+  .chan.master .ico { color: var(--sky); }
+  .chan .ico img { width: 100%; height: 100%; object-fit: contain; }
+  .chan .nm { width: 100%; height: 2.4em; flex: none; font-size: clamp(9px, 1.7vmin, 11px); line-height: 1.2; color: var(--muted); text-align: center;
+              overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word; }
+  .chan.on .nm, .chan.master .nm { color: var(--text); }
+  .fader { flex: 1; min-height: 56px; width: clamp(32px, 7.5vmin, 44px); position: relative; border-radius: 12px; background: rgba(255,255,255,.06);
+           touch-action: none; cursor: pointer; overflow: hidden; outline: none; }
+  .fader:focus-visible { box-shadow: 0 0 0 2px var(--c); }
+  .fader .lvl { position: absolute; left: 0; right: 0; bottom: 0; height: var(--v, 0%); background: color-mix(in srgb, var(--c) 24%, transparent); }
+  .fader .mtr { position: absolute; left: 50%; top: 8px; bottom: 8px; width: 4px; transform: translateX(-50%); border-radius: 99px; background: rgba(0,0,0,.25); overflow: hidden; }
+  .fader .mtr i { position: absolute; inset: 0; background: linear-gradient(0deg, var(--green) 0 60%, #facc15 82%, var(--red));
+                  clip-path: inset(calc(100% - var(--m, 0%)) 0 0 0); transition: clip-path .18s linear; }
+  .fader .knob { position: absolute; left: 4px; right: 4px; height: 6px; border-radius: 99px; background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,.55);
+                 bottom: clamp(3px, calc(var(--v, 0%) - 3px), calc(100% - 9px)); }
+  .chan .pct { flex: none; font-size: clamp(10px, 1.9vmin, 13px); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .chan .mute { flex: none; width: clamp(28px, 6.6vmin, 38px); height: clamp(26px, 6vmin, 34px); border: 0; border-radius: 10px; background: rgba(255,255,255,.05);
+                color: var(--muted); display: grid; place-items: center; font-size: clamp(14px, 3vmin, 18px); cursor: pointer; transition: transform .08s, background .15s; }
+  .chan .mute:active { transform: scale(.92); }
+  .chan.muted .lvl { background: rgba(255,255,255,.07); }
+  .chan.muted .mtr i { opacity: .25; }
+  .chan.muted .pct { color: var(--muted); text-decoration: line-through; }
+  .chan.muted .mute { background: rgba(248,113,113,.16); color: var(--red); }
+  .mix-empty { flex: 1 0 160px; align-self: center; color: var(--muted); font-size: clamp(11px, 2vmin, 13px); text-align: center; padding: 0 12px; }
+
   /* ---------- Vertical: apila las tarjetas y permite desplazarse */
   @media (orientation: portrait) {
     .page { grid-template-rows: none; grid-auto-rows: minmax(84px, auto); align-content: start; overflow-y: auto; }
@@ -258,6 +293,7 @@
     .fkeys { grid-column: 1 / 13; grid-row: auto; min-height: 64px; }
     .cal { min-height: 330px; } .wclocks { min-height: 140px; } .wx { min-height: 190px; }
     .dkeys, .dstat { grid-column: 1 / 13; grid-row: auto; } .dkeys, .dkeys:has(> :nth-child(5):last-child) { grid-auto-rows: 130px; grid-template-columns: 1fr 1fr; }
+    .mixer { grid-column: 1 / 13; grid-row: auto; height: calc(100svh - 48px); min-height: 380px; }
   }
 
   /* ---------- Hoja de confirmación y aviso */
@@ -283,6 +319,7 @@
     <symbol id="i-next" viewBox="0 0 24 24"><path d="M6 5.5v13l9-6.5z" fill="currentColor" stroke="none"/><path d="M18 5.5v13"/></symbol>
     <symbol id="i-vol" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
     <symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></symbol>
     <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5.5l11-2V16"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></symbol>
     <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></symbol>
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></symbol>
@@ -353,7 +390,15 @@
     <div class="tile stat" data-k="disk" style="--c: var(--green)"><span class="cap" style="color:var(--green)">Disco</span><div class="v" id="diskV">–</div><div class="s" id="diskS"></div><canvas></canvas></div>
   </section>
 
-  <!-- 2 · Sistema -->
+  <!-- 2 · Mezclador -->
+  <section class="page" data-name="Mezclador">
+    <div class="tile mixer">
+      <div class="head"><span class="cap" style="color:var(--sky)">Mezclador de volumen</span><span id="mixDev"></span></div>
+      <div class="chans" id="mixChans"><div class="mix-empty" id="mixEmpty">Cargando…</div></div>
+    </div>
+  </section>
+
+  <!-- 3 · Sistema -->
   <section class="page" data-name="Sistema">
     <div class="tile ring" id="ringCpu"></div>
     <div class="tile ring" id="ringRam"></div>
@@ -362,7 +407,7 @@
     <div class="deck" id="deck"></div>
   </section>
 
-  <!-- 3 · Rendimiento -->
+  <!-- 4 · Rendimiento -->
   <section class="page" data-name="Rendimiento">
     <div class="tile chart perf-cpu"><div class="head"><span class="cap" style="color:var(--teal)">CPU · últimos 3 min</span><span class="v" id="pcpuV">–</span></div><canvas id="chCpu"></canvas></div>
     <div class="tile chart perf-ram"><div class="head"><span class="cap" style="color:var(--violet)">RAM</span><span class="v" id="pramV">–</span></div><canvas id="chRam"></canvas></div>
@@ -370,13 +415,13 @@
     <div class="tile perf-cores"><div class="cap" style="color:var(--teal)">Núcleos</div><div class="cores" id="cores"></div></div>
   </section>
 
-  <!-- 4 · Procesos -->
+  <!-- 5 · Procesos -->
   <section class="page" data-name="Procesos">
     <div class="tile plist cpu" style="--c: var(--teal)"><div class="head"><span class="cap" style="color:var(--teal)">Más CPU</span><span id="procCount"></span></div><div class="rows" id="procCpu"></div></div>
     <div class="tile plist mem" style="--c: var(--violet)"><div class="head"><span class="cap" style="color:var(--violet)">Más memoria</span><span>agrupado por programa</span></div><div class="rows" id="procMem"></div></div>
   </section>
 
-  <!-- 5 · Enfoque -->
+  <!-- 6 · Enfoque -->
   <section class="page" data-name="Enfoque">
     <div class="tile pomo">
       <div class="modes" id="pomoModes"><button data-m="enfoque">Enfoque</button><button data-m="descanso">Descanso</button><button data-m="largo">Descanso largo</button></div>
@@ -396,14 +441,14 @@
     <div class="fkeys" id="focusKeys"></div>
   </section>
 
-  <!-- 6 · Calendario -->
+  <!-- 7 · Calendario -->
   <section class="page" data-name="Calendario">
     <div class="tile cal"><div class="head"><b id="calTitle"></b><button id="calPrev" aria-label="Mes anterior">‹</button><button id="calToday" aria-label="Hoy" style="width:auto;padding:0 10px;font-size:12px">Hoy</button><button id="calNext" aria-label="Mes siguiente">›</button></div><div class="grid7" id="calGrid"></div></div>
     <div class="tile wclocks" id="wclocks"></div>
     <div class="tile wx" id="wx"><span class="cap" style="color:var(--orange)">Clima</span><div class="off">Cargando…</div></div>
   </section>
 
-  <!-- 7 · Discord -->
+  <!-- 8 · Discord -->
   <section class="page" data-name="Discord">
     <div class="dkeys" id="dcKeys"></div>
     <div class="tile dstat">
@@ -414,7 +459,7 @@
     </div>
   </section>
 
-  <!-- 8 · Comandos -->
+  <!-- 9 · Comandos -->
   <section class="page" data-name="Comandos">
     <div class="cmds" id="cmds"></div>
     <div class="tile console">
@@ -526,6 +571,119 @@
   });
   $('muteBtn').onclick = () => { buzz(); volMuted = !volMuted; volDragUntil = Date.now() + 2500; $('volIcon').setAttribute('href', volMuted ? '#i-mute' : '#i-vol');
     api('/api/volume', { method: 'POST', body: JSON.stringify({ muted: volMuted }) }).catch(() => {}); };
+
+  // ---------- Mezclador de volumen
+  // Una columna por aplicación que usa el sonido del PC (como el mezclador de Windows), más la del volumen general.
+  // Mientras la página está a la vista se pide el estado unas 4 veces por segundo, para que los medidores se muevan.
+  const mixBox = $('mixChans'), mixEmpty = $('mixEmpty'), GENERAL = '__general';
+  const mixEls = new Map(), mixIcons = {}, mixIconAsked = new Set(), mixHold = {};
+  let mixDrag = null, mixTimer = null, mixBusy = false;
+  const mixName = (n) => String(n || 'Aplicación').replace(/\s+(Internet|Web)?\s*Browser$/i, '');
+  function mixSend(k, body) {
+    const req = k === GENERAL
+      ? api('/api/volume', { method: 'POST', body: JSON.stringify(body.nivel != null ? { level: body.nivel } : { muted: body.silencio }) })
+      : api('/api/mixer', { method: 'POST', body: JSON.stringify({ clave: k, ...body }) });
+    req.catch((e) => toast('Error: ' + e.message));
+    if (k === GENERAL) volDragUntil = Date.now() + 2500;
+  }
+  function setMixIcon(el, a) {
+    const ico = el.querySelector('.ico');
+    if (mixIcons[a.clave]) ico.innerHTML = `<img alt="" src="${mixIcons[a.clave]}">`;
+    else ico.innerHTML = icon(a.clave === GENERAL ? 'vol' : a.sistema ? 'bell' : 'music');
+  }
+  function paintChan(el, d) {
+    const v = Math.max(0, Math.min(100, Math.round(d.nivel)));
+    el.style.setProperty('--v', v + '%');
+    el.style.setProperty('--m', Math.round(Math.pow(Math.max(0, Math.min(1, d.pico || 0)), 0.6) * 100) + '%');
+    el.querySelector('.pct').textContent = v;
+    el.querySelector('.fader').setAttribute('aria-valuenow', v);
+    el.classList.toggle('muted', !!d.silencio);
+    el.classList.toggle('on', !!d.activa);
+    el.querySelector('.mute use').setAttribute('href', d.silencio ? '#i-mute' : '#i-vol');
+    el._d = d;
+  }
+  function newChan(a) {
+    const el = document.createElement('div');
+    el.className = 'chan' + (a.clave === GENERAL ? ' master' : ''); el.dataset.k = a.clave;
+    const nombre = a.clave === GENERAL ? 'General' : mixName(a.nombre);
+    el.innerHTML = `<div class="ico"></div><div class="nm"></div>
+      <div class="fader" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100"><div class="lvl"></div><div class="mtr"><i></i></div><div class="knob"></div></div>
+      <div class="pct">0</div><button class="mute"><svg class="i"><use href="#i-vol"/></svg></button>`;
+    el.querySelector('.nm').textContent = nombre;
+    el.querySelector('.fader').setAttribute('aria-label', 'Volumen de ' + nombre);
+    el.querySelector('.mute').setAttribute('aria-label', 'Silenciar ' + nombre);
+    setMixIcon(el, a);
+    const f = el.querySelector('.fader'), k = a.clave;
+    let lastSent = 0, trailing = null;
+    const levelAt = (e) => { const r = f.getBoundingClientRect(); return Math.round(Math.max(0, Math.min(1, (r.bottom - e.clientY) / r.height)) * 100); };
+    const setLevel = (v, final) => {
+      paintChan(el, { ...el._d, nivel: v, silencio: false });
+      mixHold[k] = { until: Date.now() + 1500, nivel: v, silencio: false };
+      clearTimeout(trailing);
+      const now = Date.now();
+      if (final || now - lastSent > 90) { lastSent = now; mixSend(k, { nivel: v }); }
+      else trailing = setTimeout(() => { lastSent = Date.now(); mixSend(k, { nivel: v }); }, 90);
+    };
+    f.addEventListener('pointerdown', (e) => { e.preventDefault(); f.setPointerCapture(e.pointerId); mixDrag = k; setLevel(levelAt(e)); });
+    f.addEventListener('pointermove', (e) => { if (mixDrag === k) setLevel(levelAt(e)); });
+    f.addEventListener('pointerup', (e) => { if (mixDrag !== k) return; mixDrag = null; setLevel(levelAt(e), true); });
+    f.addEventListener('pointercancel', () => { mixDrag = null; });
+    f.addEventListener('keydown', (e) => {
+      const step = { ArrowUp: 5, ArrowRight: 5, ArrowDown: -5, ArrowLeft: -5, PageUp: 20, PageDown: -20 }[e.key];
+      if (step) { e.preventDefault(); e.stopPropagation(); setLevel(Math.max(0, Math.min(100, (el._d ? el._d.nivel : 0) + step)), true); }
+    });
+    el.querySelector('.mute').onclick = () => {
+      buzz();
+      const s = !(el._d && el._d.silencio);
+      paintChan(el, { ...el._d, silencio: s });
+      mixHold[k] = { until: Date.now() + 1500, silencio: s };
+      mixSend(k, { silencio: s });
+    };
+    return el;
+  }
+  async function loadMixIcon(k) {
+    mixIconAsked.add(k);
+    try {
+      const r = await api('/api/mixer/icono?k=' + encodeURIComponent(k));
+      if (r.data) { mixIcons[k] = r.data; const el = mixEls.get(k); if (el) setMixIcon(el, { clave: k }); }
+    } catch { mixIconAsked.delete(k); }
+  }
+  function renderMixer(m) {
+    $('mixDev').textContent = m.dispositivo ? 'Salida: ' + m.dispositivo : '';
+    const items = [{ clave: GENERAL, activa: true, ...m.general }, ...(m.apps || [])];
+    const keep = new Set(items.map((a) => a.clave));
+    for (const [k, el] of mixEls) if (!keep.has(k)) { el.remove(); mixEls.delete(k); }
+    let prev = null;
+    for (const a of items) {
+      let el = mixEls.get(a.clave);
+      if (!el) { el = newChan(a); mixEls.set(a.clave, el); }
+      const ref = prev ? prev.nextSibling : mixBox.firstChild;
+      if (ref !== el) mixBox.insertBefore(el, ref);
+      const d = { ...a }, hold = mixHold[a.clave];
+      if (hold && Date.now() < hold.until) { if (hold.nivel != null) d.nivel = hold.nivel; if (hold.silencio != null) d.silencio = hold.silencio; }
+      if (mixDrag === a.clave && el._d) d.nivel = el._d.nivel;
+      paintChan(el, d);
+      if (a.icono && !mixIcons[a.clave] && !mixIconAsked.has(a.clave)) loadMixIcon(a.clave);
+      prev = el;
+    }
+    mixEmpty.hidden = !!(m.apps && m.apps.length);
+    mixEmpty.textContent = 'Ninguna aplicación está usando el sonido ahora. Cuando alguna suene, aparecerá aquí.';
+  }
+  async function mixTick() {
+    clearTimeout(mixTimer); mixTimer = null;
+    if (document.hidden || !pageVisible(mixBox)) return;
+    if (!mixBusy) {
+      mixBusy = true;
+      try { renderMixer(await api('/api/mixer')); }
+      catch (e) { mixEmpty.hidden = false; mixEmpty.textContent = 'No se pudo leer el mezclador del PC: ' + e.message; }
+      mixBusy = false;
+    }
+    mixTimer = setTimeout(mixTick, 250);
+  }
+  const mixWake = () => { if (!mixTimer && !mixBusy) mixTick(); };
+  pagesEl.addEventListener('scroll', () => { clearTimeout(mixWake.t); mixWake.t = setTimeout(mixWake, 120); });
+  document.addEventListener('visibilitychange', mixWake);
+  setTimeout(mixWake, 300);
 
   // ---------- Reloj
   const dateFmt = new Intl.DateTimeFormat('es', { weekday: 'long', day: 'numeric', month: 'long' });

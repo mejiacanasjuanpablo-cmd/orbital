@@ -10,7 +10,7 @@ $PanelSoloWifi = Test-Path (Join-Path (Split-Path $PSScriptRoot -Parent) $PanelM
 $PanelArchivosComunes = @(
     'server.js', 'config.ejemplo.json', 'panel.ico', 'ventana.ps1', 'iniciar.ps1', 'iniciar.cmd',
     'lib\allow.js', 'lib\aprobacion.js', 'lib\qr.js', 'lib\keys.ps1', 'lib\media.ps1', 'lib\requisitos.ps1',
-    'lib\arranque.ps1', 'lib\lanzador.cs',
+    'lib\arranque.ps1', 'lib\lanzador.cs', 'lib\mezclador.ps1',
     'public\index.html', 'public\espera.html', 'public\manifest.webmanifest', 'public\icon-192.png', 'public\icon-512.png'
 )
 # En la edición completa, iniciar.cmd abre el modo USB e iniciar-wifi.cmd el modo Wi-Fi.
@@ -102,11 +102,11 @@ function Get-Requisitos([string]$Raiz, [int]$Puerto = 8787) {
     elseif ($nv -lt $PanelNodeMinimo) { $r += New-Requisito 'Node.js' 'FALTA' "versión $nv; se necesita $($PanelNodeMinimo.Major) o superior" $true 'Se puede actualizar ahora (Node.js LTS).' 'Node' }
     else { $r += New-Requisito 'Node.js' 'OK' "v$nv" $true }
 
-    # 5. Componentes de Windows que usa el panel: volumen, música y envío de atajos de teclado
+    # 5. Componentes de Windows que usa el panel: volumen, música, mezclador y envío de atajos de teclado
     if (-not $faltan.Count) {
         $lib = (Join-Path $Raiz 'lib') -replace "'", "''"
-        $cmd = ". '$lib\media.ps1'; . '$lib\keys.ps1'; `$v = Get-PanelVolume; " +
-               "@{ vol = `$v.level; media = [bool]`$script:mediaMgr; keys = [bool]('PanelKeys' -as [type]) } | ConvertTo-Json -Compress"
+        $cmd = ". '$lib\media.ps1'; . '$lib\keys.ps1'; try { . '$lib\mezclador.ps1' } catch { }; `$v = Get-PanelVolume; " +
+               "@{ vol = `$v.level; media = [bool]`$script:mediaMgr; keys = [bool]('PanelKeys' -as [type]); mezclador = [bool]('PanelMx.Mezclador' -as [type]) } | ConvertTo-Json -Compress"
         $out = Invoke-Nativo { powershell -NoProfile -ExecutionPolicy Bypass -Command $cmd }
         $j = $null; try { $j = ($out | Where-Object { $_ -match '^\{' } | Select-Object -Last 1) | ConvertFrom-Json } catch { }
         if (-not $j -or -not $j.keys) {
@@ -115,7 +115,8 @@ function Get-Requisitos([string]$Raiz, [int]$Puerto = 8787) {
             $partes = @('atajos de teclado')
             $partes += $(if ($j.vol -ne $null) { 'volumen' } else { 'volumen (sin salida de audio)' })
             $partes += $(if ($j.media) { 'música' } else { 'música (no disponible)' })
-            $estado = if ($j.vol -ne $null -and $j.media) { 'OK' } else { 'AVISO' }
+            $partes += $(if ($j.mezclador) { 'mezclador' } else { 'mezclador (no disponible)' })
+            $estado = if ($j.vol -ne $null -and $j.media -and $j.mezclador) { 'OK' } else { 'AVISO' }
             $r += New-Requisito 'Componentes de Windows' $estado ($partes -join ', ') $true $(if ($estado -eq 'AVISO') { 'El panel funciona, pero esa parte no se mostrará.' })
         }
     }
