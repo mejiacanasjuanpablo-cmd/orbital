@@ -143,20 +143,22 @@ const PS_PRELUDE = `[Console]::OutputEncoding = [Text.Encoding]::UTF8; [Console]
 `;
 
 // Proceso permanente para cambiar el volumen al instante (sin recompilar en cada pulsación).
-// Recibe una orden por línea. Solo "mixer" responde, con exactamente una línea JSON (el estado del mezclador);
-// las demás no escriben nada, así que las respuestas llegan en el mismo orden en que se pidieron.
+// Recibe una orden por línea. Solo "mixer" (el estado del mezclador) y "salida" (cambiar la salida de audio) responden,
+// con exactamente una línea JSON; las demás no escriben nada, así que las respuestas llegan en el mismo orden en que se pidieron.
 let ctl = null;
 let ctlBuffer = '';
-const ctlEspera = []; // funciones que esperan la respuesta de cada "mixer" pendiente
+const ctlEspera = []; // funciones que esperan la respuesta de cada orden pendiente que responde
 function startControlWorker() {
   const script = `
 try { . ${psQuote(path.join(ROOT, 'lib', 'mezclador.ps1'))} } catch { }
 while (Get-Process -Id ${process.pid} -ErrorAction SilentlyContinue) {
   $line = [Console]::In.ReadLine(); if ($null -eq $line) { break }
   $p = $line.Split(' ', 3)
-  if ($p[0] -eq 'mixer') {
-    try { $j = [PanelMx.Mezclador]::Estado([int][math]::Round([PanelAudio]::Volume * 100), [PanelAudio]::Mute) }
-    catch { $j = '{"error":"no se pudo leer el mezclador"}' }
+  if ($p[0] -eq 'mixer' -or $p[0] -eq 'salida') {
+    try {
+      if ($p[0] -eq 'mixer') { $j = [PanelMx.Mezclador]::Estado([int][math]::Round([PanelAudio]::Volume * 100), [PanelAudio]::Mute) }
+      else { $j = [PanelMx.Mezclador]::CambiarSalida($p[1]) }
+    } catch { $j = '{"error":"el mezclador no esta disponible"}' }
     [Console]::Out.WriteLine($j); [Console]::Out.Flush(); continue
   }
   try {
@@ -194,19 +196,24 @@ function control(cmd) {
   return true;
 }
 
-// ---------- Mezclador de volumen (lib/mezclador.ps1): volumen, silencio y nivel de cada aplicación
-const iconosMezclador = new Map(); // ruta del programa → icono (data URL); el proceso de control lo manda una sola vez
-let mezcladorEnCurso = null;       // si varias peticiones llegan a la vez, comparten la misma lectura
-function pedirMezclador() {
-  if (mezcladorEnCurso) return mezcladorEnCurso;
-  mezcladorEnCurso = new Promise((resolve) => {
+// Manda una orden que responde ("mixer" o "salida") y espera su línea JSON; null si no responde a tiempo.
+function preguntar(cmd, ms = 3000) {
+  return new Promise((resolve) => {
     let hecho = false;
     const fin = (v) => { if (!hecho) { hecho = true; resolve(v); } };
     // Aunque se agote el tiempo, la función sigue en la cola y se queda con su línea: así no se desordenan las respuestas.
     ctlEspera.push((line) => { try { fin(line ? JSON.parse(line) : null); } catch { fin(null); } });
-    if (!control('mixer')) { ctlEspera.pop(); fin(null); return; }
-    setTimeout(() => fin(null), 3000);
-  }).then((m) => {
+    if (!control(cmd)) { ctlEspera.pop(); fin(null); return; }
+    setTimeout(() => fin(null), ms);
+  });
+}
+
+// ---------- Mezclador de volumen (lib/mezclador.ps1): volumen, silencio y nivel de cada aplicación, y salida de audio
+const iconosMezclador = new Map(); // ruta del programa → icono (data URL); el proceso de control lo manda una sola vez
+let mezcladorEnCurso = null;       // si varias peticiones llegan a la vez, comparten la misma lectura
+function pedirMezclador() {
+  if (mezcladorEnCurso) return mezcladorEnCurso;
+  mezcladorEnCurso = preguntar('mixer').then((m) => {
     mezcladorEnCurso = null;
     if (m && Array.isArray(m.apps)) {
       for (const a of m.apps) {
@@ -497,6 +504,15 @@ const handler = async (req, res) => {
       if (url.pathname === '/api/mixer' && req.method === 'GET') {
         const m = await pedirMezclador();
         return m ? send(res, 200, m) : send(res, 503, { error: 'el mezclador no está disponible' });
+      }
+      if (url.pathname === '/api/mixer/salida' && req.method === 'POST') {
+        const body = JSON.parse((await readBody(req)) || '{}');
+        const id = String(body.id || '');
+        // Windows identifica cada salida así: {0.0.0.00000000}.{guid}
+        if (!/^\{[0-9.]{1,40}\}\.\{[0-9a-f-]{36}\}$/i.test(id)) return send(res, 400, { error: 'salida inválida' });
+        const r = await preguntar(`salida ${id}`, 5000);
+        if (!r) return send(res, 503, { error: 'el PC no respondió' });
+        return r.error ? send(res, 500, { error: r.error }) : send(res, 200, r);
       }
       if (url.pathname === '/api/mixer/icono' && req.method === 'GET') {
         return send(res, 200, { data: iconosMezclador.get(url.searchParams.get('k')) || null });

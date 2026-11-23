@@ -45,7 +45,9 @@ Desliza a los lados para cambiar de página. Funciona mejor con el celular en ho
 1. **Inicio**: reloj, la canción que suena en el PC (con carátula, progreso y controles), volumen, y CPU, RAM, red y disco.
 2. **Mezclador**: el volumen de cada aplicación que usa el sonido del PC, como el mezclador de Windows: una columna por
    aplicación, con su icono, un control para subir o bajar, el botón de silencio y un medidor que se mueve con el sonido.
-   La primera columna es el volumen general; arriba se ve la salida de audio (por ejemplo, los altavoces).
+   La primera columna es el volumen general. Arriba se ve la salida de audio (por ejemplo, los altavoces): tócala para
+   elegir otra, como los audífonos o el monitor, igual que en el icono del volumen de Windows. Las llamadas se cambian
+   también, salvo que en Windows las tengas a propósito en otra salida.
 3. **Sistema**: indicadores circulares y los botones de atajos.
 4. **Rendimiento**: historial de CPU, RAM y red de los últimos 3 minutos, y el uso de cada núcleo.
 5. **Procesos**: los programas que más CPU y memoria usan, agrupados.

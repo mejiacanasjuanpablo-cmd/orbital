@@ -237,8 +237,32 @@
 
   /* ---------- Mezclador */
   .mixer { grid-column: 1 / 13; grid-row: 1 / 7; display: flex; flex-direction: column; }
-  .mixer .head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; min-width: 0; }
-  .mixer .head span:last-child { color: var(--muted); font-size: clamp(9px, 1.6vmin, 11px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mixer .head { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-width: 0; }
+  .mixer .head .cap { flex: none; }
+  /* Botón con la salida de audio actual (altavoces, audífonos…); al tocarlo se elige otra. */
+  .mix-out { display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 64%; padding: 5px 9px 5px 10px; border-radius: 99px; border: 1px solid var(--line-2);
+             background: var(--tile-2); font-size: clamp(10px, 1.8vmin, 12px); cursor: pointer; transition: transform .08s, border-color .15s; }
+  .mix-out[hidden] { display: none; }
+  .mix-out:active { transform: scale(.96); }
+  .mix-out:disabled { cursor: default; border-color: transparent; background: none; padding-right: 0; transform: none; }
+  .mix-out:disabled .chev { display: none; }
+  .mix-out svg.i { font-size: 1.3em; color: var(--sky); }
+  .mix-out span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mix-out .chev { color: var(--muted); font-size: 1.15em; }
+  .outs { display: grid; gap: 6px; max-height: min(360px, calc(100svh - 170px)); overflow-y: auto; margin-bottom: 14px;
+          scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; overscroll-behavior: contain; }
+  .outs button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 11px 12px; border-radius: 12px; border: 1px solid var(--line);
+                 background: var(--tile-2); text-align: left; cursor: pointer; transition: transform .08s; }
+  .outs button:active { transform: scale(.98); }
+  .outs button > svg.i { font-size: 22px; color: var(--muted); }
+  .outs .t { flex: 1; min-width: 0; }
+  .outs .t b, .outs .t small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .outs .t b { font-weight: 600; }
+  .outs .t small { color: var(--muted); font-size: 11px; }
+  .outs button .ck { visibility: hidden; }
+  .outs button.on { border-color: rgba(56,189,248,.45); background: linear-gradient(180deg, rgba(56,189,248,.10), transparent), var(--tile-2); }
+  .outs button.on > svg.i { color: var(--sky); }
+  .outs button.on .ck { visibility: visible; }
   .chans { flex: 1; min-height: 0; display: flex; gap: clamp(6px, 1.4vmin, 10px); margin-top: clamp(8px, 1.6vmin, 12px);
            overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain; }
   .chans::-webkit-scrollbar { display: none; }
@@ -340,6 +364,7 @@
     <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v4h4"/></symbol>
     <symbol id="i-skip" viewBox="0 0 24 24"><path d="M5 5.5v13l9-6.5zM18 5.5v13"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" stroke-width="3"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6.5 9.5 5.5 5.5 5.5-5.5"/></symbol>
     <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
     <symbol id="i-moonsm" viewBox="0 0 24 24"><path d="M18.5 14.5A7 7 0 0 1 9.5 5.5a7 7 0 1 0 9 9z"/></symbol>
     <symbol id="i-cloudsun" viewBox="0 0 24 24"><path d="M8 4.5v1.5M3.5 9H5M4.8 5.8l1 1M12.2 5.8l-1 1"/><path d="M5.6 11.6A3.5 3.5 0 0 1 11.4 8"/><path d="M7.5 19.5h9a3.5 3.5 0 0 0 .5-7 5 5 0 0 0-9.6 1.2 3 3 0 0 0 .1 5.8z"/></symbol>
@@ -393,7 +418,8 @@
   <!-- 2 · Mezclador -->
   <section class="page" data-name="Mezclador">
     <div class="tile mixer">
-      <div class="head"><span class="cap" style="color:var(--sky)">Mezclador de volumen</span><span id="mixDev"></span></div>
+      <div class="head"><span class="cap" style="color:var(--sky)">Mezclador de volumen</span>
+        <button class="mix-out" id="mixOut" hidden disabled><svg class="i"><use id="mixOutIcon" href="#i-vol"/></svg><span id="mixDev"></span><svg class="i chev"><use href="#i-chevron"/></svg></button></div>
       <div class="chans" id="mixChans"><div class="mix-empty" id="mixEmpty">Cargando…</div></div>
     </div>
   </section>
@@ -471,6 +497,7 @@
 <nav id="dots"></nav>
 
 <div class="sheet" id="sheet"><div class="box"><h3 id="sheetTitle"></h3><div class="row"><button id="sheetNo">Cancelar</button><button class="go" id="sheetYes">Sí, hacerlo</button></div></div></div>
+<div class="sheet" id="outSheet"><div class="box"><h3>Salida de audio</h3><div class="outs" id="outList"></div><div class="row"><button id="outClose">Cerrar</button></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -648,8 +675,58 @@
       if (r.data) { mixIcons[k] = r.data; const el = mixEls.get(k); if (el) setMixIcon(el, { clave: k }); }
     } catch { mixIconAsked.delete(k); }
   }
+  // Salida de audio: el botón de arriba muestra la actual; al tocarlo se elige otra, como en el icono del volumen de Windows.
+  const OUT_ICON = { audifonos: 'headphones', pantalla: 'monitor', altavoces: 'vol' };
+  const outParts = (n) => { const m = /^(.*?)\s*\((.+)\)$/.exec(n || ''); return m ? [m[1], m[2]] : [n || 'Salida', '']; };
+  let mixOuts = [], mixOutId = '', outHold = null, outSig = '';
+  function renderOut(m) {
+    mixOuts = m.salidas || [];
+    if (outHold && (Date.now() > outHold.until || m.salida === outHold.id)) outHold = null;
+    mixOutId = outHold ? outHold.id : m.salida || '';
+    const cur = mixOuts.find((s) => s.id === mixOutId), nombre = cur ? cur.nombre : m.dispositivo || '';
+    const b = $('mixOut');
+    b.hidden = !nombre;
+    b.disabled = mixOuts.length < 2;
+    $('mixDev').textContent = nombre;
+    $('mixOutIcon').setAttribute('href', '#i-' + (OUT_ICON[cur && cur.tipo] || 'vol'));
+    b.setAttribute('aria-label', 'Salida de audio: ' + nombre + (b.disabled ? '' : '. Toca para cambiarla'));
+    if ($('outSheet').classList.contains('open')) renderOutList();
+  }
+  // La lista se vuelve a dibujar solo si cambió (llega una lectura nueva 4 veces por segundo y no debe perderse un toque).
+  function renderOutList() {
+    const sig = mixOutId + '|' + mixOuts.map((s) => s.id + s.nombre + s.tipo).join('|');
+    if (sig === outSig) return;
+    outSig = sig;
+    $('outList').innerHTML = mixOuts.map((s) => {
+      const [nombre, detalle] = outParts(s.nombre);
+      return `<button data-id="${esc(s.id)}"${s.id === mixOutId ? ' class="on" aria-current="true"' : ''}>${icon(OUT_ICON[s.tipo] || 'vol')}`
+        + `<span class="t"><b>${esc(nombre)}</b><small>${esc(detalle)}</small></span><svg class="i ck"><use href="#i-check"/></svg></button>`;
+    }).join('');
+  }
+  const closeOuts = () => $('outSheet').classList.remove('open');
+  $('mixOut').onclick = () => { buzz(); outSig = ''; renderOutList(); $('outSheet').classList.add('open'); };
+  $('outClose').onclick = closeOuts;
+  $('outSheet').onclick = (e) => { if (e.target.id === 'outSheet') closeOuts(); };
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') closeOuts(); });
+  $('outList').onclick = async (e) => {
+    const b = e.target.closest('button[data-id]');
+    if (!b) return;
+    buzz(); closeOuts();
+    const id = b.dataset.id, s = mixOuts.find((x) => x.id === id);
+    if (id === mixOutId) return;
+    outHold = null;
+    renderOut({ salidas: mixOuts, salida: id }); // se muestra ya, sin esperar la próxima lectura
+    outHold = { id, until: Date.now() + 4000 };   // y una lectura que salió antes del cambio no la devuelve a la anterior
+    try {
+      const r = await api('/api/mixer/salida', { method: 'POST', body: JSON.stringify({ id }) });
+      toast('Salida: ' + outParts(r.nombre || (s && s.nombre))[0]);
+    } catch (err) {
+      outHold = null;
+      toast('No se pudo cambiar la salida: ' + err.message);
+    }
+  };
   function renderMixer(m) {
-    $('mixDev').textContent = m.dispositivo ? 'Salida: ' + m.dispositivo : '';
+    renderOut(m);
     const items = [{ clave: GENERAL, activa: true, ...m.general }, ...(m.apps || [])];
     const keep = new Set(items.map((a) => a.clave));
     for (const [k, el] of mixEls) if (!keep.has(k)) { el.remove(); mixEls.delete(k); }

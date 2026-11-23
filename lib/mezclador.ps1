@@ -1,4 +1,5 @@
-﻿# Mezclador de volumen: el volumen, el silencio y el nivel de sonido de cada aplicación (como el mezclador de Windows).
+﻿# Mezclador de volumen: el volumen, el silencio y el nivel de sonido de cada aplicación (como el mezclador de Windows),
+# y la salida de audio predeterminada (altavoces, audífonos…), que también se puede cambiar.
 # Lo usa el proceso de control permanente del servidor. Necesita lib\media.ps1 cargado antes (volumen general).
 Add-Type -ErrorAction Stop -ReferencedAssemblies System.Drawing -TypeDefinition @'
 using System;
@@ -14,13 +15,28 @@ using System.Text;
 namespace PanelMx {
   [Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
   interface IDeviceEnumerator {
-    [PreserveSig] int EnumAudioEndpoints(int flow, int mask, out IntPtr devices);
+    [PreserveSig] int EnumAudioEndpoints(int flow, int mask, out IDeviceCollection devices);
     [PreserveSig] int GetDefaultAudioEndpoint(int flow, int role, out IDevice device);
+  }
+  [Guid("0BD7A1BE-7A1A-44DB-8397-CC5392387B5E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  interface IDeviceCollection {
+    [PreserveSig] int GetCount(out int n);
+    [PreserveSig] int Item(int i, out IDevice device);
   }
   [Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
   interface IDevice {
     [PreserveSig] int Activate(ref Guid iid, int ctx, IntPtr p, [MarshalAs(UnmanagedType.IUnknown)] out object o);
     [PreserveSig] int OpenPropertyStore(int access, out IPropStore store);
+    [PreserveSig] int GetId([MarshalAs(UnmanagedType.LPWStr)] out string id);
+  }
+  // IPolicyConfig: la interfaz (sin documentar, pero estable desde Windows 7) que usa el propio Windows para elegir la salida
+  // predeterminada. Solo se llama SetDefaultEndpoint; los métodos anteriores están para que quede en su lugar de la tabla.
+  [Guid("F8679F50-850A-41CF-9C72-430F290290C8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+  interface IPolicyConfig {
+    [PreserveSig] int GetMixFormat(); [PreserveSig] int GetDeviceFormat(); [PreserveSig] int ResetDeviceFormat();
+    [PreserveSig] int SetDeviceFormat(); [PreserveSig] int GetProcessingPeriod(); [PreserveSig] int SetProcessingPeriod();
+    [PreserveSig] int GetShareMode(); [PreserveSig] int SetShareMode(); [PreserveSig] int GetPropertyValue(); [PreserveSig] int SetPropertyValue();
+    [PreserveSig] int SetDefaultEndpoint([MarshalAs(UnmanagedType.LPWStr)] string id, int role);
   }
   [Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
   interface IPropStore {
@@ -70,6 +86,7 @@ namespace PanelMx {
 
   class Sesion { public ISessionControl2 Ctl; public ISimpleVolume Vol; public IMeter Medidor; public string Clave, Nombre, Ruta; public bool Sistema; }
   class Grupo { public string Clave, Nombre, Ruta; public bool Sistema, Silencio, Activa; public float Nivel, Pico; }
+  class Salida { public string Id, Nombre, Tipo; }
 
   public static class Mezclador {
     [DllImport("kernel32.dll")] static extern IntPtr OpenProcess(int access, bool inherit, int pid);
@@ -81,7 +98,8 @@ namespace PanelMx {
 
     static List<Sesion> sesiones = new List<Sesion>();
     static IMeter medidorGeneral;
-    static string dispositivo = "";
+    static string dispositivo = "", salidaId = "";
+    static List<Salida> salidas = new List<Salida>(); // salidas de audio conectadas (altavoces, audífonos, pantalla…)
     static DateTime enumerado = DateTime.MinValue, procesosLimpios = DateTime.UtcNow;
     static readonly Dictionary<int, string[]> procesos = new Dictionary<int, string[]>(); // pid → { ruta, nombre }
     static readonly HashSet<string> iconosEnviados = new HashSet<string>();
@@ -94,14 +112,14 @@ namespace PanelMx {
       enumerado = DateTime.UtcNow;
       if ((DateTime.UtcNow - procesosLimpios).TotalSeconds > 30) { procesos.Clear(); procesosLimpios = DateTime.UtcNow; }
       var nuevas = new List<Sesion>();
-      medidorGeneral = null; dispositivo = ""; error = null;
+      medidorGeneral = null; dispositivo = ""; salidaId = ""; error = null;
       try {
-        // Se crea por su CLSID (MMDeviceEnumerator) y no con una clase [ComImport]: media.ps1 ya declara una para el mismo
-        // CLSID y, si se usó antes, .NET devuelve un objeto de esa otra clase y la conversión falla.
-        var en = (IDeviceEnumerator)Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")));
+        var en = Enumerador();
+        try { salidas = ListarSalidas(en); } catch { salidas = new List<Salida>(); }
         IDevice dev;
         if (en.GetDefaultAudioEndpoint(0, 1, out dev) != 0 || dev == null) { sesiones = nuevas; return; }
-        dispositivo = NombreDispositivo(dev);
+        dispositivo = Texto(dev, PropNombre);
+        string id; if (dev.GetId(out id) == 0 && id != null) salidaId = id;
         object o;
         Guid iid = typeof(IMeter).GUID;
         if (dev.Activate(ref iid, 23, IntPtr.Zero, out o) == 0) medidorGeneral = o as IMeter;
@@ -163,17 +181,75 @@ namespace PanelMx {
       return s.Length == 0 ? null : s;
     }
 
-    static string NombreDispositivo(IDevice d) {
+    // Se crea por su CLSID (MMDeviceEnumerator) y no con una clase [ComImport]: media.ps1 ya declara una para el mismo
+    // CLSID y, si se usó antes, .NET devuelve un objeto de esa otra clase y la conversión falla.
+    static IDeviceEnumerator Enumerador() {
+      return (IDeviceEnumerator)Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")));
+    }
+
+    static readonly PropKey PropNombre = new PropKey { fmtid = new Guid("a45c254e-df1c-4efd-8020-67d146a850e0"), pid = 14 }; // PKEY_Device_FriendlyName
+    static readonly PropKey PropForma = new PropKey { fmtid = new Guid("1da5d803-d492-4edd-8c23-e0c0ffee7f0e"), pid = 0 };  // PKEY_AudioEndpoint_FormFactor
+
+    // Lee una propiedad del dispositivo: el texto (VT_LPWSTR) o el número (VT_UI4) que tenga; null si no la tiene.
+    static object Propiedad(IDevice d, PropKey k) {
       try {
         IPropStore ps;
-        if (d.OpenPropertyStore(0, out ps) != 0) return "";
-        var k = new PropKey { fmtid = new Guid("a45c254e-df1c-4efd-8020-67d146a850e0"), pid = 14 }; // PKEY_Device_FriendlyName
+        if (d.OpenPropertyStore(0, out ps) != 0) return null;
         PropVar v;
-        if (ps.GetValue(ref k, out v) != 0) return "";
-        string s = v.vt == 31 ? Marshal.PtrToStringUni(v.p) : "";
+        if (ps.GetValue(ref k, out v) != 0) return null;
+        object r = v.vt == 31 ? (object)Marshal.PtrToStringUni(v.p) : v.vt == 19 ? (object)(int)(v.p.ToInt64() & 0xFFFFFFFF) : null;
         PropVariantClear(ref v);
-        return s ?? "";
-      } catch { return ""; }
+        return r;
+      } catch { return null; }
+    }
+    static string Texto(IDevice d, PropKey k) { return Propiedad(d, k) as string ?? ""; }
+
+    // Tipo de salida, para el icono del celular: audífonos (3 audífonos, 5 diadema con micrófono, 6 auricular de mano),
+    // pantalla (9: audio por HDMI o DisplayPort) o altavoces (todo lo demás).
+    static string Tipo(IDevice d) {
+      object f = Propiedad(d, PropForma);
+      int n = f is int ? (int)f : -1;
+      return n == 3 || n == 5 || n == 6 ? "audifonos" : n == 9 ? "pantalla" : "altavoces";
+    }
+
+    // Salidas de audio conectadas (DEVICE_STATE_ACTIVE), ordenadas por nombre.
+    static List<Salida> ListarSalidas(IDeviceEnumerator en) {
+      var r = new List<Salida>();
+      IDeviceCollection col;
+      if (en.EnumAudioEndpoints(0, 1, out col) != 0 || col == null) return r;
+      int n; col.GetCount(out n);
+      for (int i = 0; i < n; i++) {
+        IDevice d; string id;
+        if (col.Item(i, out d) != 0 || d == null || d.GetId(out id) != 0 || id == null) continue;
+        r.Add(new Salida { Id = id, Nombre = Texto(d, PropNombre), Tipo = Tipo(d) });
+      }
+      r.Sort((a, b) => string.Compare(a.Nombre, b.Nombre, StringComparison.CurrentCultureIgnoreCase));
+      return r;
+    }
+
+    static string Predeterminada(IDeviceEnumerator en, int rol) {
+      IDevice d; string id;
+      return en.GetDefaultAudioEndpoint(0, rol, out d) == 0 && d != null && d.GetId(out id) == 0 ? id : null;
+    }
+
+    // Cambia la salida de audio predeterminada de Windows, como al elegirla en el icono del volumen de la barra de tareas.
+    // Las llamadas (la salida de comunicaciones) se mueven también solo si ya iban a la misma salida que el resto:
+    // si alguien las tiene en otra a propósito (por ejemplo, una diadema para Discord), se respeta.
+    public static string CambiarSalida(string id) {
+      try {
+        var en = Enumerador();
+        Salida destino = null;
+        foreach (var s in ListarSalidas(en)) if (s.Id == id) destino = s;
+        if (destino == null) return "{\"error\":\"esa salida ya no está conectada\"}";
+        string general = Predeterminada(en, 1), llamadas = Predeterminada(en, 2);
+        var pc = (IPolicyConfig)Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("870AF99C-171D-4F9E-AF0D-E63DF40C2BC9")));
+        int hr = pc.SetDefaultEndpoint(id, 0); // eConsole
+        if (hr == 0) hr = pc.SetDefaultEndpoint(id, 1); // eMultimedia
+        if (hr == 0 && (llamadas == null || llamadas == general)) pc.SetDefaultEndpoint(id, 2); // eCommunications
+        enumerado = DateTime.MinValue; // que la próxima lectura ya muestre las aplicaciones de la nueva salida
+        if (hr != 0) return "{\"error\":\"Windows no dejó cambiar la salida (0x" + hr.ToString("X8") + ")\"}";
+        return "{\"ok\":true,\"nombre\":" + Json(destino.Nombre) + "}";
+      } catch (Exception ex) { return "{\"error\":" + Json("no se pudo cambiar la salida: " + ex.Message) + "}"; }
     }
 
     // Icono del programa (64 px) como imagen PNG; se manda una sola vez por programa.
@@ -216,7 +292,12 @@ namespace PanelMx {
       // Orden estable por nombre (las columnas no saltan cuando una app empieza a sonar); los sonidos del sistema, al final.
       orden.Sort((a, b) => a.Sistema != b.Sistema ? (a.Sistema ? 1 : -1) : string.Compare(a.Nombre, b.Nombre, StringComparison.CurrentCultureIgnoreCase));
       var sb = new StringBuilder();
-      sb.Append("{\"dispositivo\":").Append(Json(dispositivo));
+      sb.Append("{\"dispositivo\":").Append(Json(dispositivo)).Append(",\"salida\":").Append(Json(salidaId)).Append(",\"salidas\":[");
+      for (int i = 0; i < salidas.Count; i++) {
+        if (i > 0) sb.Append(',');
+        sb.Append("{\"id\":").Append(Json(salidas[i].Id)).Append(",\"nombre\":").Append(Json(salidas[i].Nombre)).Append(",\"tipo\":").Append(Json(salidas[i].Tipo)).Append('}');
+      }
+      sb.Append(']');
       if (error != null) sb.Append(",\"error\":").Append(Json(error));
       sb.Append(",\"general\":{\"nivel\":").Append(nivelGeneral).Append(",\"silencio\":").Append(silencioGeneral ? "true" : "false");
       sb.Append(",\"pico\":").Append(F(picoGeneral)).Append("},\"apps\":[");

@@ -2,7 +2,7 @@
 
 Panel de control del PC que se abre en el navegador del celular. Incluye:
 
-- música y volumen, y un mezclador con el volumen de cada aplicación;
+- música y volumen, y un mezclador con el volumen de cada aplicación y la salida de audio;
 - CPU, RAM, red y disco, con su historial y los procesos que más consumen;
 - pomodoro y lista de tareas;
 - calendario, relojes del mundo y clima;
@@ -39,7 +39,7 @@ El recorrido por cada versión, con capturas y todos los cambios, está en **[HI
 | `server.js` | Servidor HTTP en Node, sin dependencias |
 | `public/` | La página del celular (`index.html`), la de espera de aprobación (`espera.html`) y el manifest de la app |
 | `lib/media.ps1` | Música que suena en el PC, controles de música y volumen |
-| `lib/mezclador.ps1` | Mezclador: volumen, silencio y nivel de sonido de cada aplicación |
+| `lib/mezclador.ps1` | Mezclador: volumen, silencio y nivel de sonido de cada aplicación, y salida de audio |
 | `lib/keys.ps1` | Atajos de teclado (SendInput con scan codes) |
 | `lib/qr.js` | Generador de códigos QR, hecho desde cero |
 | `lib/aprobacion.js`, `lib/allow.js` | Aprobación de dispositivos nuevos y lista de dispositivos permitidos en modo Wi-Fi |
