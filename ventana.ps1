@@ -39,6 +39,15 @@ Este PC no está conectado a una red local. Conéctalo al router (por cable o Wi
 Reintentar ⇒ Try again
 Windows tiene la red «{0}» marcada como Pública, así que el celular no podrá entrar. Si es la red de tu casa, cámbiala a Privada. ⇒ Windows has the network "{0}" marked as Public, so your phone won't be able to connect. If it's your home network, change it to Private.
 Abrir configuración ⇒ Open settings
+En marcha, pero el celular no puede entrar ⇒ Running, but your phone can't connect
+El firewall de Windows todavía no deja que el celular entre al panel. Permítelo en el aviso de Windows, si apareció, o con este botón (Windows te pedirá permiso de administrador). ⇒ Windows Firewall isn't letting your phone into the panel yet. Allow it in the Windows prompt, if one appeared, or with this button (Windows will ask for administrator permission).
+El firewall de Windows está bloqueando el panel, así que el celular no podrá entrar. Si Windows te está preguntando, elige Permitir; si no, este botón lo desbloquea (Windows te pedirá permiso de administrador). ⇒ Windows Firewall is blocking the panel, so your phone won't be able to connect. If Windows is asking you, choose Allow; if not, this button unblocks it (Windows will ask for administrator permission).
+El firewall de Windows tiene activado «Bloquear todas las conexiones entrantes» en esta red, así que el celular no podrá entrar. Desactívalo en «Firewall y protección de red». ⇒ Windows Firewall has "Block all incoming connections" turned on for this network, so your phone won't be able to connect. Turn it off in "Firewall & network protection".
+Permitir el acceso ⇒ Allow access
+Abrir el firewall ⇒ Open the firewall
+Listo: el celular ya puede entrar al panel. ⇒ Done: your phone can now connect to the panel.
+No se cambió el firewall: no se dio el permiso de administrador. ⇒ The firewall wasn't changed: administrator permission wasn't given.
+No se pudo cambiar el firewall de Windows. ⇒ Windows Firewall couldn't be changed.
 Hay otra copia del panel abierta en el puerto {0}, probablemente en una ventana de consola. ⇒ Another copy of the panel is open on port {0}, probably in a console window.
 Cerrarla y continuar ⇒ Close it and continue
 No se pudo abrir Node.js: {0} ⇒ Couldn't start Node.js: {0}
@@ -432,6 +441,10 @@ $script:token = $null
 $script:servidor = $null       # proceso de node (server.js)
 $script:errServidor = $null    # lo que el servidor escribe en stderr (solo se lee si se cierra)
 $script:lanIp = $null
+$script:red = $null            # red local del PC (Get-PanelRed)
+$script:accesoRed = $null      # por qué el celular no puede entrar: 'publica', 'sin-permiso', 'bloqueado', 'todo-bloqueado' o $null
+$script:revisionRed = [datetime]::MinValue
+$script:permisoEnCurso = $false
 $script:url = $null
 $script:qrPuesto = $false
 $script:arrancando = $false
@@ -477,8 +490,9 @@ function Set-Estado([string]$Texto, [string]$Color, [switch]$Normal, [object[]]$
     $tray.Text = if ($b.Length -gt 63) { $b.Substring(0, 63) } else { $b }
 }
 
-function Show-Aviso([string]$Texto, [string]$Tipo = 'aviso', [string]$Boton, [scriptblock]$Accion, [object[]]$Datos = @()) {
-    $script:avisoActual = @{ Texto = $Texto; Boton = $Boton; Datos = $Datos }
+# $Clave marca de quién es el aviso, para quitarlo solo si sigue siendo ese.
+function Show-Aviso([string]$Texto, [string]$Tipo = 'aviso', [string]$Boton, [scriptblock]$Accion, [object[]]$Datos = @(), [string]$Clave) {
+    $script:avisoActual = @{ Texto = $Texto; Boton = $Boton; Datos = $Datos; Clave = $Clave }
     $color = @{ error = $C.Rojo; aviso = $C.Naranja; info = $C.Teal }[$Tipo]
     $ui.Aviso.Background = Get-Pincel ($color -replace '^#', '#1A')
     $ui.Aviso.BorderBrush = Get-Pincel ($color -replace '^#', '#4D')
@@ -692,6 +706,7 @@ function Start-Pasos {
     Hide-Paginas
     Set-Botones $false
     Hide-Aviso
+    $script:accesoRed = $null
     Reset-VistaConexion
     Set-Estado 'Arrancando…' $C.Naranja -Normal
     Update-Ui
@@ -718,9 +733,7 @@ function Start-Pasos {
         return
     }
     $script:lanIp = $red.Ip
-    if ($red.Publica) {
-        Show-Aviso 'Windows tiene la red «{0}» marcada como Pública, así que el celular no podrá entrar. Si es la red de tu casa, cámbiala a Privada.' 'aviso' 'Abrir configuración' { Start-Process 'ms-settings:network' } -Datos $red.Nombre
-    }
+    $script:red = $red
 
     # 3. ¿Ya hay un panel en marcha en este puerto? Si es uno de esta misma red, se usa; si no (por ejemplo, uno de una
     #    versión anterior abierto por cable), se cierra.
@@ -764,9 +777,77 @@ function Start-Pasos {
         }
     }
 
-    # 5. Listo
+    # 5. Listo, si el celular puede entrar (red Privada y permiso en el firewall)
     Set-Estado 'En marcha por Wi-Fi · {0}' $C.Verde -Normal -Datos $script:lanIp
+    Update-AccesoRed -Forzar
     Update-Tick -Forzar
+}
+
+# ---------- ¿Puede entrar el celular? La red tiene que estar marcada como Privada y el firewall de Windows tiene que dejar
+# pasar al Node.js del panel. Desde este PC no se nota si no es así (sus conexiones no pasan por el firewall), así que se
+# revisa al arrancar y, mientras haya un problema, cada 5 s: el aviso se quita solo en cuanto se arregla (por ejemplo, al
+# elegir Permitir en el aviso de Windows o al cambiar la red a Privada).
+function Get-ProgramaServidor {
+    $p = $null
+    try { $p = $script:servidor.Path } catch { }
+    if ($p) { $p } else { Get-PanelNodeRuta }
+}
+
+function Update-AccesoRed([switch]$Forzar) {
+    $red = $script:red
+    if (-not $red -or -not $script:servidor) { return }
+    $script:revisionRed = Get-Date
+    $categoria = "$((Get-NetConnectionProfile -InterfaceIndex $red.Interfaz -ErrorAction SilentlyContinue).NetworkCategory)"
+    if ($categoria) { $red.Categoria = $categoria }
+    $estado = $null
+    if ($red.Categoria -eq 'Public') { $estado = 'publica' }
+    else {
+        $fw = Get-PanelFirewall (Get-ProgramaServidor) $red.Categoria
+        if ($fw -in 'sin-permiso', 'bloqueado', 'todo-bloqueado') { $estado = $fw }
+    }
+    $antes = $script:accesoRed
+    if ($estado -eq $antes -and -not $Forzar) {
+        # Si el aviso se escondió (al pulsar su botón o al abrir las páginas) y el problema sigue, vuelve a mostrarse.
+        if ($estado -and $ui.Aviso.Visibility -ne 'Visible' -and -not $script:enPaginas) { Show-AvisoRed }
+        return
+    }
+    $script:accesoRed = $estado
+    if ($estado) {
+        Set-Estado 'En marcha, pero el celular no puede entrar' $C.Naranja -Normal
+        Show-AvisoRed
+    } else {
+        Set-Estado 'En marcha por Wi-Fi · {0}' $C.Verde -Normal -Datos $script:lanIp
+        if ($script:avisoActual -and $script:avisoActual.Clave -eq 'red') { Hide-Aviso }
+        if ($antes) { Add-EventoLocal 'Listo: el celular ya puede entrar al panel.' }
+    }
+}
+
+function Show-AvisoRed {
+    switch ($script:accesoRed) {
+        'publica' { Show-Aviso 'Windows tiene la red «{0}» marcada como Pública, así que el celular no podrá entrar. Si es la red de tu casa, cámbiala a Privada.' 'aviso' 'Abrir configuración' { Start-Process 'ms-settings:network' } -Datos $script:red.Nombre -Clave 'red' }
+        'sin-permiso' { Show-Aviso 'El firewall de Windows todavía no deja que el celular entre al panel. Permítelo en el aviso de Windows, si apareció, o con este botón (Windows te pedirá permiso de administrador).' 'aviso' 'Permitir el acceso' { Grant-AccesoFirewall } -Clave 'red' }
+        # Mientras Windows hace su pregunta, ya ha puesto una regla que bloquea (la cambia a permitir si se elige Permitir).
+        'bloqueado' { Show-Aviso 'El firewall de Windows está bloqueando el panel, así que el celular no podrá entrar. Si Windows te está preguntando, elige Permitir; si no, este botón lo desbloquea (Windows te pedirá permiso de administrador).' 'aviso' 'Permitir el acceso' { Grant-AccesoFirewall } -Clave 'red' }
+        'todo-bloqueado' { Show-Aviso 'El firewall de Windows tiene activado «Bloquear todas las conexiones entrantes» en esta red, así que el celular no podrá entrar. Desactívalo en «Firewall y protección de red».' 'aviso' 'Abrir el firewall' { Start-Process 'windowsdefender://network/' } -Clave 'red' }
+    }
+}
+
+# Botón «Permitir el acceso»: da permiso al Node.js del panel en el firewall, con el aviso de administrador de Windows.
+function Grant-AccesoFirewall {
+    if ($script:permisoEnCurso) { return }
+    $script:permisoEnCurso = $true
+    try {
+        try { $p = Start-PermisoFirewall (Get-ProgramaServidor) $script:red.Categoria }
+        catch { Add-EventoLocal 'No se cambió el firewall: no se dio el permiso de administrador.' 'error'; return }
+        $hasta = (Get-Date).AddSeconds(60)
+        while (-not $p.HasExited -and (Get-Date) -lt $hasta) { Start-Sleep -Milliseconds 100; Update-Ui }
+        $bien = $false
+        try { $bien = $p.HasExited -and $p.ExitCode -eq 0 } catch { }
+        if (-not $bien) { Add-EventoLocal 'No se pudo cambiar el firewall de Windows.' 'error' }
+    } finally {
+        $script:permisoEnCurso = $false
+        Update-AccesoRed -Forzar
+    }
 }
 
 function Exit-Panel {
@@ -808,6 +889,7 @@ function Update-Tick([switch]$Forzar) {
         if ($e.pendiente) { Set-Estado '{0} pide entrar: responde el aviso del PC' $C.Teal -Datos $e.pendiente }
         else { Set-Estado $script:estadoNormal[0] $script:estadoNormal[1] -Datos $script:estadoNormal[2] }
     }
+    if ($script:accesoRed -and -not $script:permisoEnCurso -and ((Get-Date) - $script:revisionRed).TotalSeconds -ge 5) { Update-AccesoRed }
 }
 
 function Remove-Dispositivo([string]$Ip) {

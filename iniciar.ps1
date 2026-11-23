@@ -15,7 +15,7 @@ Set-Location $PSScriptRoot
 if (-not (Test-Path (Join-Path $PSScriptRoot 'lib\requisitos.ps1')) -or -not (Test-Path (Join-Path $PSScriptRoot 'lib\arranque.ps1'))) {
     Write-Host "Faltan archivos del panel. Vuelve a descomprimir el .zip del panel completo." -ForegroundColor Red; exit 1
 }
-. (Join-Path $PSScriptRoot 'lib\requisitos.ps1')   # Get-NodeVersion, Get-ArchivosFaltantes
+. (Join-Path $PSScriptRoot 'lib\requisitos.ps1')   # Get-NodeVersion, Get-ArchivosFaltantes, $PanelNode
 . (Join-Path $PSScriptRoot 'lib\arranque.ps1')     # token, red y servidor
 $faltanArchivos = Get-ArchivosFaltantes $PSScriptRoot
 if ($faltanArchivos.Count) {
@@ -39,7 +39,7 @@ if (-not $SoloPC) {
     $red = Get-PanelRed
     if (-not $red) { Write-Host "Este PC no está conectado a una red local. Conéctalo al router, en la misma red que el celular." -ForegroundColor Red; exit 1 }
     $lanIp = $red.Ip
-    if ($red.Publica) {
+    if ($red.Categoria -eq 'Public') {
         Write-Host "La red '$($red.Nombre)' está marcada como Pública en Windows; el celular no podrá entrar." -ForegroundColor Yellow
         Write-Host "Cámbiala a Privada en Configuración > Red e Internet si es la red de tu casa."
     }
@@ -55,7 +55,7 @@ function Show-WifiInfo {
     Write-Host ""
     # El QR se dibuja con Node (lib\qr.js, sin conexión a internet: el token nunca sale del PC).
     $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
-    try { & node (Join-Path $PSScriptRoot 'lib\qr.js') $wifiUrl } catch { }
+    try { & $PanelNode (Join-Path $PSScriptRoot 'lib\qr.js') $wifiUrl } catch { }
     $ErrorActionPreference = $prev
     Write-Host ""
     Write-Host "O escribe esta dirección en el navegador del celular:" -ForegroundColor DarkGray
@@ -81,7 +81,7 @@ $env:PANEL_TOKEN = $token
 $env:PANEL_PORT = "$Puerto"
 $env:PANEL_PADRE = "$PID"
 if ($lanIp) { $env:PANEL_LAN_IP = $lanIp } else { Remove-Item Env:PANEL_LAN_IP -ErrorAction SilentlyContinue }
-$server = Start-Process node -ArgumentList 'server.js' -NoNewWindow -PassThru
+$server = Start-Process $PanelNode -ArgumentList 'server.js' -NoNewWindow -PassThru
 
 # Espera a que responda.
 $ok = $false
@@ -94,6 +94,14 @@ if (-not $ok) { Write-Host "El servidor no arrancó." -ForegroundColor Red; Stop
 
 try {
     if ($SoloPC) { Start-Process $url } else { Show-WifiInfo }
+    # Desde este PC no se nota si el firewall de Windows no deja entrar al celular: se revisa aparte.
+    if ($lanIp -and $red.Categoria -ne 'Public') {
+        $programa = try { $server.Path } catch { $null }
+        $fw = Get-PanelFirewall $(if ($programa) { $programa } else { Get-PanelNodeRuta }) $red.Categoria
+        if ($fw -eq 'sin-permiso') { Write-Host "El firewall de Windows todavía no deja entrar al celular: si Windows pregunta, elige Permitir (o usa verificar.cmd)." -ForegroundColor Yellow }
+        elseif ($fw -eq 'bloqueado') { Write-Host "El firewall de Windows está bloqueando Node.js: el celular no podrá entrar. Si Windows está preguntando, elige Permitir; si no, verificar.cmd lo desbloquea." -ForegroundColor Yellow }
+        elseif ($fw -eq 'todo-bloqueado') { Write-Host "El firewall de Windows tiene activado «Bloquear todas las conexiones entrantes»: el celular no podrá entrar." -ForegroundColor Yellow }
+    }
     Write-Host "Ctrl+C para detener."
     while (-not $server.HasExited) { Start-Sleep -Seconds 3 }
 }

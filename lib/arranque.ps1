@@ -23,16 +23,6 @@ function Initialize-PanelConfig([string]$Raiz) {
     if (-not (Test-Path $cfg) -and (Test-Path $ejemplo)) { Copy-Item $ejemplo $cfg }
 }
 
-# IP de este PC en la red local (la del adaptador con puerta de enlace) y si Windows marca esa red como Pública.
-# Devuelve $null si el PC no está conectado a ninguna red local.
-function Get-PanelRed {
-    $cfg = Get-NetIPConfiguration -ErrorAction SilentlyContinue | Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' } |
-        Where-Object { $_.IPv4Address.IPAddress -match '^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)' } | Select-Object -First 1
-    if (-not $cfg) { return $null }
-    $categoria = "$((Get-NetConnectionProfile -InterfaceIndex $cfg.InterfaceIndex -ErrorAction SilentlyContinue).NetworkCategory)"
-    [pscustomobject]@{ Ip = @($cfg.IPv4Address.IPAddress)[0]; Nombre = "$($cfg.NetProfile.Name)"; Publica = ($categoria -eq 'Public') }
-}
-
 # ¿Responde el panel en este puerto? (en 127.0.0.1 o en la IP de la red local)
 function Test-Panel([int]$Puerto, [string]$Ip = '127.0.0.1') {
     try {
@@ -50,10 +40,11 @@ function Test-ListaWifiVacia([string]$Raiz) {
 
 
 # ---------- Servidor
-# Arranca server.js sin ventana. PANEL_PADRE hace que el servidor se cierre solo si este proceso desaparece.
+# Arranca server.js sin ventana, con el Node.js incluido en el panel o el instalado ($PanelNode, de lib\requisitos.ps1).
+# PANEL_PADRE hace que el servidor se cierre solo si este proceso desaparece.
 # Solo se captura stderr (para mostrar el motivo si el servidor no arranca); lo normal se ve en la ventana del panel.
 function Start-PanelServidor([string]$Raiz, [int]$Puerto, [string]$Token, [string]$LanIp) {
-    $psi = New-Object Diagnostics.ProcessStartInfo 'node', 'server.js'
+    $psi = New-Object Diagnostics.ProcessStartInfo $PanelNode, 'server.js'
     $psi.WorkingDirectory = $Raiz
     $psi.UseShellExecute = $false
     $psi.CreateNoWindow = $true

@@ -36,13 +36,20 @@ public static class PanelNativo {
     static int Bgr(int rgb) { return ((rgb & 0xFF) << 16) | (rgb & 0xFF00) | ((rgb >> 16) & 0xFF); }
 }
 
-static class Lanzador {
+static partial class Lanzador {
+    // Ejecutable portátil (lib\portatil.cs, que solo compila herramientas\portatil.ps1): deja el panel listo en su carpeta
+    // y la devuelve en "carpeta" (o null si no se pudo). En el .exe normal no existe y esta llamada no hace nada.
+    static partial void PrepararPortatil(ref string carpeta);
+
     [STAThread]
     static int Main(string[] args) {
         string carpeta = AppDomain.CurrentDomain.BaseDirectory;
+        PrepararPortatil(ref carpeta);
+        if (carpeta == null) return 1;
         string script = Path.Combine(carpeta, "ventana.ps1");
         if (!File.Exists(script)) {
-            Error("No se encontró ventana.ps1 junto a este programa.\n\nVuelve a descomprimir el panel completo.");
+            Error(T("No se encontró ventana.ps1 junto a este programa.\n\nVuelve a descomprimir el panel completo.",
+                    "ventana.ps1 wasn't found next to this program.\n\nUnzip the full panel again."));
             return 1;
         }
         try {
@@ -67,10 +74,15 @@ static class Lanzador {
                 }
             }
         } catch (Exception e) {
-            Error("El panel no pudo abrirse:\n\n" + e.Message);
+            Error(T("El panel no pudo abrirse:\n\n", "The panel couldn't open:\n\n") + e.Message);
             return 1;
         }
         return 0;
+    }
+
+    // Antes de abrir la ventana todavía no se sabe el idioma elegido: se usa el de Windows.
+    static string T(string es, string en) {
+        return System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "en" ? en : es;
     }
 
     static void Error(string texto) {

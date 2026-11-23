@@ -16,10 +16,108 @@ $PanelMiniaturas = foreach ($carpeta in 'public\miniaturas', 'public\miniaturas\
 $PanelArchivos = $PanelArchivosComunes
 # server.js usa fetch y AbortSignal.timeout, disponibles desde Node.js 18.
 $PanelNodeMinimo = [version]'18.0.0'
+# Node.js: el que viene dentro del panel (node\node.exe, en el ejecutable portátil) o, si no, el instalado en el PC.
+$PanelNode = Join-Path (Split-Path $PSScriptRoot -Parent) 'node\node.exe'
+$PanelNodeIncluido = Test-Path $PanelNode
+if (-not $PanelNodeIncluido) { $PanelNode = 'node' }
 
 function Get-NodeVersion {
-    try { $v = (Invoke-Oculto 'node' @('--version') -EsperaMs 10000).Salida -replace '^v', ''; if ($v -match '^\d+\.\d+\.\d+') { return [version]$Matches[0] } } catch { }
+    try { $v = (Invoke-Oculto $PanelNode @('--version') -EsperaMs 10000).Salida -replace '^v', ''; if ($v -match '^\d+\.\d+\.\d+') { return [version]$Matches[0] } } catch { }
     return $null
+}
+
+# Ruta completa de ese Node.js, o $null si no hay ninguno.
+function Get-PanelNodeRuta {
+    if ($PanelNodeIncluido) { return [IO.Path]::GetFullPath($PanelNode) }
+    $c = Get-Command node -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($c) { $c.Source } else { $null }
+}
+
+# IP de este PC en la red local (la del adaptador con puerta de enlace), el nombre de esa red y cómo la tiene marcada
+# Windows: Private, Public o DomainAuthenticated. Devuelve $null si el PC no está conectado a ninguna red local.
+function Get-PanelRed {
+    $cfg = Get-NetIPConfiguration -ErrorAction SilentlyContinue | Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' } |
+        Where-Object { $_.IPv4Address.IPAddress -match '^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)' } | Select-Object -First 1
+    if (-not $cfg) { return $null }
+    $categoria = "$((Get-NetConnectionProfile -InterfaceIndex $cfg.InterfaceIndex -ErrorAction SilentlyContinue).NetworkCategory)"
+    [pscustomobject]@{ Ip = @($cfg.IPv4Address.IPAddress)[0]; Nombre = "$($cfg.NetProfile.Name)"; Categoria = $categoria; Interfaz = $cfg.InterfaceIndex }
+}
+
+# ---------- Firewall de Windows
+# El celular entra al Node.js del panel por la red local, así que el firewall de Windows tiene que dejarlo pasar en la red
+# del PC. La primera vez que el panel arranca, Windows lo pregunta: mientras pregunta, pone una regla que lo bloquea, y la
+# cambia a permitir si se elige Permitir. Si nadie responde, si se pulsa Cancelar (la regla se queda bloqueando) o si la
+# cuenta no es de administrador, el celular no puede entrar. Desde el propio PC no se nota: sus conexiones no pasan por el
+# firewall.
+# Este bloque solo lee las reglas, salvo con -Arreglar: eso lo ejecuta Start-PermisoFirewall en un PowerShell aparte, con
+# permiso de administrador, así que no usa nada de fuera. -Politica sustituye al firewall en las pruebas.
+# Devuelve 'permitido', 'sin-permiso' (ninguna regla para ese Node.js), 'bloqueado' (una regla lo bloquea) o
+# 'todo-bloqueado' (en ese tipo de red está activado «Bloquear todas las conexiones entrantes»).
+$PanelFirewall = {
+    param([string]$Programa, [int]$Perfil, [switch]$Arreglar, $Politica)
+    if (-not $Politica) { $Politica = New-Object -ComObject HNetCfg.FwPolicy2 }
+    $programa = [IO.Path]::GetFullPath($Programa)
+    # Las reglas activas de entrada (1) de ese Node.js para TCP (6) o cualquier protocolo (256) en ese tipo de red
+    $reglas = @(foreach ($r in $Politica.Rules) {
+        if (-not $r.Enabled -or $r.Direction -ne 1 -or -not $r.ApplicationName -or -not ($r.Profiles -band $Perfil) -or $r.Protocol -notin 6, 256) { continue }
+        $ruta = try { [IO.Path]::GetFullPath([Environment]::ExpandEnvironmentVariables($r.ApplicationName)) } catch { '' }
+        if ([string]::Equals($ruta, $programa, [StringComparison]::OrdinalIgnoreCase)) { $r }
+    })
+    $bloqueos = @($reglas | Where-Object { $_.Action -eq 0 })
+    $permisos = @($reglas | Where-Object { $_.Action -eq 1 })
+    if ($Arreglar) {
+        # Los bloqueos se desactivan (no se borran) y se añade un permiso solo para ese Node.js y ese tipo de red.
+        foreach ($r in $bloqueos) { $r.Enabled = $false }
+        if (-not $permisos.Count) {
+            $n = New-Object -ComObject HNetCfg.FWRule
+            $n.Name = 'Panel del PC'
+            $n.Description = 'Deja que el celular entre al Panel del PC por la red local.'
+            $n.ApplicationName = $programa
+            $n.Protocol = 6; $n.Direction = 1; $n.Action = 1; $n.Profiles = $Perfil; $n.Enabled = $true
+            [void]$Politica.Rules.Add($n)
+        }
+        return
+    }
+    if (-not $Politica.FirewallEnabled($Perfil)) { return 'permitido' }
+    if ($Politica.BlockAllInboundTraffic($Perfil)) { return 'todo-bloqueado' }
+    if ($bloqueos.Count) { return 'bloqueado' }
+    if ($permisos.Count -or $Politica.DefaultInboundAction($Perfil) -eq 1) { return 'permitido' }
+    'sin-permiso'
+}
+
+# Tipo de red de Windows → perfil del firewall: dominio 1, privada 2, pública 4.
+function Get-PerfilFirewall([string]$Categoria) {
+    switch ($Categoria) { 'DomainAuthenticated' { 1 } 'Private' { 2 } 'Public' { 4 } default { 0 } }
+}
+
+# ¿Deja el firewall que el celular entre a ese Node.js en ese tipo de red? Lo mismo que $PanelFirewall, o $null si no se
+# puede saber (por ejemplo, si el servicio del firewall no responde).
+function Get-PanelFirewall([string]$Programa, [string]$Categoria = 'Private') {
+    $perfil = Get-PerfilFirewall $Categoria
+    if (-not $Programa -or -not $perfil) { return $null }
+    try { & $PanelFirewall -Programa $Programa -Perfil $perfil } catch { $null }
+}
+
+# Da permiso a ese Node.js en ese tipo de red: abre un PowerShell oculto con permiso de administrador (Windows lo pide con
+# su aviso). Devuelve ese proceso (sale con 0 si lo consiguió), o lanza una excepción si no se dio el permiso.
+function Start-PermisoFirewall([string]$Programa, [string]$Categoria = 'Private') {
+    $perfil = Get-PerfilFirewall $Categoria
+    if (-not $Programa -or -not $perfil) { throw 'No se sabe qué Node.js ni en qué red.' }
+    $codigo = "`$ErrorActionPreference = 'Stop'; try { & { $PanelFirewall } -Programa '$($Programa -replace "'", "''")' -Perfil $perfil -Arreglar; exit 0 } catch { exit 1 }"
+    $b64 = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($codigo))
+    Start-Process "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -Verb RunAs -WindowStyle Hidden -PassThru `
+        -ArgumentList "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $b64"
+}
+
+# Lo mismo desde la consola (verificar.cmd): da el permiso y dice cómo quedó.
+function Grant-PanelFirewall {
+    $red = Get-PanelRed
+    $categoria = if ($red -and $red.Categoria -and $red.Categoria -ne 'Public') { $red.Categoria } else { 'Private' }
+    $programa = Get-PanelNodeRuta
+    try { $p = Start-PermisoFirewall $programa $categoria; [void]$p.WaitForExit(60000) }
+    catch { Write-Host 'No se cambió el firewall: no se dio el permiso de administrador.' -ForegroundColor Yellow; return }
+    if ((Get-PanelFirewall $programa $categoria) -eq 'permitido') { Write-Host 'Listo: Node.js ya tiene permiso en el firewall.' -ForegroundColor Green }
+    else { Write-Host 'No se pudo cambiar el firewall de Windows.' -ForegroundColor Yellow }
 }
 
 # Ejecuta un programa sin abrir ninguna ventana de consola (también desde la ventana del panel) y devuelve
@@ -88,7 +186,7 @@ function Get-Requisitos([string]$Raiz, [int]$Puerto = 8787) {
     $nv = Get-NodeVersion
     if (-not $nv) { $r += New-Requisito 'Node.js' 'FALTA' 'no está instalado' $true 'Se puede instalar ahora (Node.js LTS).' 'Node' }
     elseif ($nv -lt $PanelNodeMinimo) { $r += New-Requisito 'Node.js' 'FALTA' "versión $nv; se necesita $($PanelNodeMinimo.Major) o superior" $true 'Se puede actualizar ahora (Node.js LTS).' 'Node' }
-    else { $r += New-Requisito 'Node.js' 'OK' "v$nv" $true }
+    else { $r += New-Requisito 'Node.js' 'OK' "v$nv$(if ($PanelNodeIncluido) { ' (incluido en el panel)' })" $true }
 
     # 5. Componentes de Windows que usa el panel: volumen, música, mezclador y envío de atajos de teclado
     if (-not $faltan.Count) {
@@ -119,24 +217,22 @@ function Get-Requisitos([string]$Raiz, [int]$Puerto = 8787) {
     }
 
     # 7. Red local: el celular entra por la red Wi-Fi de la casa
-    $cfg = Get-NetIPConfiguration -ErrorAction SilentlyContinue | Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' } |
-        Where-Object { $_.IPv4Address.IPAddress -match '^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)' } | Select-Object -First 1
-    if (-not $cfg) { $r += New-Requisito 'Red local' 'FALTA' 'el PC no está conectado a una red local' $true 'Conecta el PC al router (por cable o Wi-Fi), en la misma red que el celular.' }
-    else {
-        $cat = "$((Get-NetConnectionProfile -InterfaceIndex $cfg.InterfaceIndex -ErrorAction SilentlyContinue).NetworkCategory)"
-        $ip = @($cfg.IPv4Address.IPAddress)[0]
-        if ($cat -eq 'Public') { $r += New-Requisito 'Red local' 'AVISO' "$ip en una red marcada como Pública" $false 'Si es la red de tu casa, márcala como Privada: Configuración > Red e Internet > propiedades de la red.' }
-        else { $r += New-Requisito 'Red local' 'OK' "$ip, red privada" $true }
-    }
+    $red = Get-PanelRed
+    if (-not $red) { $r += New-Requisito 'Red local' 'FALTA' 'el PC no está conectado a una red local' $true 'Conecta el PC al router (por cable o Wi-Fi), en la misma red que el celular.' }
+    elseif ($red.Categoria -eq 'Public') { $r += New-Requisito 'Red local' 'AVISO' "$($red.Ip) en una red marcada como Pública" $false 'Si es la red de tu casa, márcala como Privada: Configuración > Red e Internet > propiedades de la red.' }
+    else { $r += New-Requisito 'Red local' 'OK' "$($red.Ip), red privada" $true }
 
-    # 8. Firewall de Windows para Node.js
-    $permitido = $false
-    try {
-        $permitido = [bool](Get-NetFirewallApplicationFilter -ErrorAction Stop | Where-Object { $_.Program -match '\\node\.exe$' } |
-            Get-NetFirewallRule | Where-Object { $_.Enabled -eq 'True' -and $_.Direction -eq 'Inbound' -and $_.Action -eq 'Allow' -and ("$($_.Profile)" -match 'Private|Any') })
-    } catch { }
-    if ($permitido) { $r += New-Requisito 'Firewall' 'OK' 'Node.js permitido en redes privadas' $false }
-    else { $r += New-Requisito 'Firewall' 'INFO' 'Node.js aún no tiene permiso' $false 'La primera vez que abras el panel, Windows preguntará: permite el acceso en redes privadas.' }
+    # 8. Firewall de Windows: ¿deja que el celular entre al Node.js del panel? En una red Pública se revisa el de las redes
+    #    privadas, que es como hay que marcar la red de casa.
+    $programa = Get-PanelNodeRuta
+    $categoria = if ($red -and $red.Categoria -and $red.Categoria -ne 'Public') { $red.Categoria } else { 'Private' }
+    $fw = if ($programa) { Get-PanelFirewall $programa $categoria }
+    if (-not $programa) { $r += New-Requisito 'Firewall' 'INFO' 'se revisa cuando Node.js esté instalado' $false }
+    elseif ($fw -eq 'permitido') { $r += New-Requisito 'Firewall' 'OK' 'Node.js tiene permiso' $false }
+    elseif ($fw -eq 'sin-permiso') { $r += New-Requisito 'Firewall' 'INFO' 'Node.js aún no tiene permiso' $false 'Windows lo preguntará la primera vez que abras el panel (elige Permitir), o se puede dar ahora.' 'Firewall' }
+    elseif ($fw -eq 'bloqueado') { $r += New-Requisito 'Firewall' 'AVISO' 'una regla del firewall bloquea Node.js: el celular no podrá entrar' $false 'Se puede desbloquear ahora.' 'Firewall' }
+    elseif ($fw -eq 'todo-bloqueado') { $r += New-Requisito 'Firewall' 'AVISO' 'está activado «Bloquear todas las conexiones entrantes»: el celular no podrá entrar' $false 'Desactívalo en Seguridad de Windows > Firewall y protección de red > la red de tu casa.' }
+    else { $r += New-Requisito 'Firewall' 'INFO' 'no se pudo revisar' $false 'Si el celular no puede entrar, revisa que el firewall deje pasar a Node.js en las redes privadas.' }
 
 
     # 9. Discord (opcional: solo para la página Discord)
@@ -187,11 +283,12 @@ function Invoke-Verificacion([string]$Raiz, [int]$Puerto = 8787, [switch]$Instal
         $hecho = $false
         foreach ($q in $instalables) {
             Write-Host ""
-            $pregunta = '¿Instalar Node.js LTS ahora? (obligatorio para el panel)'
+            $pregunta = if ($q.Instalar -eq 'Firewall') { '¿Dar permiso a Node.js en el firewall de Windows ahora? (para que el celular pueda entrar; Windows pedirá permiso de administrador)' }
+                        else { '¿Instalar Node.js LTS ahora? (obligatorio para el panel)' }
             if ($SinPreguntas) { Write-Host "$pregunta -> omitido (-SinPreguntas)" -ForegroundColor DarkGray; continue }
             $resp = Read-Host "$pregunta (S/N)"
             if ($resp -notmatch '^(s|si|sí|y|yes)$') { continue }
-            Install-NodeLts
+            if ($q.Instalar -eq 'Firewall') { Grant-PanelFirewall } else { Install-NodeLts }
             $hecho = $true
         }
         if ($hecho) {

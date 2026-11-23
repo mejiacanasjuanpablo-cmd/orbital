@@ -7,12 +7,14 @@ No hay que instalar ninguna app en el celular ni activar nada en sus ajustes. Fu
 
 1. Descomprime `Panel-del-PC.zip` en una carpeta fija (por ejemplo, en Documentos). No lo ejecutes desde dentro del .zip.
 2. Doble clic en **`instalar.cmd`**. Revisa los requisitos y pregunta antes de instalar lo que falte
-   (**Node.js 18 o superior**, con winget; si el PC no tiene winget, abre la página oficial).
+   (**Node.js 18 o superior**, con winget; si el PC no tiene winget, abre la página oficial) y antes de dar permiso a
+   Node.js en el firewall de Windows.
    También crea `config.json`, la ventana del panel (`Panel del PC.exe`, que se compila en el propio PC con lo que trae
    Windows) y el icono **Panel del PC** en el menú Inicio.
    Si Windows avisa de que el archivo viene de internet, elige **Más información → Ejecutar de todas formas**.
 3. La primera vez que abras el panel, Windows puede preguntar si permites que Node.js use la red:
-   permítelo en **redes privadas**.
+   permítelo en **redes privadas**. Si se cancela o nadie responde, la ventana del panel lo avisa y lo arregla con
+   **Permitir el acceso** (ver [Si no abre en el celular](#si-no-abre-en-el-celular)).
 
 Si mueves la carpeta a otro sitio, vuelve a ejecutar `instalar.cmd` para que el icono apunte a la nueva ubicación.
 
@@ -31,7 +33,7 @@ Doble clic en **`verificar.cmd`** en cualquier momento. Revisa y muestra con `[O
 | Componentes de Windows que usa el panel: atajos de teclado, volumen, música y mezclador | Sí (volumen, música y mezclador, opcionales) |
 | Puerto 8787 libre (o ya en uso por el panel) | Sí |
 | El PC conectado a una red local, marcada como Privada | Sí (que sea Privada, recomendado) |
-| Permiso de Node.js en el firewall de Windows | Lo pide Windows la primera vez |
+| Permiso de Node.js en el firewall de Windows (ofrece darlo o desbloquearlo) | Para que entre el celular (Windows lo pide la primera vez) |
 | Discord instalado | Opcional |
 
 Si falta algo obligatorio, el panel tampoco arranca: lo avisa y te manda a `verificar.cmd`.
@@ -78,6 +80,15 @@ el celular y en qué orden (ver [Páginas](#páginas)).
 - El celular dice "Buscando el PC…" o "Sin conexión": revisa que el panel siga en marcha en el PC (la ventana o el icono
   junto al reloj) y que el celular esté en la misma red Wi-Fi.
 - La ventana avisa de que la red está marcada como **Pública**: cámbiala a Privada con el botón del aviso.
+- La ventana avisa de que el **firewall de Windows** no deja entrar al celular (arriba dice «En marcha, pero el celular no
+  puede entrar»): pulsa **Permitir el acceso** y acepta el aviso de administrador de Windows. Pasa cuando, la primera
+  vez, alguien canceló la pregunta de Windows o nadie la respondió, o la cuenta no es de administrador (Windows pide
+  entonces la contraseña de un administrador). Desde el propio PC no se nota, porque sus conexiones no pasan por el
+  firewall: por eso el panel lo revisa aparte. Si avisa de que está activado «Bloquear todas las conexiones entrantes»,
+  desactívalo con **Abrir el firewall**. `verificar.cmd` también lo revisa y ofrece arreglarlo.
+- Si la ventana no avisa de nada y el celular sigue sin abrirlo: la red puede no dejar que los dispositivos se vean entre
+  sí (redes de invitados, de oficina, de universidades o de cafés), puede haber una VPN en el PC o en el celular, o un
+  antivirus con firewall propio (Norton, McAfee, Avast, Kaspersky, ESET…) que bloquee Node.js.
 - La ventana dice que hay otra copia del panel abierta: es una ventana de consola de una versión anterior.
   Pulsa **Cerrarla y continuar**.
 - Si tienes en el celular pestañas viejas del panel que empiezan por `localhost`, ciérralas: eran del modo por cable,
@@ -167,9 +178,24 @@ Si añades `"confirm": true` a un botón, pedirá confirmación antes de ejecuta
 
 ## Compartir el panel
 
-En la carpeta del panel ejecuta `.\empaquetar.ps1`. Crea `Panel-del-PC.zip` junto a la carpeta, con solo los archivos del
-programa: nunca incluye tu `.token`, tu `config.json` ni la carpeta `data` (tus tareas, el orden de tus páginas y el idioma).
-Quien lo reciba empieza por la sección **Instalación**.
+Hay dos formas. Ninguna incluye nunca tu `.token`, tu `config.json` ni la carpeta `data` (tus tareas, el orden de tus
+páginas y el idioma).
+
+**Un solo programa (lo más fácil para probarlo en otros PC).** En la carpeta del panel ejecuta
+`.\herramientas\portatil.ps1`. Crea `Panel del PC.exe` en el Escritorio (unos 35 MB): lleva dentro todo el panel y Node.js,
+así que en el otro PC no hay que instalar nada.
+- Quien lo reciba solo le hace doble clic. Como el programa no está firmado, Windows puede avisar: **Más información →
+  Ejecutar de todas formas**.
+- La primera vez tarda unos segundos: deja el panel en `%LOCALAPPDATA%\Panel del PC` y el icono **Panel del PC** en el
+  menú Inicio (si ya había uno, no lo toca). Después se abre directo, también desde ese icono.
+- Si le llega un `Panel del PC.exe` más nuevo, al abrirlo actualiza el programa y conserva su `config.json`, su token y sus
+  datos. Si el panel está abierto, primero pide cerrarlo con **Detener el panel**.
+- La primera vez Windows pregunta si permite que Node.js use la red: permítelo en **redes privadas**. Si se cancela o
+  nadie responde, la ventana lo avisa y lo arregla con **Permitir el acceso**.
+- Para quitarlo: borra la carpeta `%LOCALAPPDATA%\Panel del PC` y el icono del menú Inicio.
+
+**El .zip.** En la carpeta del panel ejecuta `.\empaquetar.ps1`. Crea `Panel-del-PC.zip` junto a la carpeta, con solo los
+archivos del programa (sin Node.js). Quien lo reciba empieza por la sección **Instalación**.
 
 ## Seguridad
 
