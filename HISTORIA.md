@@ -1,6 +1,6 @@
 # Historia del Panel del PC
 
-Recorrido por las siete versiones del panel. Las capturas se tomaron ejecutando cada versión tal como quedó, en el PC y a tamaño de celular.
+Recorrido por las ocho versiones del panel, de la primera a la **v8.0, que es la versión final**. Las capturas se tomaron ejecutando cada versión tal como quedó, en el PC y a tamaño de celular.
 
 > **Cómo se armó este historial.** Las versiones 1 a 5 se hicieron sin git. Su historial se reconstruyó el 21 de noviembre de 2026 a partir del registro de la sesión de Claude Code en la que se construyó.
 > - Cada commit es el estado real de los archivos después de cada pedido, con su fecha y hora de Colombia.
@@ -219,3 +219,36 @@ El panel pasa de 3 a 7 páginas:
 | 23/11 08:10 | Página Mezclador: el volumen de cada aplicación, como en Windows |
 | 23/11 10:08 | Mezclador: cambiar la salida de audio desde el celular |
 | 23/11 10:51 | Elegir en el PC qué páginas ve el celular y en qué orden |
+
+## v8.0 · Solo Wi-Fi, en español o inglés (versión final)
+
+**23 nov 2026** · Pedidos: *«Tomemos de referencia este para rediseñar la selección de pantallas»*, *«Vamos a cambiarle el redondeado de los bordes de "Al conectar" y de los números para que coincidan con los de los marcos»* y *«Vamos a cambiar el toggle para la selección de modo y lo ponemos solo para selección de idioma, ya quitemos la opción de usb»*.
+
+**Es la versión final del panel.**
+
+- **Solo Wi-Fi.** Se quitó el modo por cable USB: el celular entra siempre por la red de la casa, con el código QR y la aprobación en el PC.
+  - Ya no hacen falta adb ni el modo desarrollador del celular.
+  - Queda un solo icono, **Panel del PC**; `instalar.cmd` quita los viejos «Panel USB» y «Panel Wi-Fi». Los iconos y el `Panel del PC.exe` de versiones anteriores siguen funcionando.
+  - Hay un solo .zip para compartir (`Panel-del-PC.zip`) y una sola guía (`LEEME.md`).
+- **Español o inglés.** El selector del encabezado de la ventana, que elegía Wi-Fi o cable, ahora elige el idioma.
+  - Cambia a la vez la ventana, la página del celular (al momento, sin recargar), la página de espera y el aviso para aprobar celulares nuevos.
+  - Se guarda en `data/preferencias.json`; la primera vez se usa el idioma de Windows.
+- **Páginas del celular, rediseñadas** con una galería de diseños como referencia: una cuadrícula de tarjetas con la vista previa de cada página.
+  - El interruptor de cada tarjeta la muestra u oculta. Para ordenarlas, se arrastra una tarjeta sobre otra, o se usan las flechas que aparecen encima.
+  - «Al conectar» marca la primera; las ocultas se ven tenues, con «Oculta».
+  - Las vistas previas usan datos de ejemplo y están en los dos idiomas; las genera `herramientas/miniaturas.js`.
+  - Las etiquetas y los números tienen esquinas redondeadas que siguen las de los marcos.
+
+![v8: ventana en inglés](docs/historia/v8-ventana-en.png)
+
+![v8: páginas del celular en tarjetas](docs/historia/v8-paginas-en.png)
+
+![v8: el celular en inglés](docs/historia/v8-celular-en.png)
+
+*Las capturas usan una IP, un celular, una actividad y datos de ejemplo.*
+
+| Fecha | Cambio |
+|---|---|
+| 23/11 11:29 | Páginas del celular: tarjetas con vista previa y arrastrar para ordenar |
+| 23/11 11:36 | Páginas del celular: etiquetas y números con esquinas como las de los marcos |
+| 23/11 12:23 | Solo Wi-Fi y selector de idioma (español o inglés) |
