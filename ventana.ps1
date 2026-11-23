@@ -92,7 +92,9 @@ Conecta el celular ⇒ Connect your phone
 Personalizar sin el celular ⇒ Customize without the phone
 Oculta esta tarjeta hasta que un celular se conecte y se vuelva a desconectar ⇒ Hides this card until a phone connects and disconnects again
 Más ⇒ More
-Dispositivos, actividad y detener el panel ⇒ Devices, activity and stop the panel
+Dispositivos, actividad y abrir en este PC ⇒ Devices, activity and open on this PC
+Pantalla completa (F11) ⇒ Full screen (F11)
+Salir de pantalla completa (F11 o Esc) ⇒ Exit full screen (F11 or Esc)
 Cambiar a modo claro ⇒ Switch to light mode
 Cambiar a modo oscuro ⇒ Switch to dark mode
 Atajos ⇒ Shortcuts
@@ -238,7 +240,7 @@ $script:tema = Get-TemaGuardado
 $xaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Panel del PC" Width="780" SizeToContent="Height" ResizeMode="CanMinimize"
+        Title="Panel del PC" Width="780" MinWidth="780" MinHeight="600" SizeToContent="Height" ResizeMode="CanResize"
         WindowStartupLocation="CenterScreen" Background="{DynamicResource Fondo}" Foreground="{DynamicResource Texto}"
         FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" UseLayoutRounding="True">
   <Window.Resources>
@@ -378,23 +380,16 @@ $xaml = @'
     </Style>
   </Window.Resources>
 
-  <Grid Margin="20,16,20,20">
+  <Grid x:Name="Raiz" Margin="20,16,20,20">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
       <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
 
-    <DockPanel Grid.Row="0" Margin="0,0,0,16" LastChildFill="False">
-      <Border x:Name="Logo" DockPanel.Dock="Left" Width="42" Height="42" CornerRadius="12" Margin="0,0,12,0"
-              BorderBrush="{DynamicResource Linea2}" BorderThickness="1"/>
-      <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
-        <TextBlock Text="Panel del PC" FontSize="18" FontWeight="SemiBold"/>
-        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-          <Ellipse x:Name="Punto" Width="8" Height="8" Fill="#FB923C" VerticalAlignment="Center" Margin="0,1,8,0"/>
-          <TextBlock x:Name="Estado" Text="Arrancando…" Foreground="{DynamicResource Tenue}"/>
-        </StackPanel>
-      </StackPanel>
+    <!-- Cabecera. Los botones de la derecha van primero, para que siempre quepan; el estado se recorta («…») si no. -->
+    <DockPanel Grid.Row="0" Margin="0,0,0,16" LastChildFill="True">
       <!-- Idioma de la ventana y del celular; cada idioma se nombra en sí mismo -->
       <Border x:Name="Idiomas" DockPanel.Dock="Right" VerticalAlignment="Center" Background="{DynamicResource Tile}"
               BorderBrush="{DynamicResource Linea}" BorderThickness="1" CornerRadius="12" Padding="3">
@@ -408,6 +403,11 @@ $xaml = @'
         <Path x:Name="IconoTema" Width="16" Height="16" Stretch="Uniform" Stroke="{DynamicResource Texto}" StrokeThickness="1.8"
               StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
       </Button>
+      <!-- Pantalla completa (F11); el icono cambia para salir de ella -->
+      <Button x:Name="PantallaCompleta" DockPanel.Dock="Right" Style="{StaticResource Boton}" Margin="0,0,10,0" Padding="9,8" VerticalAlignment="Center">
+        <Path x:Name="IconoPantalla" Width="16" Height="16" Stretch="Uniform" Stroke="{DynamicResource Texto}" StrokeThickness="1.8"
+              StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+      </Button>
       <Button x:Name="AbrirAtajos" DockPanel.Dock="Right" Style="{StaticResource Boton}" Margin="0,0,10,0" Padding="12,7" VerticalAlignment="Center"
               AutomationProperties.Name="Atajos" ToolTip="Edita los botones de la página Sistema del celular">
         <StackPanel Orientation="Horizontal">
@@ -419,7 +419,7 @@ $xaml = @'
       </Button>
       <!-- Más: dispositivos autorizados, actividad, abrir en este PC y detener el panel (en un menú que se despliega) -->
       <Button x:Name="AbrirMas" DockPanel.Dock="Right" Style="{StaticResource Boton}" Margin="0,0,10,0" Padding="12,7" VerticalAlignment="Center"
-              AutomationProperties.Name="Más" ToolTip="Dispositivos, actividad y detener el panel">
+              AutomationProperties.Name="Más" ToolTip="Dispositivos, actividad y abrir en este PC">
         <Grid>
           <StackPanel Orientation="Horizontal">
             <Path Width="14" Height="4" Stretch="Uniform" Fill="{DynamicResource Teal}" Margin="0,0,8,0" VerticalAlignment="Center"
@@ -430,6 +430,15 @@ $xaml = @'
                    Margin="0,-5,-8,0" Visibility="Collapsed"/>
         </Grid>
       </Button>
+      <Border x:Name="Logo" DockPanel.Dock="Left" Width="42" Height="42" CornerRadius="12" Margin="0,0,12,0"
+              BorderBrush="{DynamicResource Linea2}" BorderThickness="1"/>
+      <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
+        <TextBlock Text="Panel del PC" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+        <DockPanel Margin="0,2,0,0">
+          <Ellipse x:Name="Punto" Width="8" Height="8" Fill="#FB923C" VerticalAlignment="Center" Margin="0,1,8,0"/>
+          <TextBlock x:Name="Estado" Text="Arrancando…" Foreground="{DynamicResource Tenue}" TextTrimming="CharacterEllipsis"/>
+        </DockPanel>
+      </StackPanel>
     </DockPanel>
 
     <Border x:Name="Aviso" Grid.Row="1" Visibility="Collapsed" CornerRadius="12" Padding="14,10" Margin="0,0,0,14" BorderThickness="1">
@@ -443,7 +452,7 @@ $xaml = @'
          orden en que salen en el celular) y, encima, la tarjeta «Conecta el celular» mientras ningún celular use el panel -->
     <Grid x:Name="VistaPrincipal" Grid.Row="2" MinHeight="520">
       <DockPanel x:Name="VistaPaginas" LastChildFill="True">
-        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,16" LastChildFill="True">
+        <DockPanel x:Name="CabeceraPaginas" DockPanel.Dock="Top" Margin="0,0,0,16" LastChildFill="True">
           <Button x:Name="RestablecerPaginas" DockPanel.Dock="Right" Content="Restablecer" Style="{StaticResource Boton}" Margin="20,0,0,0"
                   VerticalAlignment="Center" ToolTip="Vuelve al orden original, con todas las páginas"/>
           <StackPanel VerticalAlignment="Center">
@@ -488,7 +497,7 @@ $xaml = @'
     </Grid>
 
     <!-- Atajos: los botones de la página Sistema, en el orden del celular, y el editor de uno de ellos -->
-    <DockPanel x:Name="VistaAtajos" Grid.Row="2" Visibility="Collapsed" LastChildFill="True">
+    <DockPanel x:Name="VistaAtajos" Grid.Row="2" Visibility="Collapsed" LastChildFill="True" MaxWidth="1100">
       <DockPanel DockPanel.Dock="Top" Margin="0,0,0,16" LastChildFill="True">
         <StackPanel x:Name="BotonesAtajos" DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0,0,0">
           <Button x:Name="RestablecerAtajos" Content="Restablecer" Style="{StaticResource Boton}" Margin="0,0,10,0"
@@ -588,17 +597,19 @@ $xaml = @'
           <TextBlock Text="ACTIVIDAD" Style="{StaticResource Etiqueta}"/>
           <StackPanel x:Name="ListaActividad"/>
           <Border Height="1" Background="{DynamicResource Linea}" Margin="0,6,0,14"/>
-          <DockPanel LastChildFill="False">
-            <Button x:Name="AbrirPc" DockPanel.Dock="Left" Content="Abrir en este PC" Style="{StaticResource Boton}"
-                    ToolTip="Abre el panel en el navegador de este PC"/>
-            <Button x:Name="Detener" DockPanel.Dock="Right" Content="Detener el panel" Style="{StaticResource BotonPeligro}"
-                    ToolTip="Cierra el panel: el celular deja de poder usarlo hasta que lo vuelvas a abrir"/>
-          </DockPanel>
-          <TextBlock Margin="2,12,0,0" FontSize="12" Foreground="{DynamicResource Tenue}" TextWrapping="Wrap" LineHeight="17"
-                     Text="Si cierras esta ventana, el panel sigue funcionando. Vuelve a ella desde el menú Inicio o desde el icono junto al reloj."/>
+          <Button x:Name="AbrirPc" HorizontalAlignment="Left" Content="Abrir en este PC" Style="{StaticResource Boton}"
+                  ToolTip="Abre el panel en el navegador de este PC"/>
         </StackPanel>
       </Border>
     </Popup>
+
+    <!-- Barra de abajo: siempre a la vista, con «Detener el panel» -->
+    <DockPanel Grid.Row="3" Margin="0,16,0,0" LastChildFill="True">
+      <Button x:Name="Detener" DockPanel.Dock="Right" Content="Detener el panel" Style="{StaticResource BotonPeligro}" Margin="20,0,0,0"
+              VerticalAlignment="Center" ToolTip="Cierra el panel: el celular deja de poder usarlo hasta que lo vuelvas a abrir"/>
+      <TextBlock VerticalAlignment="Center" FontSize="12" Foreground="{DynamicResource Tenue}" TextWrapping="Wrap" LineHeight="17"
+                 Text="Si cierras esta ventana, el panel sigue funcionando. Vuelve a ella desde el menú Inicio o desde el icono junto al reloj."/>
+    </DockPanel>
   </Grid>
 </Window>
 '@
@@ -608,6 +619,7 @@ $ui = @{}
 foreach ($n in 'Logo', 'Punto', 'Estado', 'Idiomas', 'IdiomaEs', 'IdiomaEn', 'Aviso', 'AvisoTexto', 'AvisoBoton', 'Qr', 'QrEspera',
     'Direccion', 'Copiar', 'ListaDispositivos', 'SinDispositivos', 'ListaActividad', 'AbrirPc', 'Detener',
     'CambiarTema', 'IconoTema', 'AbrirMas', 'AvisoMas', 'MenuMas', 'VistaPrincipal', 'Conexion', 'SinCelular',
+    'PantallaCompleta', 'IconoPantalla', 'CabeceraPaginas', 'Raiz',
     'VistaPaginas', 'ListaPaginas', 'RestablecerPaginas',
     'AbrirAtajos', 'VistaAtajos', 'BotonesAtajos', 'RestablecerAtajos', 'ListoAtajos', 'TituloAtajos', 'AyudaAtajos', 'ListaAtajos', 'EditorAtajo',
     'EdVista', 'EdVistaIcono', 'EdVistaNombre', 'EdNombre', 'EdColores', 'EdIconos', 'EdTipoAbrir', 'EdTipoTeclas', 'EdTipoComando',
@@ -625,7 +637,7 @@ try {
 # Textos fijos de la plantilla, en español, para traducirlos (y volver) al cambiar de idioma. Los que cambia el código
 # (estado, aviso, QR, enlace) y los nombres de los idiomas no entran.
 $script:textosFijos = New-Object Collections.ArrayList
-$noTraducir = 'Estado', 'QrEspera', 'AvisoTexto', 'AvisoBoton', 'Direccion', 'Copiar', 'IdiomaEs', 'IdiomaEn', 'CambiarTema',
+$noTraducir = 'Estado', 'QrEspera', 'AvisoTexto', 'AvisoBoton', 'Direccion', 'Copiar', 'IdiomaEs', 'IdiomaEn', 'CambiarTema', 'PantallaCompleta',
     'TituloAtajos', 'AyudaAtajos', 'EdVistaNombre', 'EdNombre', 'EdDestino', 'EdArgumentos', 'EdTeclasCaja', 'EdComandoCaja', 'EdError'
 function Find-TextosFijos($Elemento) {
     if ($Elemento -isnot [Windows.DependencyObject]) { return }
@@ -869,7 +881,7 @@ function Update-Idioma {
         $par[0].BorderBrush = Get-Pincel $(if ($on) { $C.Linea2 } else { '#00000000' })
         $par[0].Foreground = Get-Pincel $(if ($on) { $C.Texto } else { $C.Tenue })
     }
-    Update-TextoTema
+    Update-TextoTema; Update-TextoPantalla
     $ui.Copiar.Content = T $(if ($script:copiadoHasta) { 'Copiado' } else { 'Copiar enlace' })
     $ui.Copiar.ToolTip = T 'Copia la dirección completa del panel, para abrirla a mano en el celular'
     $ui.QrEspera.Text = T $script:qrEspera
@@ -1253,6 +1265,65 @@ $script:paginas = @()
 $script:enPaginas = $false
 $script:miniaturas = @{}                                              # id → imagen de la vista previa (o $null)
 $script:tarjetasDe = @{}; $script:marcosDe = @{}; $script:flechasDe = @{} # id → partes de su tarjeta
+$script:vistasDe = @{}   # id → vista previa de su tarjeta (se le cambia el alto según el tamaño de la ventana)
+$script:altoVista = 104
+
+# Tamaño de las tarjetas. Las vistas previas mantienen la proporción del celular en horizontal (2,27 : 1). Con la ventana
+# en su tamaño normal (crece en alto con lo que tenga dentro) se llenan las tres columnas a lo ancho. Maximizada, en
+# pantalla completa o con un tamaño elegido a mano, crecen hasta llenar también el alto; si el alto no alcanza, la
+# cuadrícula se estrecha y queda centrada.
+$ProporcionVista = 2.27
+$AltoPie = 52 # bajo cada vista previa: el número, el nombre y el interruptor (36) y el espacio hasta la siguiente fila (16)
+function Test-TamanoLibre { $w.WindowState -eq 'Maximized' -or $w.SizeToContent -ne 'Height' }
+function Update-TamanoPaginas {
+    $vistas = @($script:vistasDe.Values)
+    $anchoTotal = $ui.VistaPrincipal.ActualWidth
+    if (-not $vistas.Count -or $anchoTotal -le 0) { return }
+    $filas = [math]::Ceiling($vistas.Count / 3)
+    $ancho = ($anchoTotal + 16) / 3 - 16
+    $alto = $ancho / $ProporcionVista
+    $libre = Test-TamanoLibre
+    if ($libre) {
+        $disponible = $ui.VistaPrincipal.ActualHeight - $ui.CabeceraPaginas.ActualHeight - 16
+        $maximo = ($disponible + 16) / $filas - $AltoPie
+        if ($maximo -lt $alto) { $alto = [math]::Max(72, $maximo); $ancho = $alto * $ProporcionVista }
+    }
+    $alto = [math]::Floor($alto)
+    $maxAncho = if ($libre) { [math]::Ceiling(3 * ($ancho + 16) - 16) } else { [double]::PositiveInfinity }
+    if ([math]::Abs($script:altoVista - $alto) -lt 1 -and $ui.VistaPaginas.MaxWidth -eq $maxAncho) { return }
+    $script:altoVista = $alto
+    foreach ($v in $vistas) { $v.Height = $alto }
+    $ui.VistaPaginas.MaxWidth = $maxAncho
+}
+
+# ---------- Pantalla completa (F11 o el botón de la cabecera): sin barra de título y por encima de la barra de tareas.
+# Al salir, la ventana vuelve como estaba (normal o maximizada).
+$IconoExpandir = 'M4,9 L4,4 L9,4 M20,9 L20,4 L15,4 M4,15 L4,20 L9,20 M20,15 L20,20 L15,20'
+$IconoReducir = 'M9,4 L9,9 L4,9 M15,4 L15,9 L20,9 M9,20 L9,15 L4,15 M15,20 L15,15 L20,15'
+$script:pantallaCompleta = $false
+$script:estadoAntes = 'Normal'
+function Switch-PantallaCompleta {
+    if (-not $script:pantallaCompleta) {
+        $script:estadoAntes = [string]$w.WindowState
+        $script:pantallaCompleta = $true
+        $w.SizeToContent = 'Manual'
+        # Para cubrir también la barra de tareas, se quita el borde con la ventana sin maximizar y luego se maximiza.
+        $w.WindowState = 'Normal'; $w.WindowStyle = 'None'; $w.ResizeMode = 'NoResize'; $w.WindowState = 'Maximized'
+    } else {
+        $script:pantallaCompleta = $false
+        $w.WindowStyle = 'SingleBorderWindow'; $w.ResizeMode = 'CanResize'
+        if ($script:estadoAntes -eq 'Maximized') { $w.WindowState = 'Maximized' }
+        else { $w.WindowState = 'Normal'; $w.SizeToContent = 'Height' }
+        Set-BarraTitulo
+    }
+    Update-TextoPantalla
+}
+function Update-TextoPantalla {
+    $ui.IconoPantalla.Data = [Windows.Media.Geometry]::Parse($(if ($script:pantallaCompleta) { $IconoReducir } else { $IconoExpandir }))
+    $t = T $(if ($script:pantallaCompleta) { 'Salir de pantalla completa (F11 o Esc)' } else { 'Pantalla completa (F11)' })
+    $ui.PantallaCompleta.ToolTip = $t
+    [Windows.Automation.AutomationProperties]::SetName($ui.PantallaCompleta, $t)
+}
 $script:arrastre = $null; $script:movimiento = $null; $script:destino = ''
 
 # Es la pantalla principal: se llena en cuanto el servidor responde.
@@ -1262,6 +1333,7 @@ function Show-Paginas {
     $script:paginas = @($r.paginas)
     $script:enPaginas = $true
     Update-ListaPaginas
+    Update-TamanoPaginas
 }
 
 function Save-Paginas($Lista, [string]$Foco) {
@@ -1344,7 +1416,7 @@ function Get-Miniatura([string]$Id) {
     if (Test-Path $ruta) {
         try {
             $img = New-Object Windows.Media.Imaging.BitmapImage
-            $img.BeginInit(); $img.UriSource = New-Object Uri $ruta; $img.DecodePixelWidth = 480; $img.CacheOption = 'OnLoad'; $img.EndInit()
+            $img.BeginInit(); $img.UriSource = New-Object Uri $ruta; $img.CacheOption = 'OnLoad'; $img.EndInit() # a su tamaño: en pantalla completa se ven grandes
             $img.Freeze()
         } catch { $img = $null }
     }
@@ -1393,7 +1465,7 @@ function New-Flecha([string]$Id, [int]$Paso, [bool]$Activa, [string]$Nombre) {
 # $Foco ("-1|id", "1|id" o "ver|id") devuelve el foco al mismo control si el cambio se hizo con el teclado.
 function Update-ListaPaginas([string]$Foco) {
     $ui.ListaPaginas.Children.Clear()
-    $script:tarjetasDe = @{}; $script:marcosDe = @{}; $script:flechasDe = @{}; $script:destino = ''
+    $script:tarjetasDe = @{}; $script:marcosDe = @{}; $script:flechasDe = @{}; $script:vistasDe = @{}; $script:destino = ''
     $l = @($script:paginas)
     $visibles = @($l | Where-Object { $_.ver }).Count
     $n = 0; $controles = @{}
@@ -1406,7 +1478,7 @@ function Update-ListaPaginas([string]$Foco) {
 
         # Vista previa
         $vista = New-Object Windows.Controls.Grid
-        $vista.Height = 104
+        $vista.Height = $script:altoVista; $script:vistasDe[$id] = $vista
         $marco = New-Object Windows.Controls.Border
         $marco.CornerRadius = 14; $marco.BorderThickness = 1; $marco.BorderBrush = Get-Pincel $C.Linea2; $marco.Tag = $id
         $marco.Cursor = [Windows.Input.Cursors]::Hand
@@ -1842,6 +1914,16 @@ $ui.IdiomaEs.Add_Click({ Invoke-Seguro { Set-Idioma 'es' } })
 $ui.IdiomaEn.Add_Click({ Invoke-Seguro { Set-Idioma 'en' } })
 $ui.RestablecerPaginas.Add_Click({ Invoke-Seguro { Reset-Paginas } })
 $ui.CambiarTema.Add_Click({ Invoke-Seguro { Switch-Tema } })
+$ui.PantallaCompleta.Add_Click({ Invoke-Seguro { Switch-PantallaCompleta } })
+$ui.VistaPrincipal.Add_SizeChanged({ Invoke-Seguro { Update-TamanoPaginas } })
+# Maximizada, la ventana deja de crecer con lo que tiene dentro; al volver a su tamaño normal, vuelve a hacerlo.
+$w.Add_StateChanged({ Invoke-Seguro {
+    if (-not $script:pantallaCompleta) {
+        if ($w.WindowState -eq 'Maximized') { $w.SizeToContent = 'Manual' }
+        elseif ($w.WindowState -eq 'Normal') { $w.SizeToContent = 'Height' }
+    }
+    Update-TamanoPaginas
+} })
 $ui.AbrirMas.Add_Click({ Invoke-Seguro { Switch-MenuMas } })
 $ui.MenuMas.Add_Closed({ $script:menuCerrado = Get-Date })
 $ui.SinCelular.Add_Click({ Invoke-Seguro { $script:sinCelular = $true; Update-Conexion $script:hayCelular } })
@@ -1874,10 +1956,12 @@ $ui.EdTeclasCaja.Add_PreviewKeyDown({ param($s, $e)
     $ui.EdError.Visibility = 'Collapsed'
 })
 $w.Add_KeyDown({ param($s, $e)
+    if ($e.Key -eq 'F11' -and -not $ui.EdTeclasCaja.IsKeyboardFocused) { $e.Handled = $true; Invoke-Seguro { Switch-PantallaCompleta }; return }
     if ($e.Key -ne 'Escape') { return }
     if ($ui.MenuMas.IsOpen) { $ui.MenuMas.IsOpen = $false }
-    elseif ($script:enAtajos -and $script:edicion -and -not $ui.EdTeclasCaja.IsKeyboardFocused) { Invoke-Seguro { $script:edicion = $null; Update-ListaAtajos } }
-    elseif ($script:enAtajos -and -not $script:edicion) { Invoke-Seguro { Hide-Atajos } }
+    elseif ($script:enAtajos -and $script:edicion) { if (-not $ui.EdTeclasCaja.IsKeyboardFocused) { Invoke-Seguro { $script:edicion = $null; Update-ListaAtajos } } }
+    elseif ($script:pantallaCompleta) { Invoke-Seguro { Switch-PantallaCompleta } }
+    elseif ($script:enAtajos) { Invoke-Seguro { Hide-Atajos } }
 })
 
 # Cerrar la ventana la esconde: el panel sigue funcionando y se vuelve a ella desde el icono o el menú Inicio.

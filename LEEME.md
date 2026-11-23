@@ -48,8 +48,12 @@ sin consola:
   la dirección, con un botón para copiarla. Se va sola en cuanto un celular se conecta y vuelve si se desconecta (por
   ejemplo, si cierras la página o se apaga su pantalla). **Personalizar sin el celular** la esconde hasta entonces.
 - **Más** despliega los dispositivos autorizados (con **Quitar** para cada uno), la actividad (los botones que pulsas
-  desde el celular y los dispositivos que piden entrar), **Abrir en este PC** y **Detener el panel**. Un punto en el
-  botón avisa de actividad nueva.
+  desde el celular y los dispositivos que piden entrar) y **Abrir en este PC**. Un punto en el botón avisa de actividad
+  nueva.
+- **Detener el panel** está siempre a la vista, en la barra de abajo.
+- **Pantalla completa:** la ventana se puede maximizar, y **F11** (o el botón de las cuatro esquinas) la pone en
+  pantalla completa, sin barra de título. **Esc** o **F11** salen. Con más espacio, las tarjetas de las pantallas
+  crecen sin deformarse.
 - **Atajos** edita los botones de la página Sistema (ver [Páginas](#páginas)).
 - El botón del sol o la luna cambia entre el **modo claro** y el **oscuro**. La primera vez se usa el de Windows; lo que
   elijas se guarda. Solo cambia la ventana: el celular sigue oscuro.
@@ -57,7 +61,7 @@ sin consola:
 
 - **Cerrar la ventana no detiene el panel:** sigue funcionando y queda un icono junto al reloj. Para volver a la ventana,
   haz clic en ese icono o abre otra vez el panel desde el menú Inicio (no se arranca otro).
-- **Para detenerlo,** pulsa **Más → Detener el panel**, o **Detener el panel** en el menú del icono junto al reloj.
+- **Para detenerlo,** pulsa **Detener el panel**, abajo en la ventana o en el menú del icono junto al reloj.
 - **Para probarlo sin celular:** **Más → Abrir en este PC**.
 - **Para ver los mensajes del servidor en una consola** (por ejemplo, para diagnosticar), usa el modo consola:
   `.\iniciar.ps1` (o `.\iniciar.ps1 -SoloPC`, que lo abre solo en el navegador del PC), y Ctrl+C para detenerlo.
