@@ -1,4 +1,4 @@
-﻿# Funciones compartidas: volumen del sistema (Core Audio) y canción actual (Windows Media Controls).
+﻿# Funciones compartidas: volumen del sistema (Core Audio), canción actual y controles de música (Windows Media Controls).
 $ErrorActionPreference = 'SilentlyContinue'
 
 Add-Type -ErrorAction Stop -TypeDefinition @'
@@ -33,6 +33,14 @@ public static class PanelAudio {
   public static bool Mute {
     get { bool m; Marshal.ThrowExceptionForHR(Vol().GetMute(out m)); return m; }
     set { Marshal.ThrowExceptionForHR(Vol().SetMute(value, Guid.Empty)); }
+  }
+}
+// Teclas multimedia de verdad, por su código de tecla virtual (no por un carácter, como hacía SendKeys).
+public static class PanelMediaKeys {
+  [DllImport("user32.dll")] static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
+  public static void Press(byte vk) {
+    keybd_event(vk, 0, 1, UIntPtr.Zero);       // tecla extendida, abajo
+    keybd_event(vk, 0, 1 | 2, UIntPtr.Zero);   // tecla extendida, arriba
   }
 }
 '@
@@ -82,6 +90,30 @@ function Get-PanelMedia {
         $script:lastArtKey = $key
     }
     return $out
+}
+
+# Controles de música: siguiente, anterior, play/pausa, stop, y volumen o silencio del sistema.
+# Primero se le pide a la sesión multimedia actual (la misma que usan los controles de Windows: Spotify, Opera, Chrome...),
+# sin depender del teclado ni de qué ventana está al frente. Si no hay sesión o no respondió, se pulsa la tecla multimedia.
+# Antes se usaba SendKeys con [char]176..179, pero en teclados latinoamericanos [char]176 es '°', una tecla normal:
+# en vez de pasar la canción, escribía "°" en la ventana que estuviera al frente.
+$script:panelTeclasMedia = @{ mute = 0xAD; voldown = 0xAE; volup = 0xAF; next = 0xB0; prev = 0xB1; stop = 0xB2; playpause = 0xB3 }
+function Invoke-PanelMedia([string]$Accion) {
+    if (-not $script:panelTeclasMedia.ContainsKey($Accion)) { throw "Tecla multimedia desconocida: $Accion" }
+    if ($script:mediaMgr -and $Accion -in 'next', 'prev', 'playpause', 'stop') {
+        $s = $script:mediaMgr.GetCurrentSession()
+        if ($s) {
+            $op = switch ($Accion) {
+                'next' { $s.TrySkipNextAsync() }
+                'prev' { $s.TrySkipPreviousAsync() }
+                'playpause' { $s.TryTogglePlayPauseAsync() }
+                'stop' { $s.TryStopAsync() }
+            }
+            if (Wait-WinRT $op ([bool])) { return 'sesion' }
+        }
+    }
+    [PanelMediaKeys]::Press([byte]$script:panelTeclasMedia[$Accion])
+    'tecla'
 }
 
 function Get-PanelVolume {

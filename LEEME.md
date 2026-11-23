@@ -136,7 +136,9 @@ Los cambios se aplican sin reiniciar; basta con recargar la página en el celula
 
 Cada grupo tiene `"place"`: `"atajos"` (página Sistema, hasta 12 botones), `"enfoque"` (página Enfoque, debajo de las tareas, hasta 4),
 `"discord"`, `"comandos"` o `"media"`.
-Los botones `prev`, `playpause` y `next` del grupo `media` son los que usa la tarjeta de música.
+Los botones `prev`, `playpause` y `next` del grupo `media` son los que usa la tarjeta de música. Controlan el reproductor
+que esté sonando (Spotify, Opera, Chrome… cualquiera que aparezca en los controles de música de Windows), sin importar
+qué ventana esté al frente.
 
 Cada botón admite `"icon"` y `"color"` (por ejemplo `"#2dd4bf"`). Iconos disponibles:
 `play` `pause` `prev` `next` `vol` `mute` `music` `folder` `download` `briefcase` `globe` `calculator`

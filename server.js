@@ -90,8 +90,10 @@ function runPowerShell(script, { cwd, timeoutMs = 60000 } = {}) {
 
 const psQuote = (s) => "'" + String(s).replace(/'/g, "''") + "'";
 
-// Teclas multimedia: SendKeys acepta el código de tecla virtual como carácter.
-const MEDIA = { mute: 173, voldown: 174, volup: 175, next: 176, prev: 177, stop: 178, playpause: 179 };
+// Controles de música y volumen (lib/media.ps1 → Invoke-PanelMedia): van directo a la sesión multimedia de Windows
+// o, si no hay, se pulsa la tecla multimedia. Normalmente los hace el proceso permanente de control, al instante.
+const MEDIA = new Set(['mute', 'voldown', 'volup', 'next', 'prev', 'stop', 'playpause']);
+const mediaTimes = (action) => Math.min(Math.max(Number(action.repeat) || 1, 1), 20);
 
 function scriptFor(action) {
   switch (action.type) {
@@ -99,12 +101,9 @@ function scriptFor(action) {
       const args = action.args ? ` -ArgumentList ${psQuote(action.args)}` : '';
       return `Start-Process ([Environment]::ExpandEnvironmentVariables(${psQuote(action.target)}))${args}`;
     }
-    case 'media': {
-      const vk = MEDIA[action.key];
-      if (!vk) throw new Error(`Tecla multimedia desconocida: ${action.key}`);
-      const times = Math.min(Math.max(Number(action.repeat) || 1, 1), 20);
-      return `$w = New-Object -ComObject WScript.Shell; 1..${times} | ForEach-Object { $w.SendKeys([string][char]${vk}) }`;
-    }
+    case 'media':
+      if (!MEDIA.has(action.key)) throw new Error(`Tecla multimedia desconocida: ${action.key}`);
+      return `. ${psQuote(path.join(ROOT, 'lib', 'media.ps1'))}; 1..${mediaTimes(action)} | ForEach-Object { [void](Invoke-PanelMedia ${psQuote(action.key)}) }`;
     case 'keys':
       // Pulsación con scan code (lib/keys.ps1): Discord ignora SendKeys cuando su ventana está al frente.
       return `. ${psQuote(path.join(ROOT, 'lib', 'keys.ps1'))}; Send-PanelKeys ${psQuote(action.keys)}`;
@@ -154,6 +153,7 @@ while (Get-Process -Id ${process.pid} -ErrorAction SilentlyContinue) {
     switch ($p[0]) {
       'vol'  { [PanelAudio]::Mute = $false; [PanelAudio]::Volume = [float]([math]::Min([math]::Max([int]$p[1], 0), 100) / 100) }
       'mute' { [PanelAudio]::Mute = ($p[1] -eq '1') }
+      'media' { $n = [math]::Min([math]::Max([int]$p[2], 1), 20); for ($i = 0; $i -lt $n; $i++) { [void](Invoke-PanelMedia $p[1]) } }
     }
   } catch { }
 }`;
@@ -163,7 +163,9 @@ while (Get-Process -Id ${process.pid} -ErrorAction SilentlyContinue) {
 }
 startControlWorker();
 function control(cmd) {
-  if (ctl && ctl.stdin.writable) ctl.stdin.write(cmd + '\n');
+  if (!ctl || !ctl.stdin.writable) return false;
+  ctl.stdin.write(cmd + '\n');
+  return true;
 }
 
 function startStatsWorker() {
@@ -446,7 +448,9 @@ const handler = async (req, res) => {
         const action = findAction(id);
         if (!action) return send(res, 404, { error: 'acción no encontrada' });
         const started = Date.now();
-        const result = await runPowerShell(scriptFor(action), { cwd: action.cwd, timeoutMs: (action.timeout || 60) * 1000 });
+        // Música y volumen: al proceso de control permanente (instantáneo). Si no está listo, con un PowerShell nuevo.
+        const rapido = action.type === 'media' && MEDIA.has(action.key) && control(`media ${action.key} ${mediaTimes(action)}`);
+        const result = rapido ? { code: 0, stdout: '', stderr: '' } : await runPowerShell(scriptFor(action), { cwd: action.cwd, timeoutMs: (action.timeout || 60) * 1000 });
         evento(result.code === 0 ? 'accion' : 'error', result.code === 0 ? action.label : `${action.label}: falló (código ${result.code})`);
         return send(res, 200, { ...result, ms: Date.now() - started, showOutput: action.type === 'command' });
       }
