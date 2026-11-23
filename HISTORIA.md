@@ -1,6 +1,6 @@
 # Historia del Panel del PC
 
-Recorrido por las seis versiones del panel. Las capturas se tomaron ejecutando cada versión tal como quedó, en el PC y a tamaño de celular.
+Recorrido por las siete versiones del panel. Las capturas se tomaron ejecutando cada versión tal como quedó, en el PC y a tamaño de celular.
 
 > **Cómo se armó este historial.** Las versiones 1 a 5 se hicieron sin git. Su historial se reconstruyó el 21 de noviembre de 2026 a partir del registro de la sesión de Claude Code en la que se construyó.
 > - Cada commit es el estado real de los archivos después de cada pedido, con su fecha y hora de Colombia.
@@ -189,3 +189,33 @@ El panel pasa de 3 a 7 páginas:
 ![v6: ventana en modo cable USB](docs/historia/v6-ventana-usb.png)
 
 *Las capturas usan una IP, un celular y una actividad de ejemplo.*
+
+## v7.0 · Mezclador y páginas a tu medida
+
+**23 nov 2026** · Pedidos: *«Revisa porque los botones de pasar canciones no funcionan»*, *«¿Podemos hacer una pantalla con el mezclador de sonidos de windows?»*, *«Agrega cambiar la salida de audio en el mezclador»* y *«Vamos a crear una pantalla para controlar las pantallas que van a verse y en qué orden se van a mostrar, después de conectar el celular»*.
+
+- **Página Mezclador**, la segunda del celular: funciona como el mezclador de volumen de Windows.
+  - Hay una columna por cada aplicación que usa el sonido del PC, con su icono, un control vertical, el botón de silencio y un medidor que se mueve con el sonido.
+  - La primera columna es el volumen general.
+  - La página solo le pregunta al PC mientras está a la vista.
+- **Cambiar la salida de audio:** arriba del mezclador se ve la salida actual. Al tocarla se elige otra (altavoces, audífonos, monitor…), como en el icono del volumen de Windows. Las llamadas también se cambian, salvo que en Windows estén a propósito en otra salida.
+- **Páginas del celular:** un botón nuevo en la ventana del PC para elegir qué páginas se ven en el celular y en qué orden.
+  - Cada cambio llega al celular al momento, sin recargar.
+  - La primera página es la que aparece al conectarlo.
+  - El orden se guarda en `data/paginas.json`.
+- **Los botones de pasar canciones ya funcionan con cualquier teclado.** Antes enviaban un carácter que, con el teclado latinoamericano, se escribía como «°». Ahora usan los controles de música de Windows y, si no hay ninguno, la tecla multimedia de verdad.
+
+![v7: página Mezclador](docs/historia/v7-mezclador.png)
+
+![v7: elegir la salida de audio](docs/historia/v7-salida.png)
+
+![v7: páginas del celular en la ventana del PC](docs/historia/v7-paginas.png)
+
+*Las capturas del mezclador usan aplicaciones y salidas de audio de ejemplo.*
+
+| Fecha | Cambio |
+|---|---|
+| 23/11 07:24 | Los botones de pasar canciones funcionan con cualquier teclado |
+| 23/11 08:10 | Página Mezclador: el volumen de cada aplicación, como en Windows |
+| 23/11 10:08 | Mezclador: cambiar la salida de audio desde el celular |
+| 23/11 10:51 | Elegir en el PC qué páginas ve el celular y en qué orden |

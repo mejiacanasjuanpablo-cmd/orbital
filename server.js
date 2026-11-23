@@ -356,7 +356,7 @@ function normalizarPaginas(lista) {
 }
 function leerPaginas() {
   let guardadas = null;
-  try { guardadas = JSON.parse(fs.readFileSync(PAGINAS_PATH, 'utf8')).paginas; } catch {}
+  try { guardadas = JSON.parse(fs.readFileSync(PAGINAS_PATH, 'utf8').replace(/^﻿/, '')).paginas; } catch {} // sin BOM, por si se editó a mano
   const r = normalizarPaginas(guardadas);
   return r.some((p) => p.ver) ? r : normalizarPaginas(null); // si quedaron todas ocultas, se ven todas
 }
