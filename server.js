@@ -85,6 +85,9 @@ const EN = {
   'No se pudo leer el calendario: {0}': "Couldn't read the calendar: {0}",
   'tiempo agotado': 'timed out', 'sin conexión': 'no connection', 'enlace no válido': 'invalid link', 'no es un calendario': "it isn't a calendar",
   'fechas inválidas': 'invalid dates',
+  'cada atajo necesita un nombre': 'every shortcut needs a name', 'tipo de atajo inválido: {0}': 'invalid shortcut type: {0}',
+  'a «{0}» le falta {1}': '"{0}" is missing {1}', 'qué abrir': 'what to open', 'el atajo de teclado': 'the keyboard shortcut',
+  'el comando': 'the command', 'como mucho {0} atajos': 'at most {0} shortcuts',
   'falta level o muted': 'level or muted is missing',
   'el mezclador no está disponible': "the mixer isn't available",
   'salida inválida': 'invalid output',
@@ -386,6 +389,7 @@ function stats() {
     artKey: extra.media && extra.media.artKey === art.key ? art.key : null,
     paginas: paginasVisibles(),
     idioma,
+    cfgVer: versionConfig(),
     time: Date.now(),
   };
 }
@@ -406,6 +410,78 @@ function writeTasks(list) {
   fs.writeFileSync(TASKS_PATH, JSON.stringify(clean, null, 2));
   return clean;
 }
+
+// ---------- Atajos de la página Sistema (el grupo con "place": "atajos" de config.json). Se editan en la ventana del panel
+// (solo desde este PC); al guardarlos se reescribe solo la lista de ese grupo, un atajo por línea, sin tocar lo demás.
+// El celular los vuelve a pedir en cuanto cambia config.json (stats.cfgVer).
+const MAX_ATAJOS = 12;
+const atajosDe = (cfg) => { const g = (cfg.groups || []).find((x) => x.place === 'atajos'); return g && Array.isArray(g.items) ? g.items : []; };
+function atajosPredeterminados() {
+  try { return atajosDe(JSON.parse(fs.readFileSync(path.join(ROOT, 'config.ejemplo.json'), 'utf8').replace(/^﻿/, ''))); } catch { return []; }
+}
+// Deja solo lo que un atajo puede tener, o lanza un error que se muestra en la ventana.
+function limpiarAtajo(a, anterior, usados) {
+  const label = String(a.label || '').trim().slice(0, 40);
+  if (!label) throw new Error(tr('cada atajo necesita un nombre'));
+  if (!['open', 'keys', 'command'].includes(a.type)) throw new Error(tr('tipo de atajo inválido: {0}', label));
+  let id = String(a.id || '').replace(/[^\w-]/g, '').slice(0, 40);
+  if (!id || usados.has(id)) id = 'atajo_' + crypto.randomBytes(3).toString('hex');
+  usados.add(id);
+  const r = { id, label, icon: /^[a-z]+$/.test(a.icon || '') ? a.icon : 'dot' };
+  if (/^#[0-9a-f]{6}$/i.test(a.color || '')) r.color = a.color.toLowerCase();
+  r.type = a.type;
+  const campo = (k) => String(a[k] || '').trim();
+  if (a.type === 'open') { r.target = campo('target'); if (campo('args')) r.args = campo('args'); }
+  if (a.type === 'keys') r.keys = campo('keys');
+  if (a.type === 'command') r.command = String(a.command || '').trim();
+  const falta = { open: [r.target, 'qué abrir'], keys: [r.keys, 'el atajo de teclado'], command: [r.command, 'el comando'] }[a.type];
+  if (!falta[0]) throw new Error(tr('a «{0}» le falta {1}', label, tr(falta[1])));
+  if (a.confirm) r.confirm = true;
+  for (const k of ['hint', 'cwd', 'timeout']) if (anterior && anterior[k] != null) r[k] = anterior[k]; // lo que la ventana no edita
+  return r;
+}
+// Posición del corchete o la llave que cierra el que empieza en i (sin contar los que hay dentro de textos).
+function cierre(txt, i) {
+  let nivel = 0, enTexto = false;
+  for (let k = i; k < txt.length; k++) {
+    const c = txt[k];
+    if (enTexto) { if (c === '\\') k++; else if (c === '"') enTexto = false; continue; }
+    if (c === '"') enTexto = true;
+    else if (c === '[' || c === '{') nivel++;
+    else if ((c === ']' || c === '}') && --nivel === 0) return k;
+  }
+  return -1;
+}
+function guardarAtajos(lista) {
+  if (!Array.isArray(lista) || lista.length > MAX_ATAJOS) throw new Error(tr('como mucho {0} atajos', MAX_ATAJOS));
+  let txt = fs.readFileSync(CONFIG_PATH, 'utf8').replace(/^﻿/, '');
+  const cfg = JSON.parse(txt), antes = atajosDe(cfg);
+  const usados = new Set((cfg.groups || []).filter((g) => g.place !== 'atajos').flatMap((g) => (g.items || []).map((x) => x.id)));
+  const items = lista.map((a) => limpiarAtajo(a || {}, antes.find((x) => x.id === a.id), usados));
+  const eol = txt.includes('\r\n') ? '\r\n' : '\n';
+  const linea = (o) => '{ ' + Object.entries(o).map(([k, v]) => `${JSON.stringify(k)}: ${JSON.stringify(v)}`).join(', ') + ' }';
+  const lugar = /"place"\s*:\s*"atajos"/.exec(txt);
+  const lista0 = lugar && /"items"\s*:\s*\[/g;
+  let hecho = false;
+  if (lista0) {
+    lista0.lastIndex = lugar.index;
+    const m = lista0.exec(txt), ini = m && m.index + m[0].length - 1, fin = m ? cierre(txt, ini) : -1;
+    if (fin > ini) {
+      const nuevo = items.length ? `[${eol}${items.map((o) => '        ' + linea(o)).join(',' + eol)}${eol}      ]` : '[]';
+      const prueba = txt.slice(0, ini) + nuevo + txt.slice(fin + 1);
+      try { if (JSON.stringify(atajosDe(JSON.parse(prueba))) === JSON.stringify(items)) { txt = prueba; hecho = true; } } catch {}
+    }
+  }
+  if (!hecho) { // sin el grupo, o con un formato inesperado: se reescribe entero
+    const g = (cfg.groups || (cfg.groups = [])).find((x) => x.place === 'atajos');
+    if (g) g.items = items; else cfg.groups.unshift({ name: 'Atajos', place: 'atajos', items });
+    txt = JSON.stringify(cfg, null, 2) + eol;
+  }
+  fs.writeFileSync(CONFIG_PATH, txt);
+  return items;
+}
+// Cambia cada vez que se guarda config.json (desde la ventana, el panel o a mano).
+const versionConfig = () => { try { return fs.statSync(CONFIG_PATH).mtimeMs; } catch { return 0; } };
 
 // ---------- Páginas del celular: cuáles se ven y en qué orden. Se eligen en la ventana del panel y se guardan en
 // data/paginas.json; el celular las recibe con cada lectura del estado y se reordena solo.
@@ -692,6 +768,13 @@ const handler = async (req, res) => {
           const body = JSON.parse((await readBody(req)) || '{}');
           try { guardarPaginas(body.paginas); } catch (e) { return send(res, 400, { error: e.message }); }
           return send(res, 200, paginasPc());
+        }
+        if (url.pathname === '/api/pc/atajos' && req.method === 'GET') {
+          return send(res, 200, { atajos: atajosDe(loadConfig()), predeterminados: atajosPredeterminados(), maximo: MAX_ATAJOS });
+        }
+        if (url.pathname === '/api/pc/atajos' && req.method === 'POST') {
+          const body = JSON.parse((await readBody(req)) || '{}');
+          try { return send(res, 200, { atajos: guardarAtajos(body.atajos) }); } catch (e) { return send(res, 400, { error: e.message }); }
         }
         if (url.pathname === '/api/pc/detener' && req.method === 'POST') {
           send(res, 200, { ok: true });

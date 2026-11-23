@@ -87,6 +87,63 @@ Mostrar la ventana ⇒ Show the window
 El panel sigue funcionando ⇒ The panel is still running
 Para volver a la ventana, haz clic en este icono o abre el panel desde el menú Inicio. Para cerrarlo del todo, usa «Detener el panel». ⇒ To get back to the window, click this icon or open the panel from the Start menu. To close it completely, use "Stop the panel".
 Selección de widgets ⇒ Widget selection
+Atajos ⇒ Shortcuts
+Edita los botones de la página Sistema del celular ⇒ Edit the buttons on your phone's System page
+Vuelve a los atajos de ejemplo ⇒ Goes back to the sample shortcuts
+Los botones de la página Sistema del celular (hasta {0}). Pulsa uno para editarlo y arrástralos para cambiar el orden; cada cambio le llega al celular al momento. ⇒ The buttons on your phone's System page (up to {0}). Click one to edit it and drag them to change the order; every change reaches your phone right away.
+Para editar los atajos, el panel tiene que estar funcionando. ⇒ To edit the shortcuts, the panel has to be running.
+El panel no respondió. ⇒ The panel didn't respond.
+¿Volver a los atajos de ejemplo? Se pierden los que cambiaste. ⇒ Go back to the sample shortcuts? The ones you changed will be lost.
+No se pudieron guardar los atajos: {0} ⇒ The shortcuts couldn't be saved: {0}
+Abre {0} ⇒ Opens {0}
+Teclas: {0} ⇒ Keys: {0}
+Comando de PowerShell ⇒ PowerShell command
+Pulsa para editarlo; arrástralo para cambiar el orden ⇒ Click to edit it; drag it to change the order
+Editar {0} ⇒ Edit {0}
+Agregar atajo ⇒ Add shortcut
+Nuevo atajo ⇒ New shortcut
+Así se verá el botón en la página Sistema del celular. ⇒ This is how the button will look on your phone's System page.
+Sin nombre ⇒ No name
+Color {0} ⇒ Color {0}
+Icono {0} ⇒ Icon {0}
+NOMBRE ⇒ NAME
+COLOR ⇒ COLOR
+ICONO ⇒ ICON
+QUÉ HACE ⇒ WHAT IT DOES
+Abrir ⇒ Open
+Atajo de teclado ⇒ Keyboard shortcut
+Comando ⇒ Command
+Programa, carpeta, archivo o página web ⇒ Program, folder, file or web page
+Examinar… ⇒ Browse…
+Argumentos (opcional) ⇒ Arguments (optional)
+Por ejemplo: calc.exe, https://www.google.com, una carpeta como C:\Users o shell:Downloads. ⇒ For example: calc.exe, https://www.google.com, a folder like C:\Users, or shell:Downloads.
+Haz clic en el recuadro y pulsa la combinación de teclas ⇒ Click the box and press the key combination
+Combinación de teclas ⇒ Key combination
+Le llega al programa que esté al frente en el PC. Se pueden usar Ctrl, Shift y Alt; la tecla de Windows no. ⇒ It goes to the program in front on the PC. Ctrl, Shift and Alt work; the Windows key doesn't.
+Lo que escriba se ve en la página Comandos del celular. ⇒ Its output shows up on your phone's Commands page.
+Preguntar en el celular antes de hacerlo ⇒ Ask on the phone before doing it
+Eliminar ⇒ Delete
+Guardar ⇒ Save
+Cancelar ⇒ Cancel
+Ponle un nombre al atajo. ⇒ Give the shortcut a name.
+Escribe qué tiene que abrir. ⇒ Write what it has to open.
+Haz clic en el recuadro y pulsa la combinación de teclas. ⇒ Click the box and press the key combination.
+Escribe el comando. ⇒ Write the command.
+No se pudo guardar: {0} ⇒ Couldn't save: {0}
+¿Eliminar el atajo {0}? ⇒ Delete the shortcut {0}?
+Elige el programa o el archivo ⇒ Choose the program or file
+Programas ⇒ Programs
+Todos los archivos ⇒ All files
+Esa tecla no se puede enviar. Prueba con otra. ⇒ That key can't be sent. Try another one.
+Retroceso ⇒ Backspace
+Supr ⇒ Del
+Inicio ⇒ Home
+Fin ⇒ End
+RePág ⇒ PgUp
+AvPág ⇒ PgDn
+Espacio ⇒ Space
+Impr Pant ⇒ PrtSc
+Pausa ⇒ Pause
 Elige qué páginas ves en el celular y en qué orden ⇒ Choose which pages your phone shows, and in what order
 Restablecer ⇒ Reset
 Vuelve al orden original, con todas las páginas ⇒ Go back to the original order, with every page
@@ -238,6 +295,27 @@ $xaml = @'
       <Setter Property="Width" Value="30"/>
       <Setter Property="Height" Value="30"/>
     </Style>
+    <!-- Campo de texto (editor de atajos) -->
+    <Style x:Key="Campo" TargetType="TextBox">
+      <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+      <Setter Property="Background" Value="{StaticResource Tile2}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource Linea2}"/>
+      <Setter Property="CaretBrush" Value="#EEF1F6"/>
+      <Setter Property="SelectionBrush" Value="#2DD4BF"/>
+      <Setter Property="Padding" Value="8,7"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="TextBox">
+            <Border x:Name="Caja" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="10">
+              <ScrollViewer x:Name="PART_ContentHost" Focusable="False"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Caja" Property="BorderBrush" Value="#2DD4BF"/></Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
     <!-- Interruptor (activar o quitar una página del celular); el texto va a la derecha y también se puede pulsar. -->
     <Style x:Key="Interruptor" TargetType="CheckBox">
       <Setter Property="Foreground" Value="{StaticResource Texto}"/>
@@ -304,6 +382,15 @@ $xaml = @'
           <TextBlock Text="Selección de widgets"/>
         </StackPanel>
       </Button>
+      <Button x:Name="AbrirAtajos" DockPanel.Dock="Right" Style="{StaticResource Boton}" Margin="0,0,10,0" Padding="12,7" VerticalAlignment="Center"
+              AutomationProperties.Name="Atajos" ToolTip="Edita los botones de la página Sistema del celular">
+        <StackPanel Orientation="Horizontal">
+          <Path Width="14" Height="13" Stretch="Uniform" Stroke="#2DD4BF" StrokeThickness="1.8" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                Margin="0,0,8,0" VerticalAlignment="Center"
+                Data="M3,6 L21,6 L21,18 L3,18 Z M7,10 L7.01,10 M11,10 L11.01,10 M15,10 L15.01,10 M8,14 L16,14"/>
+          <TextBlock Text="Atajos"/>
+        </StackPanel>
+      </Button>
     </DockPanel>
 
     <Border x:Name="Aviso" Grid.Row="1" Visibility="Collapsed" CornerRadius="12" Padding="14,10" Margin="0,0,0,14" BorderThickness="1">
@@ -330,6 +417,91 @@ $xaml = @'
       </DockPanel>
       <!-- El margen negativo compensa el espacio que cada tarjeta deja a su derecha y debajo -->
       <UniformGrid x:Name="ListaPaginas" Columns="3" Margin="0,0,-16,-16"/>
+    </DockPanel>
+
+    <!-- Atajos: los botones de la página Sistema, en el orden del celular, y el editor de uno de ellos -->
+    <DockPanel x:Name="VistaAtajos" Grid.Row="2" Visibility="Collapsed" LastChildFill="True">
+      <DockPanel DockPanel.Dock="Top" Margin="0,0,0,16" LastChildFill="True">
+        <StackPanel x:Name="BotonesAtajos" DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0,0,0">
+          <Button x:Name="RestablecerAtajos" Content="Restablecer" Style="{StaticResource Boton}" Margin="0,0,10,0"
+                  ToolTip="Vuelve a los atajos de ejemplo"/>
+          <Button x:Name="ListoAtajos" Content="Listo" Style="{StaticResource BotonPrincipal}" Padding="26,8"/>
+        </StackPanel>
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock x:Name="TituloAtajos" FontSize="16" FontWeight="SemiBold"/>
+          <TextBlock x:Name="AyudaAtajos" Margin="0,3,0,0" Foreground="{StaticResource Tenue}" FontSize="12" TextWrapping="Wrap" LineHeight="17"/>
+        </StackPanel>
+      </DockPanel>
+      <Grid>
+        <UniformGrid x:Name="ListaAtajos" Columns="4" VerticalAlignment="Top" Margin="0,0,-12,-12"/>
+        <Grid x:Name="EditorAtajo" Visibility="Collapsed">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="254"/>
+            <ColumnDefinition Width="24"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+          <StackPanel Grid.Column="0">
+            <Border x:Name="EdVista" Height="88" CornerRadius="14" BorderBrush="{StaticResource Linea2}" BorderThickness="1">
+              <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <ContentControl x:Name="EdVistaIcono" HorizontalAlignment="Center" Focusable="False"/>
+                <TextBlock x:Name="EdVistaNombre" Margin="10,8,10,0" FontWeight="SemiBold" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+              </StackPanel>
+            </Border>
+            <TextBlock Text="NOMBRE" Style="{StaticResource Etiqueta}" Margin="0,16,0,6"/>
+            <TextBox x:Name="EdNombre" Style="{StaticResource Campo}" MaxLength="40"/>
+            <TextBlock Text="COLOR" Style="{StaticResource Etiqueta}" Margin="0,16,0,6"/>
+            <WrapPanel x:Name="EdColores"/>
+            <TextBlock Text="ICONO" Style="{StaticResource Etiqueta}" Margin="0,12,0,6"/>
+            <WrapPanel x:Name="EdIconos"/>
+          </StackPanel>
+          <StackPanel Grid.Column="2">
+            <TextBlock Text="QUÉ HACE" Style="{StaticResource Etiqueta}" Margin="0,0,0,6"/>
+            <Border Background="{StaticResource Tile}" BorderBrush="{StaticResource Linea}" BorderThickness="1" CornerRadius="12" Padding="3" HorizontalAlignment="Left">
+              <StackPanel Orientation="Horizontal">
+                <Button x:Name="EdTipoAbrir" Content="Abrir" Style="{StaticResource Segmento}" Tag="open"/>
+                <Button x:Name="EdTipoTeclas" Content="Atajo de teclado" Style="{StaticResource Segmento}" Tag="keys"/>
+                <Button x:Name="EdTipoComando" Content="Comando" Style="{StaticResource Segmento}" Tag="command"/>
+              </StackPanel>
+            </Border>
+            <StackPanel x:Name="EdAbrir" Margin="0,16,0,0">
+              <TextBlock Text="Programa, carpeta, archivo o página web" Foreground="{StaticResource Tenue}" FontSize="12" Margin="0,0,0,6"/>
+              <DockPanel>
+                <Button x:Name="EdExaminar" DockPanel.Dock="Right" Content="Examinar…" Style="{StaticResource Boton}" Margin="8,0,0,0" Padding="12,6"/>
+                <TextBox x:Name="EdDestino" Style="{StaticResource Campo}"/>
+              </DockPanel>
+              <TextBlock Text="Argumentos (opcional)" Foreground="{StaticResource Tenue}" FontSize="12" Margin="0,12,0,6"/>
+              <TextBox x:Name="EdArgumentos" Style="{StaticResource Campo}"/>
+              <TextBlock Margin="0,10,0,0" Foreground="{StaticResource Tenue}" FontSize="12" TextWrapping="Wrap" LineHeight="17"
+                         Text="Por ejemplo: calc.exe, https://www.google.com, una carpeta como C:\Users o shell:Downloads."/>
+            </StackPanel>
+            <StackPanel x:Name="EdTeclas" Margin="0,16,0,0">
+              <TextBlock Text="Haz clic en el recuadro y pulsa la combinación de teclas" Foreground="{StaticResource Tenue}" FontSize="12" Margin="0,0,0,6"/>
+              <TextBox x:Name="EdTeclasCaja" Style="{StaticResource Campo}" IsReadOnly="True" IsReadOnlyCaretVisible="False" FontSize="15" FontWeight="SemiBold"
+                       AutomationProperties.Name="Combinación de teclas"/>
+              <TextBlock Margin="0,10,0,0" Foreground="{StaticResource Tenue}" FontSize="12" TextWrapping="Wrap" LineHeight="17"
+                         Text="Le llega al programa que esté al frente en el PC. Se pueden usar Ctrl, Shift y Alt; la tecla de Windows no."/>
+            </StackPanel>
+            <StackPanel x:Name="EdComando" Margin="0,16,0,0">
+              <TextBlock Text="Comando de PowerShell" Foreground="{StaticResource Tenue}" FontSize="12" Margin="0,0,0,6"/>
+              <TextBox x:Name="EdComandoCaja" Style="{StaticResource Campo}" AcceptsReturn="True" TextWrapping="Wrap" Height="112"
+                       VerticalScrollBarVisibility="Auto" FontFamily="Cascadia Mono, Consolas" FontSize="12"/>
+              <TextBlock Margin="0,10,0,0" Foreground="{StaticResource Tenue}" FontSize="12" TextWrapping="Wrap" LineHeight="17"
+                         Text="Lo que escriba se ve en la página Comandos del celular."/>
+            </StackPanel>
+            <CheckBox x:Name="EdConfirmar" Style="{StaticResource Interruptor}" Margin="0,18,0,0" Content="Preguntar en el celular antes de hacerlo"/>
+            <TextBlock x:Name="EdError" Foreground="{StaticResource Rojo}" Margin="0,14,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
+          </StackPanel>
+          <DockPanel Grid.Row="1" Grid.ColumnSpan="3" Margin="0,18,0,0" LastChildFill="False">
+            <Button x:Name="EdEliminar" DockPanel.Dock="Left" Content="Eliminar" Style="{StaticResource BotonPeligro}"/>
+            <Button x:Name="EdGuardar" DockPanel.Dock="Right" Content="Guardar" Style="{StaticResource BotonPrincipal}" Padding="26,8"/>
+            <Button x:Name="EdCancelar" DockPanel.Dock="Right" Content="Cancelar" Style="{StaticResource Boton}" Margin="0,0,10,0"/>
+          </DockPanel>
+        </Grid>
+      </Grid>
     </DockPanel>
 
     <Grid x:Name="VistaConexion" Grid.Row="2">
@@ -399,7 +571,11 @@ $w = [Windows.Markup.XamlReader]::Parse($xaml)
 $ui = @{}
 foreach ($n in 'Logo', 'Punto', 'Estado', 'Idiomas', 'IdiomaEs', 'IdiomaEn', 'Aviso', 'AvisoTexto', 'AvisoBoton', 'Qr', 'QrEspera',
     'Direccion', 'Copiar', 'TarjetaDispositivos', 'ListaDispositivos', 'SinDispositivos', 'ListaActividad', 'AbrirPc', 'Detener',
-    'AbrirPaginas', 'VistaConexion', 'VistaPaginas', 'ListaPaginas', 'RestablecerPaginas', 'ListoPaginas') {
+    'AbrirPaginas', 'VistaConexion', 'VistaPaginas', 'ListaPaginas', 'RestablecerPaginas', 'ListoPaginas',
+    'AbrirAtajos', 'VistaAtajos', 'BotonesAtajos', 'RestablecerAtajos', 'ListoAtajos', 'TituloAtajos', 'AyudaAtajos', 'ListaAtajos', 'EditorAtajo',
+    'EdVista', 'EdVistaIcono', 'EdVistaNombre', 'EdNombre', 'EdColores', 'EdIconos', 'EdTipoAbrir', 'EdTipoTeclas', 'EdTipoComando',
+    'EdAbrir', 'EdExaminar', 'EdDestino', 'EdArgumentos', 'EdTeclas', 'EdTeclasCaja', 'EdComando', 'EdComandoCaja', 'EdConfirmar', 'EdError',
+    'EdEliminar', 'EdGuardar', 'EdCancelar') {
     $ui[$n] = $w.FindName($n)
 }
 try {
@@ -412,7 +588,8 @@ try {
 # Textos fijos de la plantilla, en español, para traducirlos (y volver) al cambiar de idioma. Los que cambia el código
 # (estado, aviso, QR, enlace) y los nombres de los idiomas no entran.
 $script:textosFijos = New-Object Collections.ArrayList
-$noTraducir = 'Estado', 'QrEspera', 'AvisoTexto', 'AvisoBoton', 'Direccion', 'Copiar', 'IdiomaEs', 'IdiomaEn'
+$noTraducir = 'Estado', 'QrEspera', 'AvisoTexto', 'AvisoBoton', 'Direccion', 'Copiar', 'IdiomaEs', 'IdiomaEn',
+    'TituloAtajos', 'AyudaAtajos', 'EdVistaNombre', 'EdNombre', 'EdDestino', 'EdArgumentos', 'EdTeclasCaja', 'EdComandoCaja', 'EdError'
 function Find-TextosFijos($Elemento) {
     if ($Elemento -isnot [Windows.DependencyObject]) { return }
     if ($Elemento -is [Windows.FrameworkElement] -and $Elemento.Name -in $noTraducir) { return }
@@ -505,7 +682,7 @@ function Show-Aviso([string]$Texto, [string]$Tipo = 'aviso', [string]$Boton, [sc
 function Hide-Aviso { $ui.Aviso.Visibility = 'Collapsed'; $script:avisoAccion = $null }
 
 function Set-Fallo([string]$Texto, [string]$Boton, [scriptblock]$Accion, [object[]]$Datos = @()) {
-    Hide-Paginas
+    Hide-Paginas; Hide-Atajos
     Set-Estado 'No está funcionando' $C.Rojo -Normal
     Show-Aviso $Texto 'error' $Boton $Accion $Datos
     Set-QrEspera 'Sin conexión'; $ui.Qr.Source = $null; $script:qrPuesto = $false
@@ -560,6 +737,14 @@ function Update-Idioma {
     $script:firmaActividad = $null; Update-Actividad
     $script:firmaDispositivos = $null # los dispositivos se vuelven a dibujar con la próxima lectura
     if ($script:enPaginas) { Update-ListaPaginas }
+    if ($script:enAtajos) {
+        if ($script:edicion) {
+            $e = $script:edicion
+            $ui.TituloAtajos.Text = if ($e.nuevo) { T 'Nuevo atajo' } else { TF 'Editar {0}' $e.label }
+            $ui.AyudaAtajos.Text = T 'Así se verá el botón en la página Sistema del celular.'
+            $ui.EdTeclasCaja.Text = Format-Teclas $e.keys; Update-EditorAtajo
+        } else { Update-ListaAtajos }
+    }
 }
 
 # El código QR llega del servidor como filas de "0" y "1"; se dibuja como imagen, con un margen blanco.
@@ -659,14 +844,16 @@ function Show-Ventana {
 }
 
 # ---------- Comunicación con el servidor (solo desde este PC, con el token)
+# Si el servidor responde con un error, $script:errorApi guarda su mensaje (ya en el idioma elegido).
 function Invoke-PanelApi([string]$Metodo, [string]$Ruta, $Cuerpo = $null) {
+    $script:errorApi = $null
     if (-not $script:token) { return $null }
     try {
         $r = [Net.HttpWebRequest]::Create("http://127.0.0.1:$Puerto$Ruta")
         $r.Method = $Metodo; $r.Timeout = 2000; $r.ReadWriteTimeout = 2000; $r.Proxy = $null
         $r.Headers.Add('x-panel-token', $script:token)
         if ($null -ne $Cuerpo) {
-            $bytes = [Text.Encoding]::UTF8.GetBytes(($Cuerpo | ConvertTo-Json -Compress))
+            $bytes = [Text.Encoding]::UTF8.GetBytes(($Cuerpo | ConvertTo-Json -Compress -Depth 6))
             $r.ContentType = 'application/json'; $r.ContentLength = $bytes.Length
             $s = $r.GetRequestStream(); $s.Write($bytes, 0, $bytes.Length); $s.Close()
         } elseif ($Metodo -eq 'POST') { $r.ContentLength = 0 }
@@ -674,7 +861,16 @@ function Invoke-PanelApi([string]$Metodo, [string]$Ruta, $Cuerpo = $null) {
         $lector = New-Object IO.StreamReader($resp.GetResponseStream(), [Text.Encoding]::UTF8)
         $texto = $lector.ReadToEnd(); $lector.Close(); $resp.Close()
         return ($texto | ConvertFrom-Json)
-    } catch { return $null }
+    } catch {
+        try {
+            $e = $_.Exception; while ($e -and $e -isnot [Net.WebException]) { $e = $e.InnerException }
+            if ($e -and $e.Response) {
+                $lector = New-Object IO.StreamReader($e.Response.GetResponseStream(), [Text.Encoding]::UTF8)
+                $script:errorApi = [string]($lector.ReadToEnd() | ConvertFrom-Json).error; $lector.Close()
+            }
+        } catch { }
+        return $null
+    }
 }
 
 function Format-ErrorServidor([string]$Texto) {
@@ -914,12 +1110,12 @@ $script:arrastre = $null; $script:movimiento = $null; $script:destino = ''
 function Show-Paginas {
     $r = Invoke-PanelApi 'GET' '/api/pc/paginas'
     if (-not $r) { Show-Aviso 'Para elegir las páginas del celular, el panel tiene que estar funcionando.' 'aviso'; return }
-    Hide-Aviso
+    Hide-Atajos; Hide-Aviso
     $script:paginas = @($r.paginas)
     Update-ListaPaginas
     $ui.VistaPaginas.MinHeight = $ui.VistaConexion.ActualHeight # la ventana no cambia de alto al pasar de una vista a otra
     $ui.VistaConexion.Visibility = 'Collapsed'; $ui.VistaPaginas.Visibility = 'Visible'
-    $ui.AbrirPaginas.Visibility = 'Collapsed'
+    $ui.AbrirPaginas.Visibility = 'Collapsed'; $ui.AbrirAtajos.Visibility = 'Collapsed'
     $script:enPaginas = $true
 }
 
@@ -927,7 +1123,7 @@ function Hide-Paginas {
     if (-not $script:enPaginas) { return }
     $script:enPaginas = $false
     $ui.VistaPaginas.Visibility = 'Collapsed'; $ui.VistaConexion.Visibility = 'Visible'
-    $ui.AbrirPaginas.Visibility = 'Visible'
+    $ui.AbrirPaginas.Visibility = 'Visible'; $ui.AbrirAtajos.Visibility = 'Visible'
 }
 
 function Save-Paginas($Lista, [string]$Foco) {
@@ -1181,6 +1377,306 @@ function Update-ListaPaginas([string]$Foco) {
     }
 }
 
+# ---------- Atajos: los botones de la página Sistema del celular. Se guardan en config.json (a través del servidor) y el
+# celular los ve al momento. Desde aquí se agregan, editan, quitan y ordenan.
+$script:atajos = @()
+$script:atajosEjemplo = @()
+$script:maxAtajos = 12
+$script:enAtajos = $false
+$script:edicion = $null        # el atajo que se está editando (hashtable), o $null en la lista
+$script:arrastreAtajo = $null; $script:movAtajo = $null
+$ColoresAtajo = '#2dd4bf', '#38bdf8', '#818cf8', '#a78bfa', '#f472b6', '#f87171', '#fb923c', '#f5b84b', '#4ade80', '#94a3b8'
+
+# Iconos: los mismos del celular, leídos de public\index.html (sus <symbol> en SVG pasan a geometrías de WPF).
+$script:iconos = [ordered]@{}
+$sinIconoAtajo = 'pause', 'expand', 'shrink', 'reset', 'skip', 'check', 'chevron', 'moonsm', 'cloudsun', 'cloud', 'fog', 'rain', 'storm', 'snow', 'dot'
+function Read-Iconos {
+    if ($script:iconos.Count) { return }
+    try { $html = [IO.File]::ReadAllText((Join-Path $Raiz 'public\index.html')) } catch { return }
+    foreach ($m in [regex]::Matches($html, '<symbol id="i-([a-z]+)" viewBox="0 0 24 24">(.*?)</symbol>')) {
+        $partes = @()
+        try {
+            foreach ($el in [regex]::Matches($m.Groups[2].Value, '<(path|circle|rect)\s([^>]*?)/?>')) {
+                $at = @{}
+                foreach ($a in [regex]::Matches($el.Groups[2].Value, '([\w-]+)="([^"]*)"')) { $at[$a.Groups[1].Value] = $a.Groups[2].Value }
+                $g = switch ($el.Groups[1].Value) {
+                    'path' { [Windows.Media.Geometry]::Parse($at['d']) }
+                    'circle' { New-Object Windows.Media.EllipseGeometry((New-Object Windows.Point([double]$at['cx'], [double]$at['cy'])), [double]$at['r'], [double]$at['r']) }
+                    'rect' { $rx = if ($at['rx']) { [double]$at['rx'] } else { 0 }; New-Object Windows.Media.RectangleGeometry((New-Object Windows.Rect([double]$at['x'], [double]$at['y'], [double]$at['width'], [double]$at['height'])), $rx, $rx) }
+                }
+                $g.Freeze()
+                $partes += @{ Geo = $g; Relleno = ($at['fill'] -eq 'currentColor'); Grosor = $(if ($at['stroke-width']) { [double]$at['stroke-width'] } else { 1.9 }) }
+            }
+            $script:iconos[$m.Groups[1].Value] = $partes
+        } catch { } # un icono que WPF no entiende no se ofrece
+    }
+}
+
+function New-IconoVista([string]$Nombre, [string]$Color, [double]$Tamano) {
+    Read-Iconos
+    $partes = $script:iconos[$Nombre]; if (-not $partes) { $partes = $script:iconos['dot'] }
+    $pincel = Get-Pincel $Color
+    $lienzo = New-Object Windows.Controls.Canvas
+    $lienzo.Width = 24; $lienzo.Height = 24
+    foreach ($p in @($partes)) {
+        $f = New-Object Windows.Shapes.Path
+        $f.Data = $p.Geo
+        if ($p.Relleno) { $f.Fill = $pincel } else {
+            $f.Stroke = $pincel; $f.StrokeThickness = $p.Grosor
+            $f.StrokeStartLineCap = 'Round'; $f.StrokeEndLineCap = 'Round'; $f.StrokeLineJoin = 'Round'
+        }
+        [void]$lienzo.Children.Add($f)
+    }
+    $vb = New-Object Windows.Controls.Viewbox
+    $vb.Width = $Tamano; $vb.Height = $Tamano; $vb.Child = $lienzo; $vb.IsHitTestVisible = $false
+    $vb
+}
+
+# Atajo de teclado en formato SendKeys (^+{ESC}) ↔ texto para leer (Ctrl + Shift + Esc)
+$NombresTecla = @{ ESC = 'Esc'; ESCAPE = 'Esc'; ENTER = 'Enter'; TAB = 'Tab'; BACKSPACE = 'Retroceso'; BS = 'Retroceso'; DEL = 'Supr'; DELETE = 'Supr'
+    INS = 'Insert'; INSERT = 'Insert'; HOME = 'Inicio'; END = 'Fin'; PGUP = 'RePág'; PGDN = 'AvPág'; UP = '↑'; DOWN = '↓'; LEFT = '←'; RIGHT = '→'
+    SPACE = 'Espacio'; PRTSC = 'Impr Pant'; BREAK = 'Pausa' }
+function Format-Teclas([string]$K) {
+    if (-not $K) { return '' }
+    $partes = @(); $i = 0
+    while ($i -lt $K.Length -and '^+%'.Contains([string]$K[$i])) { $partes += @{ '^' = 'Ctrl'; '+' = 'Shift'; '%' = 'Alt' }[[string]$K[$i]]; $i++ }
+    $resto = $K.Substring($i)
+    if ($resto -match '^\{(.+)\}$') { $n = $Matches[1].ToUpper(); $resto = if ($NombresTecla[$n]) { T $NombresTecla[$n] } else { $Matches[1] } }
+    elseif ($resto.Length -eq 1) { $resto = $resto.ToUpper() }
+    ($partes + $resto) -join ' + '
+}
+function ConvertTo-TeclaSendKeys([Windows.Input.Key]$Tecla) {
+    $n = [string]$Tecla
+    if ($n -match '^[A-Z]$') { return $n.ToLower() }
+    if ($n -match '^D(\d)$' -or $n -match '^NumPad(\d)$') { return $Matches[1] }
+    if ($n -match '^F(\d{1,2})$' -and [int]$Matches[1] -le 24) { return "{$n}" }
+    $mapa = @{ Escape = '{ESC}'; Return = '{ENTER}'; Enter = '{ENTER}'; Tab = '{TAB}'; Back = '{BACKSPACE}'; Delete = '{DEL}'; Insert = '{INS}'
+        Home = '{HOME}'; End = '{END}'; PageUp = '{PGUP}'; Prior = '{PGUP}'; PageDown = '{PGDN}'; Next = '{PGDN}'; Up = '{UP}'; Down = '{DOWN}'
+        Left = '{LEFT}'; Right = '{RIGHT}'; Space = '{SPACE}'; Snapshot = '{PRTSC}'; PrintScreen = '{PRTSC}'; Pause = '{BREAK}' }
+    $mapa[$n]
+}
+
+function Get-ResumenAtajo($A) {
+    switch ([string]$A.type) {
+        'open' { $d = [string]$A.target; if ($A.args -and $d -match 'explorer(\.exe)?$') { $d = [string]$A.args } # una carpeta: se dice cuál
+            if ($d -match '^https?://([^/]+)') { $d = $Matches[1] } elseif ($d -match '[\\/]([^\\/]+)$') { $d = $Matches[1] }; TF 'Abre {0}' $d }
+        'keys' { TF 'Teclas: {0}' (Format-Teclas ([string]$A.keys)) }
+        'command' { T 'Comando de PowerShell' }
+        default { '' }
+    }
+}
+
+function Show-Atajos {
+    $r = Invoke-PanelApi 'GET' '/api/pc/atajos'
+    if (-not $r) { Show-Aviso 'Para editar los atajos, el panel tiene que estar funcionando.' 'aviso'; return }
+    Hide-Paginas; Hide-Aviso
+    $script:atajos = @($r.atajos); $script:atajosEjemplo = @($r.predeterminados); if ($r.maximo) { $script:maxAtajos = [int]$r.maximo }
+    $script:edicion = $null
+    Update-ListaAtajos
+    $ui.VistaAtajos.MinHeight = $ui.VistaConexion.ActualHeight
+    $ui.VistaConexion.Visibility = 'Collapsed'; $ui.VistaAtajos.Visibility = 'Visible'
+    $ui.AbrirAtajos.Visibility = 'Collapsed'; $ui.AbrirPaginas.Visibility = 'Collapsed'
+    $script:enAtajos = $true
+}
+
+function Hide-Atajos {
+    if (-not $script:enAtajos) { return }
+    $script:enAtajos = $false; $script:edicion = $null
+    $ui.VistaAtajos.Visibility = 'Collapsed'; $ui.VistaConexion.Visibility = 'Visible'
+    $ui.AbrirAtajos.Visibility = 'Visible'; $ui.AbrirPaginas.Visibility = 'Visible'
+}
+
+# Guarda la lista entera. Devuelve $true si el servidor la aceptó; si no, deja el motivo en $script:errorAtajos.
+function Save-Atajos($Lista) {
+    $campos = 'id', 'label', 'icon', 'color', 'type', 'target', 'args', 'keys', 'command', 'confirm'
+    $cuerpo = @{ atajos = @(@($Lista) | Where-Object { $_ } | ForEach-Object {
+        $a = $_; $h = @{}
+        foreach ($k in $campos) { $v = if ($a -is [hashtable]) { $a[$k] } else { $a.$k }; if ($null -ne $v -and "$v" -ne '') { $h[$k] = $v } }
+        $h
+    }) }
+    $r = Invoke-PanelApi 'POST' '/api/pc/atajos' $cuerpo
+    if (-not $r) { $script:errorAtajos = if ($script:errorApi) { $script:errorApi } else { T 'El panel no respondió.' }; return $false }
+    $script:atajos = @($r.atajos); $script:errorAtajos = $null
+    $true
+}
+
+function Reset-Atajos {
+    $r = [Windows.MessageBox]::Show($w, (T '¿Volver a los atajos de ejemplo? Se pierden los que cambiaste.'), 'Panel del PC', 'YesNo', 'Question')
+    if ("$r" -ne 'Yes') { return }
+    if (Save-Atajos $script:atajosEjemplo) { Update-ListaAtajos } else { Show-Aviso 'No se pudieron guardar los atajos: {0}' 'error' -Datos $script:errorAtajos }
+}
+
+function Move-AtajoA([string]$Id, [string]$DestinoId) {
+    $l = New-Object Collections.ArrayList; $l.AddRange(@($script:atajos))
+    $i = -1; $j = -1
+    for ($k = 0; $k -lt $l.Count; $k++) { if ($l[$k].id -eq $Id) { $i = $k }; if ($l[$k].id -eq $DestinoId) { $j = $k } }
+    if ($i -lt 0 -or $j -lt 0 -or $i -eq $j) { return }
+    $p = $l[$i]; $l.RemoveAt($i); $l.Insert($j, $p)
+    if (-not (Save-Atajos @($l))) { Show-Aviso 'No se pudieron guardar los atajos: {0}' 'error' -Datos $script:errorAtajos }
+    Update-ListaAtajos
+}
+
+# La lista: una tarjeta por atajo, como se ve en el celular (icono de su color y nombre), con lo que hace debajo. Se pulsa
+# para editarla y se arrastra para cambiar el orden. Al final, «Agregar atajo» si caben más.
+function Update-ListaAtajos {
+    $ui.TituloAtajos.Text = T 'Atajos'
+    $ui.AyudaAtajos.Text = TF 'Los botones de la página Sistema del celular (hasta {0}). Pulsa uno para editarlo y arrástralos para cambiar el orden; cada cambio le llega al celular al momento.' $script:maxAtajos
+    $ui.BotonesAtajos.Visibility = 'Visible'; $ui.EditorAtajo.Visibility = 'Collapsed'; $ui.ListaAtajos.Visibility = 'Visible'
+    $ui.ListaAtajos.Children.Clear()
+    foreach ($a in @($script:atajos)) {
+        $color = if ([string]$a.color -match '^#[0-9a-fA-F]{6}$') { [string]$a.color } else { $C.Texto }
+        $b = New-Object Windows.Controls.Button
+        $b.Style = $w.FindResource('Boton'); $b.Padding = '10,12'; $b.Margin = '0,0,12,12'; $b.Height = 104
+        $b.Background = Get-Pincel $C.Tile; $b.Tag = [string]$a.id; $b.AllowDrop = $true
+        $b.HorizontalContentAlignment = 'Stretch'
+        $sp = New-Object Windows.Controls.StackPanel
+        $ic = New-IconoVista ([string]$a.icon) $color 24; $ic.HorizontalAlignment = 'Center'
+        $nom = New-Texto ([string]$a.label) $C.Texto 13 ([Windows.FontWeights]::SemiBold)
+        $nom.TextWrapping = 'NoWrap'; $nom.TextTrimming = 'CharacterEllipsis'; $nom.HorizontalAlignment = 'Center'; $nom.Margin = '0,10,0,0'
+        $res = New-Texto (Get-ResumenAtajo $a) $C.Tenue 11
+        $res.TextWrapping = 'NoWrap'; $res.TextTrimming = 'CharacterEllipsis'; $res.HorizontalAlignment = 'Center'; $res.Margin = '0,3,0,0'
+        [void]$sp.Children.Add($ic); [void]$sp.Children.Add($nom); [void]$sp.Children.Add($res)
+        $b.Content = $sp
+        $b.ToolTip = T 'Pulsa para editarlo; arrástralo para cambiar el orden'
+        [Windows.Automation.AutomationProperties]::SetName($b, (TF 'Editar {0}' ([string]$a.label)))
+        $b.Add_Click({ param($s) Invoke-Seguro { $id = [string]$s.Tag; Open-EditorAtajo (@($script:atajos) | Where-Object { $_.id -eq $id } | Select-Object -First 1) } })
+        # Arrastrar para ordenar
+        $b.Add_PreviewMouseLeftButtonDown({ param($s, $e) $script:arrastreAtajo = @{ Id = [string]$s.Tag; Punto = $e.GetPosition($w) } })
+        $b.Add_PreviewMouseLeftButtonUp({ $script:arrastreAtajo = $null })
+        $b.Add_PreviewMouseMove({ param($s, $e)
+            $a = $script:arrastreAtajo
+            if (-not $a -or $e.LeftButton -ne [Windows.Input.MouseButtonState]::Pressed) { return }
+            $q = $e.GetPosition($w)
+            if ([math]::Abs($q.X - $a.Punto.X) -lt [Windows.SystemParameters]::MinimumHorizontalDragDistance -and
+                [math]::Abs($q.Y - $a.Punto.Y) -lt [Windows.SystemParameters]::MinimumVerticalDragDistance) { return }
+            $script:arrastreAtajo = $null; $script:movAtajo = $null
+            $s.Opacity = 0.4
+            try { [void][Windows.DragDrop]::DoDragDrop($s, (New-Object Windows.DataObject('PanelAtajo', $a.Id)), [Windows.DragDropEffects]::Move) } finally { $s.Opacity = 1 }
+            $m = $script:movAtajo; $script:movAtajo = $null
+            if ($m) { Invoke-Seguro { Move-AtajoA $m[0] $m[1] } }
+        })
+        $b.Add_DragOver({ param($s, $e)
+            $o = if ($e.Data.GetDataPresent('PanelAtajo')) { [string]$e.Data.GetData('PanelAtajo') } else { '' }
+            $e.Effects = if ($o -and $o -ne [string]$s.Tag) { [Windows.DragDropEffects]::Move } else { [Windows.DragDropEffects]::None }
+            $s.BorderBrush = Get-Pincel $(if ($o -and $o -ne [string]$s.Tag) { $C.Teal } else { '#1FFFFFFF' })
+            $e.Handled = $true
+        })
+        $b.Add_DragLeave({ param($s) $s.BorderBrush = Get-Pincel '#1FFFFFFF' })
+        $b.Add_Drop({ param($s, $e)
+            $s.BorderBrush = Get-Pincel '#1FFFFFFF'
+            $o = if ($e.Data.GetDataPresent('PanelAtajo')) { [string]$e.Data.GetData('PanelAtajo') } else { '' }
+            if ($o -and $o -ne [string]$s.Tag) { $script:movAtajo = @($o, [string]$s.Tag) }
+            $e.Handled = $true
+        })
+        [void]$ui.ListaAtajos.Children.Add($b)
+    }
+    if (@($script:atajos).Count -lt $script:maxAtajos) {
+        $n = New-Object Windows.Controls.Button
+        $n.Style = $w.FindResource('Boton'); $n.Margin = '0,0,12,12'; $n.Height = 104
+        $n.Background = Get-Pincel '#00000000'; $n.BorderBrush = Get-Pincel '#33FFFFFF'
+        $sp = New-Object Windows.Controls.StackPanel
+        $mas = New-Texto '+' $C.Teal 26 ([Windows.FontWeights]::Light); $mas.HorizontalAlignment = 'Center'
+        $txt = New-Texto (T 'Agregar atajo') $C.Tenue 12 ([Windows.FontWeights]::SemiBold); $txt.HorizontalAlignment = 'Center'
+        [void]$sp.Children.Add($mas); [void]$sp.Children.Add($txt)
+        $n.Content = $sp
+        [Windows.Automation.AutomationProperties]::SetName($n, (T 'Agregar atajo'))
+        $n.Add_Click({ Invoke-Seguro { Open-EditorAtajo $null } })
+        [void]$ui.ListaAtajos.Children.Add($n)
+    }
+}
+
+# ---------- Editor de un atajo ($A = $null: uno nuevo)
+function Open-EditorAtajo($A) {
+    $e = @{ nuevo = -not $A; id = ''; label = ''; icon = 'globe'; color = '#2dd4bf'; type = 'open'; target = ''; args = ''; keys = ''; command = ''; confirm = $false }
+    if ($A) { foreach ($k in 'id', 'label', 'icon', 'color', 'type', 'target', 'args', 'keys', 'command') { if ($null -ne $A.$k) { $e[$k] = [string]$A.$k } }; $e.confirm = [bool]$A.confirm }
+    if ($e.type -notin 'open', 'keys', 'command') { $e.type = 'open' }
+    $script:edicion = $e
+    $ui.TituloAtajos.Text = if ($e.nuevo) { T 'Nuevo atajo' } else { TF 'Editar {0}' $e.label }
+    $ui.AyudaAtajos.Text = T 'Así se verá el botón en la página Sistema del celular.'
+    $ui.BotonesAtajos.Visibility = 'Collapsed'; $ui.ListaAtajos.Visibility = 'Collapsed'; $ui.EditorAtajo.Visibility = 'Visible'
+    $ui.EdNombre.Text = $e.label; $ui.EdDestino.Text = $e.target; $ui.EdArgumentos.Text = $e.args; $ui.EdComandoCaja.Text = $e.command
+    $ui.EdTeclasCaja.Text = Format-Teclas $e.keys; $ui.EdConfirmar.IsChecked = $e.confirm
+    $ui.EdEliminar.Visibility = if ($e.nuevo) { 'Collapsed' } else { 'Visible' }
+    $ui.EdError.Visibility = 'Collapsed'
+    Update-EditorAtajo
+    [void]$ui.EdNombre.Focus()
+}
+
+# Vuelve a dibujar lo que depende de lo elegido: la vista previa, el color, el icono y el tipo de acción.
+function Update-EditorAtajo {
+    $e = $script:edicion; if (-not $e) { return }
+    $ui.EdVista.Background = Get-Pincel ($e.color -replace '^#', '#1F')
+    $ui.EdVista.BorderBrush = Get-Pincel ($e.color -replace '^#', '#59')
+    $ui.EdVistaIcono.Content = New-IconoVista $e.icon $e.color 26
+    $ui.EdVistaNombre.Text = if ($ui.EdNombre.Text.Trim()) { $ui.EdNombre.Text.Trim() } else { T 'Sin nombre' }
+    $ui.EdColores.Children.Clear()
+    foreach ($tono in $ColoresAtajo) { # ($c no: en PowerShell es la misma variable que $C, la de los colores de la ventana)
+        $b = New-Object Windows.Controls.Button
+        $b.Style = $w.FindResource('BotonFlotante'); $b.Width = 22; $b.Height = 22; $b.Margin = '0,0,3,3'; $b.Tag = $tono
+        $b.Background = Get-Pincel $tono
+        $b.BorderBrush = Get-Pincel $(if ($tono -eq $e.color) { $C.Texto } else { '#00000000' })
+        if ($tono -eq $e.color) { $b.Width = 26; $b.Height = 26; $b.Margin = '0,0,1,1' }
+        [Windows.Automation.AutomationProperties]::SetName($b, (TF 'Color {0}' $tono))
+        $b.Add_Click({ param($s) Invoke-Seguro { $script:edicion.color = [string]$s.Tag; Update-EditorAtajo } })
+        [void]$ui.EdColores.Children.Add($b)
+    }
+    $ui.EdIconos.Children.Clear()
+    Read-Iconos
+    foreach ($n in $script:iconos.Keys) {
+        if ($n -in $sinIconoAtajo) { continue }
+        $b = New-Object Windows.Controls.Button
+        $b.Style = $w.FindResource('BotonFlotante'); $b.Width = 30; $b.Height = 30; $b.Margin = '0,0,4,4'; $b.Tag = $n
+        $sel = $n -eq $e.icon
+        $b.Background = Get-Pincel $(if ($sel) { $e.color -replace '^#', '#33' } else { $C.Tile2 })
+        $b.BorderBrush = Get-Pincel $(if ($sel) { $e.color } else { '#1FFFFFFF' })
+        $b.Content = New-IconoVista $n $(if ($sel) { $e.color } else { $C.Tenue }) 15
+        [Windows.Automation.AutomationProperties]::SetName($b, (TF 'Icono {0}' $n)); $b.ToolTip = $n
+        $b.Add_Click({ param($s) Invoke-Seguro { $script:edicion.icon = [string]$s.Tag; Update-EditorAtajo } })
+        [void]$ui.EdIconos.Children.Add($b)
+    }
+    foreach ($par in @(@($ui.EdTipoAbrir, 'open'), @($ui.EdTipoTeclas, 'keys'), @($ui.EdTipoComando, 'command'))) {
+        $on = $e.type -eq $par[1]
+        $par[0].Background = Get-Pincel $(if ($on) { $C.Tile2 } else { '#00000000' })
+        $par[0].BorderBrush = Get-Pincel $(if ($on) { '#1FFFFFFF' } else { '#00000000' })
+        $par[0].Foreground = Get-Pincel $(if ($on) { $C.Texto } else { $C.Tenue })
+    }
+    $ui.EdAbrir.Visibility = if ($e.type -eq 'open') { 'Visible' } else { 'Collapsed' }
+    $ui.EdTeclas.Visibility = if ($e.type -eq 'keys') { 'Visible' } else { 'Collapsed' }
+    $ui.EdComando.Visibility = if ($e.type -eq 'command') { 'Visible' } else { 'Collapsed' }
+}
+
+function Show-ErrorEditor([string]$Texto) { $ui.EdError.Text = $Texto; $ui.EdError.Visibility = 'Visible' }
+
+function Save-EditorAtajo {
+    $e = $script:edicion; if (-not $e) { return }
+    $e.label = $ui.EdNombre.Text.Trim(); $e.target = $ui.EdDestino.Text.Trim(); $e.args = $ui.EdArgumentos.Text.Trim()
+    $e.command = $ui.EdComandoCaja.Text.Trim(); $e.confirm = [bool]$ui.EdConfirmar.IsChecked
+    if (-not $e.label) { Show-ErrorEditor (T 'Ponle un nombre al atajo.'); [void]$ui.EdNombre.Focus(); return }
+    if ($e.type -eq 'open' -and -not $e.target) { Show-ErrorEditor (T 'Escribe qué tiene que abrir.'); [void]$ui.EdDestino.Focus(); return }
+    if ($e.type -eq 'keys' -and -not $e.keys) { Show-ErrorEditor (T 'Haz clic en el recuadro y pulsa la combinación de teclas.'); [void]$ui.EdTeclasCaja.Focus(); return }
+    if ($e.type -eq 'command' -and -not $e.command) { Show-ErrorEditor (T 'Escribe el comando.'); [void]$ui.EdComandoCaja.Focus(); return }
+    $nuevo = @{ id = $e.id; label = $e.label; icon = $e.icon; color = $e.color; type = $e.type; confirm = $e.confirm }
+    switch ($e.type) { 'open' { $nuevo.target = $e.target; $nuevo.args = $e.args } 'keys' { $nuevo.keys = $e.keys } 'command' { $nuevo.command = $e.command } }
+    $lista = @(@($script:atajos) | ForEach-Object { if (-not $e.nuevo -and $_.id -eq $e.id) { $nuevo } else { $_ } })
+    if ($e.nuevo) { $lista += $nuevo }
+    if (Save-Atajos $lista) { $script:edicion = $null; Update-ListaAtajos } else { Show-ErrorEditor (TF 'No se pudo guardar: {0}' $script:errorAtajos) }
+}
+
+function Remove-EditorAtajo {
+    $e = $script:edicion; if (-not $e -or $e.nuevo) { return }
+    $r = [Windows.MessageBox]::Show($w, (TF '¿Eliminar el atajo {0}?' $e.label), 'Panel del PC', 'YesNo', 'Question')
+    if ("$r" -ne 'Yes') { return }
+    if (Save-Atajos @(@($script:atajos) | Where-Object { $_.id -ne $e.id })) { $script:edicion = $null; Update-ListaAtajos }
+    else { Show-ErrorEditor (TF 'No se pudo guardar: {0}' $script:errorAtajos) }
+}
+
+function Select-DestinoAtajo {
+    $d = New-Object Microsoft.Win32.OpenFileDialog
+    $d.Title = T 'Elige el programa o el archivo'
+    $d.Filter = (T 'Programas') + ' (*.exe;*.lnk;*.bat;*.cmd)|*.exe;*.lnk;*.bat;*.cmd|' + (T 'Todos los archivos') + ' (*.*)|*.*'
+    if ($d.ShowDialog($w)) { $ui.EdDestino.Text = $d.FileName; if (-not $ui.EdNombre.Text.Trim()) { $ui.EdNombre.Text = [IO.Path]::GetFileNameWithoutExtension($d.FileName) } }
+}
+
 # ---------- Icono junto al reloj
 $tray = New-Object Windows.Forms.NotifyIcon
 try { $tray.Icon = New-Object Drawing.Icon((Join-Path $Raiz 'panel.ico'), [Windows.Forms.SystemInformation]::SmallIconSize) } catch { $tray.Icon = [Drawing.SystemIcons]::Application }
@@ -1210,7 +1706,40 @@ $ui.IdiomaEn.Add_Click({ Invoke-Seguro { Set-Idioma 'en' } })
 $ui.AbrirPaginas.Add_Click({ Invoke-Seguro { Show-Paginas } })
 $ui.ListoPaginas.Add_Click({ Invoke-Seguro { Hide-Paginas } })
 $ui.RestablecerPaginas.Add_Click({ Invoke-Seguro { Reset-Paginas } })
-$w.Add_KeyDown({ param($s, $e) if ($e.Key -eq 'Escape' -and $script:enPaginas) { Invoke-Seguro { Hide-Paginas } } })
+$ui.AbrirAtajos.Add_Click({ Invoke-Seguro { Show-Atajos } })
+$ui.ListoAtajos.Add_Click({ Invoke-Seguro { Hide-Atajos } })
+$ui.RestablecerAtajos.Add_Click({ Invoke-Seguro { Reset-Atajos } })
+$ui.EdGuardar.Add_Click({ Invoke-Seguro { Save-EditorAtajo } })
+$ui.EdCancelar.Add_Click({ Invoke-Seguro { $script:edicion = $null; Update-ListaAtajos } })
+$ui.EdEliminar.Add_Click({ Invoke-Seguro { Remove-EditorAtajo } })
+$ui.EdExaminar.Add_Click({ Invoke-Seguro { Select-DestinoAtajo } })
+foreach ($b in $ui.EdTipoAbrir, $ui.EdTipoTeclas, $ui.EdTipoComando) {
+    $b.Add_Click({ param($s) Invoke-Seguro { $script:edicion.type = [string]$s.Tag; $ui.EdError.Visibility = 'Collapsed'; Update-EditorAtajo } })
+}
+$ui.EdNombre.Add_TextChanged({ if ($script:edicion) { $ui.EdVistaNombre.Text = if ($ui.EdNombre.Text.Trim()) { $ui.EdNombre.Text.Trim() } else { T 'Sin nombre' } } })
+# Capturar la combinación: se guarda en el formato de SendKeys (^ Ctrl, + Shift, % Alt) y se muestra para leer.
+$ui.EdTeclasCaja.Add_PreviewKeyDown({ param($s, $e)
+    $k = if ($e.Key -eq [Windows.Input.Key]::System) { $e.SystemKey } else { $e.Key }
+    $mods = [Windows.Input.Keyboard]::Modifiers
+    if ($k -eq [Windows.Input.Key]::Tab -and $mods -eq 'None') { return } # Tab sola: pasar al siguiente campo
+    $e.Handled = $true
+    if ("$k" -match 'Ctrl$|Shift$|Alt$|Win$|^System$') { return }
+    $tecla = ConvertTo-TeclaSendKeys $k
+    if (-not $tecla) { Show-ErrorEditor (T 'Esa tecla no se puede enviar. Prueba con otra.'); return }
+    $pre = ''
+    if ($mods -band [Windows.Input.ModifierKeys]::Control) { $pre += '^' }
+    if ($mods -band [Windows.Input.ModifierKeys]::Shift) { $pre += '+' }
+    if ($mods -band [Windows.Input.ModifierKeys]::Alt) { $pre += '%' }
+    $script:edicion.keys = $pre + $tecla
+    $s.Text = Format-Teclas $script:edicion.keys
+    $ui.EdError.Visibility = 'Collapsed'
+})
+$w.Add_KeyDown({ param($s, $e)
+    if ($e.Key -ne 'Escape') { return }
+    if ($script:enPaginas) { Invoke-Seguro { Hide-Paginas } }
+    elseif ($script:enAtajos -and $script:edicion -and -not $ui.EdTeclasCaja.IsKeyboardFocused) { Invoke-Seguro { $script:edicion = $null; Update-ListaAtajos } }
+    elseif ($script:enAtajos -and -not $script:edicion) { Invoke-Seguro { Hide-Atajos } }
+})
 
 # Cerrar la ventana la esconde: el panel sigue funcionando y se vuelve a ella desde el icono o el menú Inicio.
 # Si el panel no está funcionando (por ejemplo, porque falló al arrancar), cerrarla lo cierra todo.

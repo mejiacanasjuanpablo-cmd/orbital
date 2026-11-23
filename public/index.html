@@ -1025,10 +1025,17 @@
   }
 
   function online(on, text) { $('live').classList.toggle('on', on); $('stripStatus').textContent = text; }
-  let cfgLoaded = false, busy = false;
+  let cfgLoaded = false, busy = false, cfgVer = null;
   async function tick() {
     if (busy) return; busy = true;
-    try { if (!cfgLoaded) { await loadConfig(); cfgLoaded = true; loadTasks(); loadWeather(); loadAgenda(); } render(await api('/api/stats')); online(true, t('Conectado')); }
+    try {
+      if (!cfgLoaded) { await loadConfig(); cfgLoaded = true; loadTasks(); loadWeather(); loadAgenda(); }
+      const s = await api('/api/stats');
+      // config.json cambió (por ejemplo, se editaron los atajos en el PC): se vuelven a pedir los botones.
+      if (s.cfgVer && cfgVer && s.cfgVer !== cfgVer) await loadConfig();
+      if (s.cfgVer) cfgVer = s.cfgVer;
+      render(s); online(true, t('Conectado'));
+    }
     catch (e) { online(false, String(e.message).includes('token') ? t('Token inválido') : t('Sin conexión')); }
     busy = false;
   }

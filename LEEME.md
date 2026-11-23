@@ -122,6 +122,20 @@ es una tarjeta con su vista previa, en el orden en que salen en el celular:
 - la primera, marcada «Al conectar», es la que aparece al conectar el celular (si solo recargas la página, vuelves a la
   que estabas viendo).
 
+**Editar los atajos de la página Sistema:** en la ventana del panel pulsa **Atajos**. Cada botón es una tarjeta con su
+icono, su nombre y lo que hace; el celular ve cada cambio al momento, sin recargar.
+- Pulsa una tarjeta para editarla, o **Agregar atajo** (hasta 12). En el editor eliges el nombre, el color, el icono y
+  qué hace:
+  - **Abrir**: un programa, una carpeta, un archivo o una página web (con **Examinar…** o escribiéndolo), con
+    argumentos opcionales.
+  - **Atajo de teclado**: haz clic en el recuadro y pulsa la combinación (con Ctrl, Shift y Alt; la tecla de Windows no
+    se puede enviar). Le llega al programa que esté al frente en el PC.
+  - **Comando**: un comando de PowerShell; lo que escriba se ve en la página Comandos.
+  - **Preguntar en el celular antes de hacerlo**, para los que no quieres pulsar por error (por ejemplo, apagar).
+- Para cambiar el orden, arrastra una tarjeta sobre otra. **Eliminar** (en el editor) lo quita, y **Restablecer** vuelve
+  a los atajos de ejemplo.
+- Se guardan en `config.json`, en el grupo `"atajos"`, un atajo por línea; también puedes editarlos ahí a mano.
+
 Cada cambio llega al celular al momento, sin recargar, y se guarda en el PC, en `data/paginas.json`. **Restablecer**
 vuelve al orden de abajo, con todas las páginas.
 
