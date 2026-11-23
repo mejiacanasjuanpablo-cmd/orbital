@@ -594,8 +594,8 @@
     'No disponible: {0}': 'Not available: {0}', 'Sensación {0}° · Humedad {1}%': 'Feels like {0}° · Humidity {1}%',
     'Hoy · {0}': 'Today · {0}', 'Todo el día': 'All day', 'No tienes nada agendado este día.': 'Nothing scheduled for this day.',
     'Cargando la agenda…': 'Loading the schedule…', 'Conecta tu calendario para ver aquí lo que tienes agendado.': 'Connect your calendar to see what you have scheduled here.',
-    'En Google Calendar, en el PC: <b>Configuración</b> → tu calendario → <b>Integrar el calendario</b> → copia la <b>Dirección secreta en formato iCal</b> y pégala aquí. Es más fácil desde el PC, con <b>Abrir en este PC</b> en la ventana del panel.':
-      'In Google Calendar, on the PC: <b>Settings</b> → your calendar → <b>Integrate calendar</b> → copy the <b>Secret address in iCal format</b> and paste it here. It\'s easier from the PC, with <b>Open on this PC</b> in the panel window.',
+    'En Google Calendar, en el PC: <b>Configuración</b> → tu calendario → <b>Integrar el calendario</b> → copia la <b>Dirección secreta en formato iCal</b> y pégala aquí. Es más fácil desde el PC, con <b>Más → Abrir en este PC</b> en la ventana del panel.':
+      'In Google Calendar, on the PC: <b>Settings</b> → your calendar → <b>Integrate calendar</b> → copy the <b>Secret address in iCal format</b> and paste it here. It\'s easier from the PC, with <b>More → Open on this PC</b> in the panel window.',
     'Enlace iCal (https://…)': 'iCal link (https://…)', 'Conectar': 'Connect', 'Calendario conectado': 'Calendar connected',
     'El enlace se guarda solo en este PC. Quien lo tenga puede ver tu calendario: no lo compartas.': "The link is saved only on this PC. Anyone who has it can see your calendar: don't share it.",
     'Cambiar enlace': 'Change link', 'Volver': 'Back', 'Desconectar': 'Disconnect', '¿Desconectar el calendario?': 'Disconnect the calendar?',
@@ -1246,7 +1246,7 @@
   function renderFormAgenda(box) {
     const conectado = agenda && agenda.conectado;
     box.innerHTML = `<div class="nota">${t('Conecta tu calendario para ver aquí lo que tienes agendado.')}</div>
-      <div class="nota">${t('En Google Calendar, en el PC: <b>Configuración</b> → tu calendario → <b>Integrar el calendario</b> → copia la <b>Dirección secreta en formato iCal</b> y pégala aquí. Es más fácil desde el PC, con <b>Abrir en este PC</b> en la ventana del panel.')}</div>
+      <div class="nota">${t('En Google Calendar, en el PC: <b>Configuración</b> → tu calendario → <b>Integrar el calendario</b> → copia la <b>Dirección secreta en formato iCal</b> y pégala aquí. Es más fácil desde el PC, con <b>Más → Abrir en este PC</b> en la ventana del panel.')}</div>
       <form id="agForm" autocomplete="off"><input id="agEnlace" type="url" inputmode="url" spellcheck="false" placeholder="${esc(t('Enlace iCal (https://…)'))}" enterkeyhint="go"><button>${t('Conectar')}</button></form>
       <div class="error" id="agError"></div>
       <div class="nota chica">${t('El enlace se guarda solo en este PC. Quien lo tenga puede ver tu calendario: no lo compartas.')}</div>

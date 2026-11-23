@@ -41,19 +41,24 @@ Si falta algo obligatorio, el panel tampoco arranca: lo avisa y te manda a `veri
 ## Usar
 
 Abre **Panel del PC** desde el menú Inicio (o doble clic en `iniciar.cmd`). Se abre la **ventana del panel** en el PC,
-sin consola. Muestra:
-- si el panel está en marcha;
-- el **código QR** para conectar el celular y la dirección, con un botón para copiarla;
-- los dispositivos autorizados, con un botón **Quitar** para cada uno;
-- la actividad: los botones que pulsas desde el celular y los dispositivos que piden entrar.
-
-Arriba a la derecha eliges el **idioma** (**Español** o **English**) y, con **Selección de widgets**, qué páginas se ven en
-el celular y en qué orden (ver [Páginas](#páginas)).
+sin consola:
+- **Personaliza las pantallas** es la pantalla principal: qué páginas se ven en el celular y en qué orden (ver
+  [Páginas](#páginas)). Arriba dice si el panel está en marcha.
+- **Conecta el celular:** mientras ningún celular esté usando el panel, encima aparece una tarjeta con el **código QR** y
+  la dirección, con un botón para copiarla. Se va sola en cuanto un celular se conecta y vuelve si se desconecta (por
+  ejemplo, si cierras la página o se apaga su pantalla). **Personalizar sin el celular** la esconde hasta entonces.
+- **Más** despliega los dispositivos autorizados (con **Quitar** para cada uno), la actividad (los botones que pulsas
+  desde el celular y los dispositivos que piden entrar), **Abrir en este PC** y **Detener el panel**. Un punto en el
+  botón avisa de actividad nueva.
+- **Atajos** edita los botones de la página Sistema (ver [Páginas](#páginas)).
+- El botón del sol o la luna cambia entre el **modo claro** y el **oscuro**. La primera vez se usa el de Windows; lo que
+  elijas se guarda. Solo cambia la ventana: el celular sigue oscuro.
+- Arriba a la derecha eliges el **idioma** (**Español** o **English**).
 
 - **Cerrar la ventana no detiene el panel:** sigue funcionando y queda un icono junto al reloj. Para volver a la ventana,
   haz clic en ese icono o abre otra vez el panel desde el menú Inicio (no se arranca otro).
-- **Para detenerlo,** pulsa **Detener el panel**, en la ventana o en el menú del icono junto al reloj.
-- **Para probarlo sin celular:** **Abrir en este PC** en la ventana.
+- **Para detenerlo,** pulsa **Más → Detener el panel**, o **Detener el panel** en el menú del icono junto al reloj.
+- **Para probarlo sin celular:** **Más → Abrir en este PC**.
 - **Para ver los mensajes del servidor en una consola** (por ejemplo, para diagnosticar), usa el modo consola:
   `.\iniciar.ps1` (o `.\iniciar.ps1 -SoloPC`, que lo abre solo en el navegador del PC), y Ctrl+C para detenerlo.
 
@@ -68,7 +73,7 @@ el celular y en qué orden (ver [Páginas](#páginas)).
 
 - Para pedir acceso hace falta el token que va dentro del QR: un equipo de la red que no lo tenga no puede ni abrir el aviso.
 - Los dispositivos aprobados se guardan en `config.json` → `"wifi": { "dispositivos": ["192.168.1.50"] }`. Para quitar uno,
-  pulsa **Quitar** en la ventana (o borra su IP del archivo; se aplica al instante). A cualquier otro equipo se le corta
+  pulsa **Más → Quitar** en la ventana (o borra su IP del archivo; se aplica al instante). A cualquier otro equipo se le corta
   la conexión sin responderle.
 - Si el router cambia la IP del PC o del celular, el icono del celular deja de funcionar: vuelve a escanear el QR
   y aprueba el aviso. Para evitarlo, reserva esas IP en el router.
@@ -114,7 +119,7 @@ Los nombres de tus botones, relojes y comandos salen tal como los escribiste en 
 
 Desliza a los lados (o usa las flechas del teclado) para cambiar de página. Funciona mejor con el celular en horizontal.
 
-**Elegir qué páginas ves y en qué orden:** en la ventana del panel, en el PC, pulsa **Selección de widgets**. Cada página
+**Elegir qué páginas ves y en qué orden:** es la pantalla principal de la ventana del panel, **Personaliza las pantallas**. Cada página
 es una tarjeta con su vista previa, en el orden en que salen en el celular:
 - el interruptor de la tarjeta la muestra u oculta (las ocultas se ven tenues, con «Oculta»);
 - para cambiar el orden, arrastra la tarjeta sobre otra: ocupa su lugar. También puedes usar las flechas que aparecen
@@ -186,7 +191,7 @@ La agenda se lee desde el enlace privado de tu calendario en formato iCal: solo 
 
 1. En el PC, abre Google Calendar en el navegador → ⚙ **Configuración** → en la columna izquierda, tu calendario →
    **Integrar el calendario** → copia la **Dirección secreta en formato iCal** (termina en `.ics`).
-2. En la ventana del panel pulsa **Abrir en este PC**, ve a la página Calendario y toca cualquier día.
+2. En la ventana del panel pulsa **Más → Abrir en este PC**, ve a la página Calendario y toca cualquier día.
 3. Pega el enlace y pulsa **Conectar**. El panel lo prueba antes de guardarlo.
 
 También sirven Outlook.com (Configuración → Calendario → Calendarios compartidos → Publicar un calendario → enlace ICS) e

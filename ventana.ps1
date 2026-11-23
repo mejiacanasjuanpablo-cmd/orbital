@@ -87,6 +87,14 @@ Mostrar la ventana ⇒ Show the window
 El panel sigue funcionando ⇒ The panel is still running
 Para volver a la ventana, haz clic en este icono o abre el panel desde el menú Inicio. Para cerrarlo del todo, usa «Detener el panel». ⇒ To get back to the window, click this icon or open the panel from the Start menu. To close it completely, use "Stop the panel".
 Selección de widgets ⇒ Widget selection
+Personaliza las pantallas ⇒ Customize the screens
+Conecta el celular ⇒ Connect your phone
+Personalizar sin el celular ⇒ Customize without the phone
+Oculta esta tarjeta hasta que un celular se conecte y se vuelva a desconectar ⇒ Hides this card until a phone connects and disconnects again
+Más ⇒ More
+Dispositivos, actividad y detener el panel ⇒ Devices, activity and stop the panel
+Cambiar a modo claro ⇒ Switch to light mode
+Cambiar a modo oscuro ⇒ Switch to dark mode
 Atajos ⇒ Shortcuts
 Edita los botones de la página Sistema del celular ⇒ Edit the buttons on your phone's System page
 Vuelve a los atajos de ejemplo ⇒ Goes back to the sample shortcuts
@@ -209,16 +217,29 @@ if (-not $creada) {
     return
 }
 
-# ---------- Diseño (los mismos colores que el panel del celular)
-$C = @{
-    Fondo = '#07090C'; Tile = '#10141A'; Tile2 = '#161B23'; Texto = '#EEF1F6'; Tenue = '#7D8696'; Apagado = '#4B5363'
-    Teal = '#2DD4BF'; Verde = '#4ADE80'; Naranja = '#FB923C'; Rojo = '#F87171'
+# ---------- Diseño: en modo oscuro, los mismos colores que el panel del celular; también hay una versión clara.
+# $C tiene los del modo elegido (Set-Tema los cambia, junto con los colores del XAML). El celular sigue siempre oscuro.
+$Temas = @{
+    oscuro = @{ Fondo = '#07090C'; Tile = '#10141A'; Tile2 = '#161B23'; Linea = '#12FFFFFF'; Linea2 = '#1FFFFFFF'; LineaFuerte = '#59FFFFFF'
+        Texto = '#EEF1F6'; Tenue = '#7D8696'; Apagado = '#4B5363'; Teal = '#2DD4BF'; TextoBoton = '#07090C'
+        Verde = '#4ADE80'; Naranja = '#FB923C'; Rojo = '#F87171'; PistaApagada = '#262C36'; BolaApagada = '#7D8696'; Velo = '#B307090C' }
+    claro = @{ Fondo = '#F3F5F8'; Tile = '#FFFFFF'; Tile2 = '#EDF0F4'; Linea = '#14000000'; Linea2 = '#21000000'; LineaFuerte = '#47000000'
+        Texto = '#11161D'; Tenue = '#5B6573'; Apagado = '#9AA3AF'; Teal = '#0F766E'; TextoBoton = '#FFFFFF'
+        Verde = '#15803D'; Naranja = '#C2410C'; Rojo = '#DC2626'; PistaApagada = '#D5DAE1'; BolaApagada = '#FFFFFF'; Velo = '#B3F3F5F8' }
 }
+$C = @{}; foreach ($k in $Temas.oscuro.Keys) { $C[$k] = $Temas.oscuro[$k] }
+# El modo elegido (data\preferencias.json) o, si nunca se eligió, el de las aplicaciones de Windows.
+function Get-TemaGuardado {
+    try { $p = [IO.File]::ReadAllText($archivoPreferencias).TrimStart([char]0xFEFF) | ConvertFrom-Json; if ($p.tema -in 'claro', 'oscuro') { return [string]$p.tema } } catch { }
+    try { if ((Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' -ErrorAction Stop).AppsUseLightTheme -eq 1) { return 'claro' } } catch { }
+    'oscuro'
+}
+$script:tema = Get-TemaGuardado
 $xaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Panel del PC" Width="780" SizeToContent="Height" ResizeMode="CanMinimize"
-        WindowStartupLocation="CenterScreen" Background="#07090C" Foreground="#EEF1F6"
+        WindowStartupLocation="CenterScreen" Background="{DynamicResource Fondo}" Foreground="{DynamicResource Texto}"
         FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" UseLayoutRounding="True">
   <Window.Resources>
     <SolidColorBrush x:Key="Tile" Color="#10141A"/>
@@ -229,9 +250,17 @@ $xaml = @'
     <SolidColorBrush x:Key="Tenue" Color="#7D8696"/>
     <SolidColorBrush x:Key="Teal" Color="#2DD4BF"/>
     <SolidColorBrush x:Key="Rojo" Color="#F87171"/>
+    <!-- Los colores se cambian al elegir el modo claro u oscuro (Set-Tema); estos son los del oscuro -->
+    <SolidColorBrush x:Key="Fondo" Color="#07090C"/>
+    <SolidColorBrush x:Key="TextoBoton" Color="#07090C"/>
+    <SolidColorBrush x:Key="PeligroFondo" Color="#1AF87171"/>
+    <SolidColorBrush x:Key="PeligroBorde" Color="#40F87171"/>
+    <SolidColorBrush x:Key="PistaApagada" Color="#262C36"/>
+    <SolidColorBrush x:Key="BolaApagada" Color="#7D8696"/>
+    <SolidColorBrush x:Key="Velo" Color="#B307090C"/>
     <Style x:Key="Tarjeta" TargetType="Border">
-      <Setter Property="Background" Value="{StaticResource Tile}"/>
-      <Setter Property="BorderBrush" Value="{StaticResource Linea}"/>
+      <Setter Property="Background" Value="{DynamicResource Tile}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Linea}"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="CornerRadius" Value="18"/>
       <Setter Property="Padding" Value="18,16"/>
@@ -239,13 +268,13 @@ $xaml = @'
     <Style x:Key="Etiqueta" TargetType="TextBlock">
       <Setter Property="FontSize" Value="11"/>
       <Setter Property="FontWeight" Value="Bold"/>
-      <Setter Property="Foreground" Value="{StaticResource Tenue}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Tenue}"/>
       <Setter Property="Margin" Value="0,0,0,12"/>
     </Style>
     <Style x:Key="Boton" TargetType="Button">
-      <Setter Property="Foreground" Value="{StaticResource Texto}"/>
-      <Setter Property="Background" Value="{StaticResource Tile2}"/>
-      <Setter Property="BorderBrush" Value="{StaticResource Linea2}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Texto}"/>
+      <Setter Property="Background" Value="{DynamicResource Tile2}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Linea2}"/>
       <Setter Property="Padding" Value="14,8"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
       <Setter Property="Cursor" Value="Hand"/>
@@ -260,7 +289,7 @@ $xaml = @'
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Caja" Property="Opacity" Value="0.82"/></Trigger>
               <Trigger Property="IsPressed" Value="True"><Setter TargetName="Caja" Property="Opacity" Value="0.66"/></Trigger>
-              <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Caja" Property="BorderBrush" Value="{StaticResource Teal}"/></Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Caja" Property="BorderBrush" Value="{DynamicResource Teal}"/></Trigger>
               <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Caja" Property="Opacity" Value="0.4"/></Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -268,19 +297,19 @@ $xaml = @'
       </Setter>
     </Style>
     <Style x:Key="BotonPrincipal" TargetType="Button" BasedOn="{StaticResource Boton}">
-      <Setter Property="Background" Value="{StaticResource Teal}"/>
-      <Setter Property="BorderBrush" Value="{StaticResource Teal}"/>
-      <Setter Property="Foreground" Value="#07090C"/>
+      <Setter Property="Background" Value="{DynamicResource Teal}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Teal}"/>
+      <Setter Property="Foreground" Value="{DynamicResource TextoBoton}"/>
     </Style>
     <Style x:Key="BotonPeligro" TargetType="Button" BasedOn="{StaticResource Boton}">
-      <Setter Property="Background" Value="#1AF87171"/>
-      <Setter Property="BorderBrush" Value="#40F87171"/>
-      <Setter Property="Foreground" Value="{StaticResource Rojo}"/>
+      <Setter Property="Background" Value="{DynamicResource PeligroFondo}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource PeligroBorde}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Rojo}"/>
     </Style>
     <Style x:Key="BotonEnlace" TargetType="Button" BasedOn="{StaticResource Boton}">
       <Setter Property="Background" Value="Transparent"/>
       <Setter Property="BorderBrush" Value="Transparent"/>
-      <Setter Property="Foreground" Value="{StaticResource Tenue}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Tenue}"/>
       <Setter Property="Padding" Value="10,5"/>
       <Setter Property="FontSize" Value="12"/>
     </Style>
@@ -297,11 +326,11 @@ $xaml = @'
     </Style>
     <!-- Campo de texto (editor de atajos) -->
     <Style x:Key="Campo" TargetType="TextBox">
-      <Setter Property="Foreground" Value="{StaticResource Texto}"/>
-      <Setter Property="Background" Value="{StaticResource Tile2}"/>
-      <Setter Property="BorderBrush" Value="{StaticResource Linea2}"/>
-      <Setter Property="CaretBrush" Value="#EEF1F6"/>
-      <Setter Property="SelectionBrush" Value="#2DD4BF"/>
+      <Setter Property="Foreground" Value="{DynamicResource Texto}"/>
+      <Setter Property="Background" Value="{DynamicResource Tile2}"/>
+      <Setter Property="BorderBrush" Value="{DynamicResource Linea2}"/>
+      <Setter Property="CaretBrush" Value="{DynamicResource Texto}"/>
+      <Setter Property="SelectionBrush" Value="{DynamicResource Teal}"/>
       <Setter Property="Padding" Value="8,7"/>
       <Setter Property="Template">
         <Setter.Value>
@@ -310,7 +339,7 @@ $xaml = @'
               <ScrollViewer x:Name="PART_ContentHost" Focusable="False"/>
             </Border>
             <ControlTemplate.Triggers>
-              <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Caja" Property="BorderBrush" Value="#2DD4BF"/></Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Caja" Property="BorderBrush" Value="{DynamicResource Teal}"/></Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
         </Setter.Value>
@@ -318,7 +347,7 @@ $xaml = @'
     </Style>
     <!-- Interruptor (activar o quitar una página del celular); el texto va a la derecha y también se puede pulsar. -->
     <Style x:Key="Interruptor" TargetType="CheckBox">
-      <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+      <Setter Property="Foreground" Value="{DynamicResource Texto}"/>
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
       <Setter Property="Padding" Value="12,0,0,0"/>
@@ -326,21 +355,21 @@ $xaml = @'
         <Setter.Value>
           <ControlTemplate TargetType="CheckBox">
             <DockPanel Background="Transparent">
-              <Border x:Name="Pista" DockPanel.Dock="Left" Width="34" Height="20" CornerRadius="10" Background="#262C36"
-                      BorderBrush="{StaticResource Linea2}" BorderThickness="1" VerticalAlignment="Center">
-                <Ellipse x:Name="Bola" Width="14" Height="14" Fill="#7D8696" HorizontalAlignment="Left" Margin="2,0,0,0"/>
+              <Border x:Name="Pista" DockPanel.Dock="Left" Width="34" Height="20" CornerRadius="10" Background="{DynamicResource PistaApagada}"
+                      BorderBrush="{DynamicResource Linea2}" BorderThickness="1" VerticalAlignment="Center">
+                <Ellipse x:Name="Bola" Width="14" Height="14" Fill="{DynamicResource BolaApagada}" HorizontalAlignment="Left" Margin="2,0,0,0"/>
               </Border>
               <ContentPresenter Margin="{TemplateBinding Padding}" VerticalAlignment="Center" RecognizesAccessKey="False"/>
             </DockPanel>
             <ControlTemplate.Triggers>
               <Trigger Property="IsChecked" Value="True">
-                <Setter TargetName="Pista" Property="Background" Value="#2DD4BF"/>
-                <Setter TargetName="Pista" Property="BorderBrush" Value="#2DD4BF"/>
-                <Setter TargetName="Bola" Property="Fill" Value="#07090C"/>
+                <Setter TargetName="Pista" Property="Background" Value="{DynamicResource Teal}"/>
+                <Setter TargetName="Pista" Property="BorderBrush" Value="{DynamicResource Teal}"/>
+                <Setter TargetName="Bola" Property="Fill" Value="{DynamicResource TextoBoton}"/>
                 <Setter TargetName="Bola" Property="HorizontalAlignment" Value="Right"/>
                 <Setter TargetName="Bola" Property="Margin" Value="0,0,2,0"/>
               </Trigger>
-              <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Pista" Property="BorderBrush" Value="#EEF1F6"/></Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Pista" Property="BorderBrush" Value="{DynamicResource Texto}"/></Trigger>
               <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Pista" Property="Opacity" Value="0.45"/></Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -358,38 +387,48 @@ $xaml = @'
 
     <DockPanel Grid.Row="0" Margin="0,0,0,16" LastChildFill="False">
       <Border x:Name="Logo" DockPanel.Dock="Left" Width="42" Height="42" CornerRadius="12" Margin="0,0,12,0"
-              BorderBrush="{StaticResource Linea2}" BorderThickness="1"/>
+              BorderBrush="{DynamicResource Linea2}" BorderThickness="1"/>
       <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
         <TextBlock Text="Panel del PC" FontSize="18" FontWeight="SemiBold"/>
         <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
           <Ellipse x:Name="Punto" Width="8" Height="8" Fill="#FB923C" VerticalAlignment="Center" Margin="0,1,8,0"/>
-          <TextBlock x:Name="Estado" Text="Arrancando…" Foreground="{StaticResource Tenue}"/>
+          <TextBlock x:Name="Estado" Text="Arrancando…" Foreground="{DynamicResource Tenue}"/>
         </StackPanel>
       </StackPanel>
       <!-- Idioma de la ventana y del celular; cada idioma se nombra en sí mismo -->
-      <Border x:Name="Idiomas" DockPanel.Dock="Right" VerticalAlignment="Center" Background="{StaticResource Tile}"
-              BorderBrush="{StaticResource Linea}" BorderThickness="1" CornerRadius="12" Padding="3">
+      <Border x:Name="Idiomas" DockPanel.Dock="Right" VerticalAlignment="Center" Background="{DynamicResource Tile}"
+              BorderBrush="{DynamicResource Linea}" BorderThickness="1" CornerRadius="12" Padding="3">
         <StackPanel Orientation="Horizontal">
           <Button x:Name="IdiomaEs" Content="Español" Style="{StaticResource Segmento}"/>
           <Button x:Name="IdiomaEn" Content="English" Style="{StaticResource Segmento}"/>
         </StackPanel>
       </Border>
-      <Button x:Name="AbrirPaginas" DockPanel.Dock="Right" Style="{StaticResource Boton}" Margin="0,0,10,0" Padding="12,7" VerticalAlignment="Center"
-              AutomationProperties.Name="Selección de widgets" ToolTip="Elige qué páginas ves en el celular y en qué orden">
-        <StackPanel Orientation="Horizontal">
-          <Path Width="13" Height="13" Stretch="Uniform" Stroke="#2DD4BF" StrokeThickness="1.8" StrokeLineJoin="Round" Margin="0,0,8,0" VerticalAlignment="Center"
-                Data="M4,4 L10,4 L10,10 L4,10 Z M14,4 L20,4 L20,10 L14,10 Z M4,14 L10,14 L10,20 L4,20 Z M14,14 L20,14 L20,20 L14,20 Z"/>
-          <TextBlock Text="Selección de widgets"/>
-        </StackPanel>
+      <!-- Modo claro u oscuro: el icono es el del modo al que se cambia -->
+      <Button x:Name="CambiarTema" DockPanel.Dock="Right" Style="{StaticResource Boton}" Margin="0,0,10,0" Padding="9,8" VerticalAlignment="Center">
+        <Path x:Name="IconoTema" Width="16" Height="16" Stretch="Uniform" Stroke="{DynamicResource Texto}" StrokeThickness="1.8"
+              StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
       </Button>
       <Button x:Name="AbrirAtajos" DockPanel.Dock="Right" Style="{StaticResource Boton}" Margin="0,0,10,0" Padding="12,7" VerticalAlignment="Center"
               AutomationProperties.Name="Atajos" ToolTip="Edita los botones de la página Sistema del celular">
         <StackPanel Orientation="Horizontal">
-          <Path Width="14" Height="13" Stretch="Uniform" Stroke="#2DD4BF" StrokeThickness="1.8" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+          <Path Width="14" Height="13" Stretch="Uniform" Stroke="{DynamicResource Teal}" StrokeThickness="1.8" StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                 Margin="0,0,8,0" VerticalAlignment="Center"
                 Data="M3,6 L21,6 L21,18 L3,18 Z M7,10 L7.01,10 M11,10 L11.01,10 M15,10 L15.01,10 M8,14 L16,14"/>
           <TextBlock Text="Atajos"/>
         </StackPanel>
+      </Button>
+      <!-- Más: dispositivos autorizados, actividad, abrir en este PC y detener el panel (en un menú que se despliega) -->
+      <Button x:Name="AbrirMas" DockPanel.Dock="Right" Style="{StaticResource Boton}" Margin="0,0,10,0" Padding="12,7" VerticalAlignment="Center"
+              AutomationProperties.Name="Más" ToolTip="Dispositivos, actividad y detener el panel">
+        <Grid>
+          <StackPanel Orientation="Horizontal">
+            <Path Width="14" Height="4" Stretch="Uniform" Fill="{DynamicResource Teal}" Margin="0,0,8,0" VerticalAlignment="Center"
+                  Data="M0,2 A2,2 0 1 0 4,2 A2,2 0 1 0 0,2 Z M8,2 A2,2 0 1 0 12,2 A2,2 0 1 0 8,2 Z M16,2 A2,2 0 1 0 20,2 A2,2 0 1 0 16,2 Z"/>
+            <TextBlock Text="Más"/>
+          </StackPanel>
+          <Ellipse x:Name="AvisoMas" Width="8" Height="8" Fill="{DynamicResource Teal}" HorizontalAlignment="Right" VerticalAlignment="Top"
+                   Margin="0,-5,-8,0" Visibility="Collapsed"/>
+        </Grid>
       </Button>
     </DockPanel>
 
@@ -400,24 +439,53 @@ $xaml = @'
       </DockPanel>
     </Border>
 
-    <!-- Selección de widgets: una tarjeta por página, con su vista previa, en el orden en que salen en el celular
-         (ocupa el lugar de la vista de conexión mientras está abierta) -->
-    <DockPanel x:Name="VistaPaginas" Grid.Row="2" Visibility="Collapsed" LastChildFill="True">
-      <DockPanel DockPanel.Dock="Top" Margin="0,0,0,16" LastChildFill="True">
-        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0,0,0">
-          <Button x:Name="RestablecerPaginas" Content="Restablecer" Style="{StaticResource Boton}" Margin="0,0,10,0"
-                  ToolTip="Vuelve al orden original, con todas las páginas"/>
-          <Button x:Name="ListoPaginas" Content="Listo" Style="{StaticResource BotonPrincipal}" Padding="26,8"/>
-        </StackPanel>
-        <StackPanel VerticalAlignment="Center">
-          <TextBlock Text="Selección de widgets" FontSize="16" FontWeight="SemiBold"/>
-          <TextBlock Margin="0,3,0,0" Foreground="{StaticResource Tenue}" FontSize="12" TextWrapping="Wrap" LineHeight="17"
-                     Text="Activa las que quieres ver y arrástralas para cambiar el orden. La primera es la que aparece al conectar el celular, y cada cambio le llega al momento."/>
-        </StackPanel>
+    <!-- Pantalla principal: «Personaliza las pantallas» (una tarjeta por página del celular, con su vista previa, en el
+         orden en que salen en el celular) y, encima, la tarjeta «Conecta el celular» mientras ningún celular use el panel -->
+    <Grid x:Name="VistaPrincipal" Grid.Row="2" MinHeight="520">
+      <DockPanel x:Name="VistaPaginas" LastChildFill="True">
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,16" LastChildFill="True">
+          <Button x:Name="RestablecerPaginas" DockPanel.Dock="Right" Content="Restablecer" Style="{StaticResource Boton}" Margin="20,0,0,0"
+                  VerticalAlignment="Center" ToolTip="Vuelve al orden original, con todas las páginas"/>
+          <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="Personaliza las pantallas" FontSize="16" FontWeight="SemiBold"/>
+            <TextBlock Margin="0,3,0,0" Foreground="{DynamicResource Tenue}" FontSize="12" TextWrapping="Wrap" LineHeight="17"
+                       Text="Activa las que quieres ver y arrástralas para cambiar el orden. La primera es la que aparece al conectar el celular, y cada cambio le llega al momento."/>
+          </StackPanel>
+        </DockPanel>
+        <!-- El margen negativo compensa el espacio que cada tarjeta deja a su derecha y debajo -->
+        <UniformGrid x:Name="ListaPaginas" Columns="3" VerticalAlignment="Top" Margin="0,0,-16,-16"/>
       </DockPanel>
-      <!-- El margen negativo compensa el espacio que cada tarjeta deja a su derecha y debajo -->
-      <UniformGrid x:Name="ListaPaginas" Columns="3" Margin="0,0,-16,-16"/>
-    </DockPanel>
+
+      <!-- Conecta el celular: velo sobre las pantallas (que se ven desenfocadas detrás) y la tarjeta con el código QR -->
+      <Border x:Name="Conexion" Background="{DynamicResource Velo}" CornerRadius="18" Margin="-8">
+        <Border Style="{StaticResource Tarjeta}" Width="344" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24,22,24,14">
+          <Border.Effect>
+            <DropShadowEffect BlurRadius="48" ShadowDepth="10" Direction="270" Opacity="0.28" Color="#000000"/>
+          </Border.Effect>
+          <StackPanel>
+            <TextBlock Text="Conecta el celular" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+            <TextBlock Margin="4,6,4,16" Foreground="{DynamicResource Tenue}" FontSize="12" TextWrapping="Wrap" TextAlignment="Center" LineHeight="18"
+                       Text="Escanéalo con la cámara del celular. Tiene que estar en la misma red Wi-Fi que este PC."/>
+            <Border Background="White" CornerRadius="14" Padding="8" HorizontalAlignment="Center">
+              <Grid Width="216" Height="216">
+                <Image x:Name="Qr" RenderOptions.BitmapScalingMode="NearestNeighbor" Stretch="Uniform"/>
+                <TextBlock x:Name="QrEspera" Text="Preparando…" Foreground="#7D8696" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Grid>
+            </Border>
+            <Border Margin="0,16,0,0" Background="{DynamicResource Tile2}" CornerRadius="10" Padding="12,3,3,3">
+              <DockPanel>
+                <Button x:Name="Copiar" DockPanel.Dock="Right" Content="Copiar enlace" Style="{StaticResource BotonEnlace}"
+                        ToolTip="Copia la dirección completa del panel, para abrirla a mano en el celular"/>
+                <TextBlock x:Name="Direccion" VerticalAlignment="Center" FontFamily="Cascadia Mono, Consolas" FontSize="12"
+                           Foreground="{DynamicResource Tenue}" TextTrimming="CharacterEllipsis"/>
+              </DockPanel>
+            </Border>
+            <Button x:Name="SinCelular" Content="Personalizar sin el celular" Style="{StaticResource BotonEnlace}" HorizontalAlignment="Center"
+                    Margin="0,8,0,0" ToolTip="Oculta esta tarjeta hasta que un celular se conecte y se vuelva a desconectar"/>
+          </StackPanel>
+        </Border>
+      </Border>
+    </Grid>
 
     <!-- Atajos: los botones de la página Sistema, en el orden del celular, y el editor de uno de ellos -->
     <DockPanel x:Name="VistaAtajos" Grid.Row="2" Visibility="Collapsed" LastChildFill="True">
@@ -429,7 +497,7 @@ $xaml = @'
         </StackPanel>
         <StackPanel VerticalAlignment="Center">
           <TextBlock x:Name="TituloAtajos" FontSize="16" FontWeight="SemiBold"/>
-          <TextBlock x:Name="AyudaAtajos" Margin="0,3,0,0" Foreground="{StaticResource Tenue}" FontSize="12" TextWrapping="Wrap" LineHeight="17"/>
+          <TextBlock x:Name="AyudaAtajos" Margin="0,3,0,0" Foreground="{DynamicResource Tenue}" FontSize="12" TextWrapping="Wrap" LineHeight="17"/>
         </StackPanel>
       </DockPanel>
       <Grid>
@@ -445,7 +513,7 @@ $xaml = @'
             <RowDefinition Height="Auto"/>
           </Grid.RowDefinitions>
           <StackPanel Grid.Column="0">
-            <Border x:Name="EdVista" Height="88" CornerRadius="14" BorderBrush="{StaticResource Linea2}" BorderThickness="1">
+            <Border x:Name="EdVista" Height="88" CornerRadius="14" BorderBrush="{DynamicResource Linea2}" BorderThickness="1">
               <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                 <ContentControl x:Name="EdVistaIcono" HorizontalAlignment="Center" Focusable="False"/>
                 <TextBlock x:Name="EdVistaNombre" Margin="10,8,10,0" FontWeight="SemiBold" HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
@@ -460,7 +528,7 @@ $xaml = @'
           </StackPanel>
           <StackPanel Grid.Column="2">
             <TextBlock Text="QUÉ HACE" Style="{StaticResource Etiqueta}" Margin="0,0,0,6"/>
-            <Border Background="{StaticResource Tile}" BorderBrush="{StaticResource Linea}" BorderThickness="1" CornerRadius="12" Padding="3" HorizontalAlignment="Left">
+            <Border Background="{DynamicResource Tile}" BorderBrush="{DynamicResource Linea}" BorderThickness="1" CornerRadius="12" Padding="3" HorizontalAlignment="Left">
               <StackPanel Orientation="Horizontal">
                 <Button x:Name="EdTipoAbrir" Content="Abrir" Style="{StaticResource Segmento}" Tag="open"/>
                 <Button x:Name="EdTipoTeclas" Content="Atajo de teclado" Style="{StaticResource Segmento}" Tag="keys"/>
@@ -468,32 +536,32 @@ $xaml = @'
               </StackPanel>
             </Border>
             <StackPanel x:Name="EdAbrir" Margin="0,16,0,0">
-              <TextBlock Text="Programa, carpeta, archivo o página web" Foreground="{StaticResource Tenue}" FontSize="12" Margin="0,0,0,6"/>
+              <TextBlock Text="Programa, carpeta, archivo o página web" Foreground="{DynamicResource Tenue}" FontSize="12" Margin="0,0,0,6"/>
               <DockPanel>
                 <Button x:Name="EdExaminar" DockPanel.Dock="Right" Content="Examinar…" Style="{StaticResource Boton}" Margin="8,0,0,0" Padding="12,6"/>
                 <TextBox x:Name="EdDestino" Style="{StaticResource Campo}"/>
               </DockPanel>
-              <TextBlock Text="Argumentos (opcional)" Foreground="{StaticResource Tenue}" FontSize="12" Margin="0,12,0,6"/>
+              <TextBlock Text="Argumentos (opcional)" Foreground="{DynamicResource Tenue}" FontSize="12" Margin="0,12,0,6"/>
               <TextBox x:Name="EdArgumentos" Style="{StaticResource Campo}"/>
-              <TextBlock Margin="0,10,0,0" Foreground="{StaticResource Tenue}" FontSize="12" TextWrapping="Wrap" LineHeight="17"
+              <TextBlock Margin="0,10,0,0" Foreground="{DynamicResource Tenue}" FontSize="12" TextWrapping="Wrap" LineHeight="17"
                          Text="Por ejemplo: calc.exe, https://www.google.com, una carpeta como C:\Users o shell:Downloads."/>
             </StackPanel>
             <StackPanel x:Name="EdTeclas" Margin="0,16,0,0">
-              <TextBlock Text="Haz clic en el recuadro y pulsa la combinación de teclas" Foreground="{StaticResource Tenue}" FontSize="12" Margin="0,0,0,6"/>
+              <TextBlock Text="Haz clic en el recuadro y pulsa la combinación de teclas" Foreground="{DynamicResource Tenue}" FontSize="12" Margin="0,0,0,6"/>
               <TextBox x:Name="EdTeclasCaja" Style="{StaticResource Campo}" IsReadOnly="True" IsReadOnlyCaretVisible="False" FontSize="15" FontWeight="SemiBold"
                        AutomationProperties.Name="Combinación de teclas"/>
-              <TextBlock Margin="0,10,0,0" Foreground="{StaticResource Tenue}" FontSize="12" TextWrapping="Wrap" LineHeight="17"
+              <TextBlock Margin="0,10,0,0" Foreground="{DynamicResource Tenue}" FontSize="12" TextWrapping="Wrap" LineHeight="17"
                          Text="Le llega al programa que esté al frente en el PC. Se pueden usar Ctrl, Shift y Alt; la tecla de Windows no."/>
             </StackPanel>
             <StackPanel x:Name="EdComando" Margin="0,16,0,0">
-              <TextBlock Text="Comando de PowerShell" Foreground="{StaticResource Tenue}" FontSize="12" Margin="0,0,0,6"/>
+              <TextBlock Text="Comando de PowerShell" Foreground="{DynamicResource Tenue}" FontSize="12" Margin="0,0,0,6"/>
               <TextBox x:Name="EdComandoCaja" Style="{StaticResource Campo}" AcceptsReturn="True" TextWrapping="Wrap" Height="112"
                        VerticalScrollBarVisibility="Auto" FontFamily="Cascadia Mono, Consolas" FontSize="12"/>
-              <TextBlock Margin="0,10,0,0" Foreground="{StaticResource Tenue}" FontSize="12" TextWrapping="Wrap" LineHeight="17"
+              <TextBlock Margin="0,10,0,0" Foreground="{DynamicResource Tenue}" FontSize="12" TextWrapping="Wrap" LineHeight="17"
                          Text="Lo que escriba se ve en la página Comandos del celular."/>
             </StackPanel>
             <CheckBox x:Name="EdConfirmar" Style="{StaticResource Interruptor}" Margin="0,18,0,0" Content="Preguntar en el celular antes de hacerlo"/>
-            <TextBlock x:Name="EdError" Foreground="{StaticResource Rojo}" Margin="0,14,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
+            <TextBlock x:Name="EdError" Foreground="{DynamicResource Rojo}" Margin="0,14,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
           </StackPanel>
           <DockPanel Grid.Row="1" Grid.ColumnSpan="3" Margin="0,18,0,0" LastChildFill="False">
             <Button x:Name="EdEliminar" DockPanel.Dock="Left" Content="Eliminar" Style="{StaticResource BotonPeligro}"/>
@@ -504,65 +572,33 @@ $xaml = @'
       </Grid>
     </DockPanel>
 
-    <Grid x:Name="VistaConexion" Grid.Row="2">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="316"/>
-        <ColumnDefinition Width="16"/>
-        <ColumnDefinition Width="*"/>
-      </Grid.ColumnDefinitions>
-
-      <Border Grid.Column="0" Style="{StaticResource Tarjeta}" MinHeight="420">
-        <Grid>
-          <StackPanel x:Name="VistaWifi">
-            <TextBlock Text="CONECTA TU CELULAR" Style="{StaticResource Etiqueta}"/>
-            <Border Background="White" CornerRadius="14" Padding="8" HorizontalAlignment="Center">
-              <Grid Width="224" Height="224">
-                <Image x:Name="Qr" RenderOptions.BitmapScalingMode="NearestNeighbor" Stretch="Uniform"/>
-                <TextBlock x:Name="QrEspera" Text="Preparando…" Foreground="#7D8696" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-              </Grid>
-            </Border>
-            <TextBlock Margin="4,16,4,0" TextWrapping="Wrap" TextAlignment="Center" Foreground="{StaticResource Tenue}" LineHeight="19"
-                       Text="Escanéalo con la cámara del celular. Tiene que estar en la misma red Wi-Fi que este PC."/>
-            <Border Margin="0,16,0,0" Background="{StaticResource Tile2}" CornerRadius="10" Padding="12,3,3,3">
-              <DockPanel>
-                <Button x:Name="Copiar" DockPanel.Dock="Right" Content="Copiar enlace" Style="{StaticResource BotonEnlace}"
-                        ToolTip="Copia la dirección completa del panel, para abrirla a mano en el celular"/>
-                <TextBlock x:Name="Direccion" VerticalAlignment="Center" FontFamily="Cascadia Mono, Consolas" FontSize="12"
-                           Foreground="{StaticResource Tenue}" TextTrimming="CharacterEllipsis"/>
-              </DockPanel>
-            </Border>
-          </StackPanel>
-
-        </Grid>
-      </Border>
-
-      <DockPanel Grid.Column="2" LastChildFill="True">
-        <StackPanel DockPanel.Dock="Bottom" Margin="0,14,0,0">
+    <!-- Menú «Más»: se despliega bajo su botón y se cierra al hacer clic fuera -->
+    <Popup x:Name="MenuMas" PlacementTarget="{Binding ElementName=AbrirMas}" Placement="Bottom" StaysOpen="False"
+           AllowsTransparency="True" PopupAnimation="Fade" VerticalOffset="6">
+      <Border Style="{StaticResource Tarjeta}" Width="380" Margin="16,0,16,20" Padding="18,16,18,14">
+        <Border.Effect>
+          <DropShadowEffect BlurRadius="28" ShadowDepth="6" Direction="270" Opacity="0.3" Color="#000000"/>
+        </Border.Effect>
+        <StackPanel>
+          <TextBlock Text="DISPOSITIVOS AUTORIZADOS" Style="{StaticResource Etiqueta}"/>
+          <StackPanel x:Name="ListaDispositivos"/>
+          <TextBlock x:Name="SinDispositivos" Foreground="{DynamicResource Tenue}" TextWrapping="Wrap" LineHeight="19"
+                     Text="Todavía ninguno. Escanea el código con el celular y acepta el aviso que aparecerá en este PC."/>
+          <Border Height="1" Background="{DynamicResource Linea}" Margin="0,10,0,14"/>
+          <TextBlock Text="ACTIVIDAD" Style="{StaticResource Etiqueta}"/>
+          <StackPanel x:Name="ListaActividad"/>
+          <Border Height="1" Background="{DynamicResource Linea}" Margin="0,6,0,14"/>
           <DockPanel LastChildFill="False">
             <Button x:Name="AbrirPc" DockPanel.Dock="Left" Content="Abrir en este PC" Style="{StaticResource Boton}"
                     ToolTip="Abre el panel en el navegador de este PC"/>
             <Button x:Name="Detener" DockPanel.Dock="Right" Content="Detener el panel" Style="{StaticResource BotonPeligro}"
                     ToolTip="Cierra el panel: el celular deja de poder usarlo hasta que lo vuelvas a abrir"/>
           </DockPanel>
-          <TextBlock Margin="2,12,0,0" FontSize="12" Foreground="{StaticResource Tenue}" TextWrapping="Wrap" LineHeight="17"
+          <TextBlock Margin="2,12,0,0" FontSize="12" Foreground="{DynamicResource Tenue}" TextWrapping="Wrap" LineHeight="17"
                      Text="Si cierras esta ventana, el panel sigue funcionando. Vuelve a ella desde el menú Inicio o desde el icono junto al reloj."/>
         </StackPanel>
-        <Border x:Name="TarjetaDispositivos" DockPanel.Dock="Top" Style="{StaticResource Tarjeta}" Margin="0,0,0,14">
-          <StackPanel>
-            <TextBlock Text="DISPOSITIVOS AUTORIZADOS" Style="{StaticResource Etiqueta}"/>
-            <StackPanel x:Name="ListaDispositivos"/>
-            <TextBlock x:Name="SinDispositivos" Foreground="{StaticResource Tenue}" TextWrapping="Wrap" LineHeight="19"
-                       Text="Todavía ninguno. Escanea el código con el celular y acepta el aviso que aparecerá en este PC."/>
-          </StackPanel>
-        </Border>
-        <Border Style="{StaticResource Tarjeta}" ClipToBounds="True">
-          <DockPanel>
-            <TextBlock DockPanel.Dock="Top" Text="ACTIVIDAD" Style="{StaticResource Etiqueta}"/>
-            <StackPanel x:Name="ListaActividad"/>
-          </DockPanel>
-        </Border>
-      </DockPanel>
-    </Grid>
+      </Border>
+    </Popup>
   </Grid>
 </Window>
 '@
@@ -570,8 +606,9 @@ $xaml = @'
 $w = [Windows.Markup.XamlReader]::Parse($xaml)
 $ui = @{}
 foreach ($n in 'Logo', 'Punto', 'Estado', 'Idiomas', 'IdiomaEs', 'IdiomaEn', 'Aviso', 'AvisoTexto', 'AvisoBoton', 'Qr', 'QrEspera',
-    'Direccion', 'Copiar', 'TarjetaDispositivos', 'ListaDispositivos', 'SinDispositivos', 'ListaActividad', 'AbrirPc', 'Detener',
-    'AbrirPaginas', 'VistaConexion', 'VistaPaginas', 'ListaPaginas', 'RestablecerPaginas', 'ListoPaginas',
+    'Direccion', 'Copiar', 'ListaDispositivos', 'SinDispositivos', 'ListaActividad', 'AbrirPc', 'Detener',
+    'CambiarTema', 'IconoTema', 'AbrirMas', 'AvisoMas', 'MenuMas', 'VistaPrincipal', 'Conexion', 'SinCelular',
+    'VistaPaginas', 'ListaPaginas', 'RestablecerPaginas',
     'AbrirAtajos', 'VistaAtajos', 'BotonesAtajos', 'RestablecerAtajos', 'ListoAtajos', 'TituloAtajos', 'AyudaAtajos', 'ListaAtajos', 'EditorAtajo',
     'EdVista', 'EdVistaIcono', 'EdVistaNombre', 'EdNombre', 'EdColores', 'EdIconos', 'EdTipoAbrir', 'EdTipoTeclas', 'EdTipoComando',
     'EdAbrir', 'EdExaminar', 'EdDestino', 'EdArgumentos', 'EdTeclas', 'EdTeclasCaja', 'EdComando', 'EdComandoCaja', 'EdConfirmar', 'EdError',
@@ -588,7 +625,7 @@ try {
 # Textos fijos de la plantilla, en español, para traducirlos (y volver) al cambiar de idioma. Los que cambia el código
 # (estado, aviso, QR, enlace) y los nombres de los idiomas no entran.
 $script:textosFijos = New-Object Collections.ArrayList
-$noTraducir = 'Estado', 'QrEspera', 'AvisoTexto', 'AvisoBoton', 'Direccion', 'Copiar', 'IdiomaEs', 'IdiomaEn',
+$noTraducir = 'Estado', 'QrEspera', 'AvisoTexto', 'AvisoBoton', 'Direccion', 'Copiar', 'IdiomaEs', 'IdiomaEn', 'CambiarTema',
     'TituloAtajos', 'AyudaAtajos', 'EdVistaNombre', 'EdNombre', 'EdDestino', 'EdArgumentos', 'EdTeclasCaja', 'EdComandoCaja', 'EdError'
 function Find-TextosFijos($Elemento) {
     if ($Elemento -isnot [Windows.DependencyObject]) { return }
@@ -615,6 +652,11 @@ function Set-TextosFijos {
 
 # ---------- Estado
 $script:token = $null
+$script:hayCelular = $false    # algún celular autorizado está usando el panel ahora
+$script:sinCelular = $false    # se pulsó «Personalizar sin el celular»: la tarjeta del QR no se muestra hasta que uno se desconecte
+$script:conexionPuesta = $false
+$script:actividadVista = [DateTimeOffset]::Now.ToUnixTimeMilliseconds() # lo anterior a esto no enciende el punto de «Más»
+$script:menuCerrado = [datetime]::MinValue
 $script:servidor = $null       # proceso de node (server.js)
 $script:errServidor = $null    # lo que el servidor escribe en stderr (solo se lee si se cierra)
 $script:lanIp = $null
@@ -656,6 +698,108 @@ function Invoke-Seguro([scriptblock]$Bloque) {
     try { & $Bloque } catch { try { Add-EventoLocal 'Error: {0}' 'error' $_.Exception.Message } catch { } }
 }
 
+# ---------- Modo claro u oscuro. Cambia $C, los colores del XAML y la barra de título, y vuelve a dibujar lo que el código
+# pinta con colores fijos.
+$IconoSol = 'M12,8 A4,4 0 1 0 12,16 A4,4 0 1 0 12,8 Z M12,2.5 L12,4.5 M12,19.5 L12,21.5 M2.5,12 L4.5,12 M19.5,12 L21.5,12 M5.3,5.3 L6.7,6.7 M17.3,17.3 L18.7,18.7 M5.3,18.7 L6.7,17.3 M17.3,6.7 L18.7,5.3'
+$IconoLuna = 'M20,14.5 A8,8 0 0 1 9.5,4 A8,8 0 1 0 20,14.5 Z'
+function Set-Tema([string]$Tema, [switch]$Guardar) {
+    if ($Tema -notin 'claro', 'oscuro') { $Tema = 'oscuro' }
+    $antes = @{}; foreach ($k in $C.Keys) { $antes[$k] = $C[$k] }
+    $script:tema = $Tema
+    foreach ($k in @($Temas[$Tema].Keys)) { $C[$k] = $Temas[$Tema][$k] }
+    foreach ($k in 'Fondo', 'Tile', 'Tile2', 'Linea', 'Linea2', 'Texto', 'Tenue', 'Teal', 'Rojo', 'TextoBoton', 'PistaApagada', 'BolaApagada', 'Velo') {
+        $w.Resources[$k] = Get-Pincel $C[$k]
+    }
+    $w.Resources['PeligroFondo'] = Get-Pincel ($C.Rojo -replace '^#', '#1A')
+    $w.Resources['PeligroBorde'] = Get-Pincel ($C.Rojo -replace '^#', '#40')
+    # El icono es el del modo al que se cambia
+    $ui.IconoTema.Data = [Windows.Media.Geometry]::Parse($(if ($Tema -eq 'oscuro') { $IconoSol } else { $IconoLuna }))
+    Update-TextoTema
+    Set-BarraTitulo
+    # El estado guarda su color: se pasa al del mismo nombre en el modo nuevo
+    $nombre = { param($Hex) foreach ($k in $antes.Keys) { if ($antes[$k] -eq $Hex) { return $k } } }
+    foreach ($v in 'estadoActual', 'estadoNormal') {
+        $e = Get-Variable -Scope Script -Name $v -ValueOnly
+        $k = & $nombre $e[1]
+        if ($k) { Set-Variable -Scope Script -Name $v -Value @($e[0], $C[$k], $e[2]) }
+    }
+    if ($Guardar) { Save-Preferencia 'tema' $Tema }
+}
+function Update-TextoTema {
+    $t = T $(if ($script:tema -eq 'oscuro') { 'Cambiar a modo claro' } else { 'Cambiar a modo oscuro' })
+    $ui.CambiarTema.ToolTip = $t
+    [Windows.Automation.AutomationProperties]::SetName($ui.CambiarTema, $t)
+}
+# Barra de título oscura o clara, del mismo color que el fondo (Windows 11). Panel del PC.exe de versiones anteriores solo
+# sabe ponerla oscura.
+function Set-BarraTitulo {
+    if (-not $hayNativo) { return }
+    $h = (New-Object Windows.Interop.WindowInteropHelper $w).Handle
+    if ($h -eq [IntPtr]::Zero) { return }
+    $rgb = { param($Hex) [Convert]::ToInt32($Hex.Substring($Hex.Length - 6), 16) }
+    try {
+        if ([PanelNativo].GetMethod('Barra')) {
+            [PanelNativo]::Barra($h, $script:tema -eq 'oscuro', (& $rgb $C.Fondo), $(if ($script:tema -eq 'oscuro') { 0x1B2029 } else { 0xDCE1E7 }), (& $rgb $C.Texto))
+        } elseif ($script:tema -eq 'oscuro') { [PanelNativo]::BarraOscura($h, 0x07090C, 0x1B2029) }
+    } catch { }
+}
+# Guarda una preferencia de esta ventana en data\preferencias.json, sin tocar las demás.
+function Save-Preferencia([string]$Clave, $Valor) {
+    try {
+        $prefs = @{}
+        if (Test-Path $archivoPreferencias) { ([IO.File]::ReadAllText($archivoPreferencias).TrimStart([char]0xFEFF) | ConvertFrom-Json).PSObject.Properties | ForEach-Object { $prefs[$_.Name] = $_.Value } }
+        $prefs[$Clave] = $Valor
+        New-Item -ItemType Directory -Force (Split-Path $archivoPreferencias) | Out-Null
+        [IO.File]::WriteAllText($archivoPreferencias, ($prefs | ConvertTo-Json -Compress), (New-Object Text.UTF8Encoding $false))
+    } catch { }
+}
+function Switch-Tema {
+    Set-Tema $(if ($script:tema -eq 'oscuro') { 'claro' } else { 'oscuro' }) -Guardar
+    # Lo que el código pinta con colores fijos se vuelve a dibujar
+    $a = $script:avisoActual
+    if ($a -and $ui.Aviso.Visibility -eq 'Visible') { Set-ColorAviso $a.Tipo }
+    Update-Idioma
+    $script:firmaDispositivos = $null; Update-Tick -Forzar
+}
+
+# ---------- Tarjeta «Conecta el celular»: se ve mientras ningún celular autorizado esté usando el panel (con las pantallas
+# desenfocadas detrás) y se va con un fundido en cuanto uno se conecta. «Personalizar sin el celular» la esconde hasta
+# que un celular se conecte y se vuelva a desconectar.
+function Update-Conexion([bool]$HayCelular) {
+    if ($HayCelular -ne $script:hayCelular) {
+        if (-not $HayCelular) { $script:sinCelular = $false }
+        $script:hayCelular = $HayCelular
+    }
+    $ver = -not $script:hayCelular -and -not $script:sinCelular
+    $visible = $ui.Conexion.Visibility -eq 'Visible' -and $ui.Conexion.Tag -ne 'saliendo'
+    if ($script:conexionPuesta -and $ver -eq $visible) { return }
+    $script:conexionPuesta = $true
+    $fundido = New-Object Windows.Media.Animation.DoubleAnimation($(if ($ver) { 1 } else { 0 }), [TimeSpan]::FromMilliseconds(220))
+    if ($ver) {
+        $ui.Conexion.Tag = $null
+        $ui.Conexion.Visibility = 'Visible'
+        $d = New-Object Windows.Media.Effects.BlurEffect; $d.Radius = 7
+        $ui.VistaPaginas.Effect = $d; $ui.VistaPaginas.IsHitTestVisible = $false
+    } else {
+        $ui.Conexion.Tag = 'saliendo'
+        $ui.VistaPaginas.Effect = $null; $ui.VistaPaginas.IsHitTestVisible = $true
+        $fundido.Add_Completed({ if ($ui.Conexion.Tag -eq 'saliendo') { $ui.Conexion.Visibility = 'Collapsed'; $ui.Conexion.Tag = $null } })
+    }
+    $ui.Conexion.BeginAnimation([Windows.UIElement]::OpacityProperty, $fundido)
+}
+
+# ---------- Menú «Más» (dispositivos, actividad y botones). Se abre bajo su botón, alineado a su derecha. El punto del
+# botón avisa de actividad nueva (no de cada botón pulsado en el celular) desde la última vez que se abrió.
+function Switch-MenuMas {
+    if ($ui.MenuMas.IsOpen) { $ui.MenuMas.IsOpen = $false; return }
+    # Al pulsar el botón con el menú abierto, el menú ya se cerró solo al hacer clic fuera de él: no se vuelve a abrir
+    if (((Get-Date) - $script:menuCerrado).TotalMilliseconds -lt 250) { return }
+    $ui.MenuMas.HorizontalOffset = $ui.AbrirMas.ActualWidth - 396
+    $ui.MenuMas.IsOpen = $true
+    $script:actividadVista = [DateTimeOffset]::Now.ToUnixTimeMilliseconds()
+    $ui.AvisoMas.Visibility = 'Collapsed'
+}
+
 # El texto va en español (con {0}, {1}… para $Datos); se guarda así para volver a mostrarlo si cambia el idioma.
 function Set-Estado([string]$Texto, [string]$Color, [switch]$Normal, [object[]]$Datos = @()) {
     $script:estadoActual = @($Texto, $Color, $Datos)
@@ -669,20 +813,24 @@ function Set-Estado([string]$Texto, [string]$Color, [switch]$Normal, [object[]]$
 
 # $Clave marca de quién es el aviso, para quitarlo solo si sigue siendo ese.
 function Show-Aviso([string]$Texto, [string]$Tipo = 'aviso', [string]$Boton, [scriptblock]$Accion, [object[]]$Datos = @(), [string]$Clave) {
-    $script:avisoActual = @{ Texto = $Texto; Boton = $Boton; Datos = $Datos; Clave = $Clave }
-    $color = @{ error = $C.Rojo; aviso = $C.Naranja; info = $C.Teal }[$Tipo]
-    $ui.Aviso.Background = Get-Pincel ($color -replace '^#', '#1A')
-    $ui.Aviso.BorderBrush = Get-Pincel ($color -replace '^#', '#4D')
+    $script:avisoActual = @{ Texto = $Texto; Boton = $Boton; Datos = $Datos; Clave = $Clave; Tipo = $Tipo }
+    Set-ColorAviso $Tipo
     $ui.AvisoTexto.Text = Format-Texto $Texto $Datos
     $ui.AvisoBoton.Content = T $Boton
     $ui.AvisoBoton.Visibility = if ($Boton) { 'Visible' } else { 'Collapsed' }
     $script:avisoAccion = $Accion
     $ui.Aviso.Visibility = 'Visible'
 }
+function Set-ColorAviso([string]$Tipo) {
+    $color = @{ error = $C.Rojo; aviso = $C.Naranja; info = $C.Teal }[$Tipo]
+    if (-not $color) { $color = $C.Naranja }
+    $ui.Aviso.Background = Get-Pincel ($color -replace '^#', '#1A')
+    $ui.Aviso.BorderBrush = Get-Pincel ($color -replace '^#', '#4D')
+}
 function Hide-Aviso { $ui.Aviso.Visibility = 'Collapsed'; $script:avisoAccion = $null }
 
 function Set-Fallo([string]$Texto, [string]$Boton, [scriptblock]$Accion, [object[]]$Datos = @()) {
-    Hide-Paginas; Hide-Atajos
+    Hide-Atajos; Update-Conexion $false
     Set-Estado 'No está funcionando' $C.Rojo -Normal
     Show-Aviso $Texto 'error' $Boton $Accion $Datos
     Set-QrEspera 'Sin conexión'; $ui.Qr.Source = $null; $script:qrPuesto = $false
@@ -696,7 +844,7 @@ function Set-QrEspera([string]$Texto) {
 
 # El idioma no depende del servidor: sus botones funcionan siempre.
 function Set-Botones([bool]$Activos) {
-    foreach ($b in $ui.AbrirPc, $ui.Detener, $ui.AbrirPaginas) { $b.IsEnabled = $Activos }
+    foreach ($b in $ui.AbrirPc, $ui.Detener, $ui.AbrirAtajos) { $b.IsEnabled = $Activos }
 }
 
 function Reset-VistaConexion {
@@ -708,13 +856,7 @@ function Reset-VistaConexion {
 function Set-Idioma([string]$Idioma) {
     if ($Idioma -notin 'es', 'en' -or $Idioma -eq $script:idioma) { return }
     $script:idioma = $Idioma
-    try {
-        $prefs = @{}
-        if (Test-Path $archivoPreferencias) { ([IO.File]::ReadAllText($archivoPreferencias).TrimStart([char]0xFEFF) | ConvertFrom-Json).PSObject.Properties | ForEach-Object { $prefs[$_.Name] = $_.Value } }
-        $prefs.idioma = $Idioma
-        New-Item -ItemType Directory -Force (Split-Path $archivoPreferencias) | Out-Null
-        [IO.File]::WriteAllText($archivoPreferencias, ($prefs | ConvertTo-Json -Compress), (New-Object Text.UTF8Encoding $false))
-    } catch { }
+    Save-Preferencia 'idioma' $Idioma
     [void](Invoke-PanelApi 'POST' '/api/pc/idioma' @{ idioma = $Idioma })
     Update-Idioma
 }
@@ -724,9 +866,10 @@ function Update-Idioma {
     foreach ($par in @(@($ui.IdiomaEs, 'es'), @($ui.IdiomaEn, 'en'))) {
         $on = $script:idioma -eq $par[1]
         $par[0].Background = Get-Pincel $(if ($on) { $C.Tile2 } else { '#00000000' })
-        $par[0].BorderBrush = Get-Pincel $(if ($on) { '#1FFFFFFF' } else { '#00000000' })
+        $par[0].BorderBrush = Get-Pincel $(if ($on) { $C.Linea2 } else { '#00000000' })
         $par[0].Foreground = Get-Pincel $(if ($on) { $C.Texto } else { $C.Tenue })
     }
+    Update-TextoTema
     $ui.Copiar.Content = T $(if ($script:copiadoHasta) { 'Copiado' } else { 'Copiar enlace' })
     $ui.Copiar.ToolTip = T 'Copia la dirección completa del panel, para abrirla a mano en el celular'
     $ui.QrEspera.Text = T $script:qrEspera
@@ -774,7 +917,10 @@ function Add-EventoLocal([string]$Mensaje, [string]$Tipo = 'local', [object[]]$D
 function Update-Actividad {
     $todos = @(@($script:eventosServidor) + @($script:eventosLocales) | Where-Object { $_ } |
         Sort-Object { [double]$_.t } -Descending | Select-Object -First 7)
-    $firma = "$($script:idioma)`n" + (($todos | ForEach-Object { "$($_.t)|$($_.msg)" }) -join "`n")
+    # Punto en «Más»: actividad que importa (no cada botón pulsado en el celular) desde la última vez que se abrió el menú
+    $nueva = @($todos | Where-Object { $_.tipo -ne 'accion' -and [double]$_.t -gt $script:actividadVista }).Count
+    $ui.AvisoMas.Visibility = if ($nueva -and -not $ui.MenuMas.IsOpen) { 'Visible' } else { 'Collapsed' }
+    $firma = "$($script:idioma)|$($script:tema)`n" + (($todos | ForEach-Object { "$($_.t)|$($_.msg)" }) -join "`n")
     if ($null -ne $script:firmaActividad -and $firma -eq $script:firmaActividad) { return }
     $script:firmaActividad = $firma
     $ui.ListaActividad.Children.Clear()
@@ -899,7 +1045,7 @@ function Start-Flujo {
 }
 
 function Start-Pasos {
-    Hide-Paginas
+    Hide-Atajos; Update-Conexion $false
     Set-Botones $false
     Hide-Aviso
     $script:accesoRed = $null
@@ -976,6 +1122,7 @@ function Start-Pasos {
     # 5. Listo, si el celular puede entrar (red Privada y permiso en el firewall)
     Set-Estado 'En marcha por Wi-Fi · {0}' $C.Verde -Normal -Datos $script:lanIp
     Update-AccesoRed -Forzar
+    Show-Paginas
     Update-Tick -Forzar
 }
 
@@ -1004,7 +1151,7 @@ function Update-AccesoRed([switch]$Forzar) {
     $antes = $script:accesoRed
     if ($estado -eq $antes -and -not $Forzar) {
         # Si el aviso se escondió (al pulsar su botón o al abrir las páginas) y el problema sigue, vuelve a mostrarse.
-        if ($estado -and $ui.Aviso.Visibility -ne 'Visible' -and -not $script:enPaginas) { Show-AvisoRed }
+        if ($estado -and $ui.Aviso.Visibility -ne 'Visible') { Show-AvisoRed }
         return
     }
     $script:accesoRed = $estado
@@ -1080,6 +1227,7 @@ function Update-Tick([switch]$Forzar) {
             $ui.Direccion.Text = "$($e.lanIp):$($e.puerto)"
         }
         Update-Dispositivos $e.dispositivos
+        Update-Conexion (@(@($e.dispositivos) | Where-Object { $_ -and $null -ne $_.haceMs -and [double]$_.haceMs -lt 20000 }).Count -gt 0)
         $script:eventosServidor = @($e.actividad)
         Update-Actividad
         if ($e.pendiente) { Set-Estado '{0} pide entrar: responde el aviso del PC' $C.Teal -Datos $e.pendiente }
@@ -1107,23 +1255,13 @@ $script:miniaturas = @{}                                              # id → i
 $script:tarjetasDe = @{}; $script:marcosDe = @{}; $script:flechasDe = @{} # id → partes de su tarjeta
 $script:arrastre = $null; $script:movimiento = $null; $script:destino = ''
 
+# Es la pantalla principal: se llena en cuanto el servidor responde.
 function Show-Paginas {
     $r = Invoke-PanelApi 'GET' '/api/pc/paginas'
-    if (-not $r) { Show-Aviso 'Para elegir las páginas del celular, el panel tiene que estar funcionando.' 'aviso'; return }
-    Hide-Atajos; Hide-Aviso
+    if (-not $r) { return }
     $script:paginas = @($r.paginas)
-    Update-ListaPaginas
-    $ui.VistaPaginas.MinHeight = $ui.VistaConexion.ActualHeight # la ventana no cambia de alto al pasar de una vista a otra
-    $ui.VistaConexion.Visibility = 'Collapsed'; $ui.VistaPaginas.Visibility = 'Visible'
-    $ui.AbrirPaginas.Visibility = 'Collapsed'; $ui.AbrirAtajos.Visibility = 'Collapsed'
     $script:enPaginas = $true
-}
-
-function Hide-Paginas {
-    if (-not $script:enPaginas) { return }
-    $script:enPaginas = $false
-    $ui.VistaPaginas.Visibility = 'Collapsed'; $ui.VistaConexion.Visibility = 'Visible'
-    $ui.AbrirPaginas.Visibility = 'Visible'; $ui.AbrirAtajos.Visibility = 'Visible'
+    Update-ListaPaginas
 }
 
 function Save-Paginas($Lista, [string]$Foco) {
@@ -1190,7 +1328,7 @@ function Update-TarjetaPagina([string]$Id) {
     $activa = $t.IsMouseOver -or $t.IsKeyboardFocusWithin
     $script:flechasDe[$Id].Opacity = if ($activa) { 1 } else { 0 }
     if ($script:destino -eq $Id) { $m.BorderBrush = Get-Pincel $C.Teal; $m.BorderThickness = 2 }
-    else { $m.BorderBrush = Get-Pincel $(if ($activa) { '#59FFFFFF' } else { '#1FFFFFFF' }); $m.BorderThickness = 1 }
+    else { $m.BorderBrush = Get-Pincel $(if ($activa) { $C.LineaFuerte } else { $C.Linea2 }); $m.BorderThickness = 1 }
 }
 
 # Vista previa de cada página en el idioma de la ventana (public\miniaturas\<página>.jpg, y en inglés en
@@ -1270,7 +1408,7 @@ function Update-ListaPaginas([string]$Foco) {
         $vista = New-Object Windows.Controls.Grid
         $vista.Height = 104
         $marco = New-Object Windows.Controls.Border
-        $marco.CornerRadius = 14; $marco.BorderThickness = 1; $marco.BorderBrush = Get-Pincel '#1FFFFFFF'; $marco.Tag = $id
+        $marco.CornerRadius = 14; $marco.BorderThickness = 1; $marco.BorderBrush = Get-Pincel $C.Linea2; $marco.Tag = $id
         $marco.Cursor = [Windows.Input.Cursors]::Hand
         $img = Get-Miniatura $id
         if ($img) {
@@ -1286,12 +1424,12 @@ function Update-ListaPaginas([string]$Foco) {
         if (-not $ver) { $marco.Opacity = 0.3 }
         [void]$vista.Children.Add($marco)
         if ($ver -and $n -eq 1) {
-            $primera = New-Pastilla 'Al conectar' $C.Texto $C.Teal
+            $primera = New-Pastilla 'Al conectar' '#EEF1F6' '#2DD4BF' # sobre la vista previa, que siempre es oscura
             $primera.HorizontalAlignment = 'Left'; $primera.VerticalAlignment = 'Top'; $primera.Margin = '8'
             [void]$vista.Children.Add($primera)
         }
         if (-not $ver) {
-            $oculta = New-Pastilla 'Oculta' $C.Texto $null
+            $oculta = New-Pastilla 'Oculta' '#EEF1F6' $null
             $oculta.HorizontalAlignment = 'Center'; $oculta.VerticalAlignment = 'Center'
             [void]$vista.Children.Add($oculta)
         }
@@ -1309,8 +1447,8 @@ function Update-ListaPaginas([string]$Foco) {
         $pie.Margin = '2,10,0,0'
         $avatar = New-Object Windows.Controls.Border
         $avatar.Width = 26; $avatar.Height = 26; $avatar.CornerRadius = 8; $avatar.BorderThickness = 1 # cuadrado redondeado, como los marcos
-        $avatar.Background = Get-Pincel $(if ($ver) { '#262DD4BF' } else { $C.Tile2 })
-        $avatar.BorderBrush = Get-Pincel $(if ($ver) { '#592DD4BF' } else { '#1FFFFFFF' })
+        $avatar.Background = Get-Pincel $(if ($ver) { $C.Teal -replace '^#', '#26' } else { $C.Tile2 })
+        $avatar.BorderBrush = Get-Pincel $(if ($ver) { $C.Teal -replace '^#', '#59' } else { $C.Linea2 })
         $num = New-Texto $(if ($ver) { "$n" } else { '–' }) $(if ($ver) { $C.Teal } else { $C.Apagado }) 12 ([Windows.FontWeights]::SemiBold)
         $num.TextWrapping = 'NoWrap'; $num.HorizontalAlignment = 'Center'; $num.VerticalAlignment = 'Center'
         $avatar.Child = $num
@@ -1469,21 +1607,20 @@ function Get-ResumenAtajo($A) {
 function Show-Atajos {
     $r = Invoke-PanelApi 'GET' '/api/pc/atajos'
     if (-not $r) { Show-Aviso 'Para editar los atajos, el panel tiene que estar funcionando.' 'aviso'; return }
-    Hide-Paginas; Hide-Aviso
     $script:atajos = @($r.atajos); $script:atajosEjemplo = @($r.predeterminados); if ($r.maximo) { $script:maxAtajos = [int]$r.maximo }
     $script:edicion = $null
     Update-ListaAtajos
-    $ui.VistaAtajos.MinHeight = $ui.VistaConexion.ActualHeight
-    $ui.VistaConexion.Visibility = 'Collapsed'; $ui.VistaAtajos.Visibility = 'Visible'
-    $ui.AbrirAtajos.Visibility = 'Collapsed'; $ui.AbrirPaginas.Visibility = 'Collapsed'
+    $ui.VistaAtajos.MinHeight = $ui.VistaPrincipal.ActualHeight # la ventana no cambia de alto al pasar de una vista a otra
+    $ui.VistaPrincipal.Visibility = 'Collapsed'; $ui.VistaAtajos.Visibility = 'Visible'
+    $ui.AbrirAtajos.Visibility = 'Collapsed'
     $script:enAtajos = $true
 }
 
 function Hide-Atajos {
     if (-not $script:enAtajos) { return }
     $script:enAtajos = $false; $script:edicion = $null
-    $ui.VistaAtajos.Visibility = 'Collapsed'; $ui.VistaConexion.Visibility = 'Visible'
-    $ui.AbrirAtajos.Visibility = 'Visible'; $ui.AbrirPaginas.Visibility = 'Visible'
+    $ui.VistaAtajos.Visibility = 'Collapsed'; $ui.VistaPrincipal.Visibility = 'Visible'
+    $ui.AbrirAtajos.Visibility = 'Visible'
 }
 
 # Guarda la lista entera. Devuelve $true si el servidor la aceptó; si no, deja el motivo en $script:errorAtajos.
@@ -1558,12 +1695,12 @@ function Update-ListaAtajos {
         $b.Add_DragOver({ param($s, $e)
             $o = if ($e.Data.GetDataPresent('PanelAtajo')) { [string]$e.Data.GetData('PanelAtajo') } else { '' }
             $e.Effects = if ($o -and $o -ne [string]$s.Tag) { [Windows.DragDropEffects]::Move } else { [Windows.DragDropEffects]::None }
-            $s.BorderBrush = Get-Pincel $(if ($o -and $o -ne [string]$s.Tag) { $C.Teal } else { '#1FFFFFFF' })
+            $s.BorderBrush = Get-Pincel $(if ($o -and $o -ne [string]$s.Tag) { $C.Teal } else { $C.Linea2 })
             $e.Handled = $true
         })
-        $b.Add_DragLeave({ param($s) $s.BorderBrush = Get-Pincel '#1FFFFFFF' })
+        $b.Add_DragLeave({ param($s) $s.BorderBrush = Get-Pincel $C.Linea2 })
         $b.Add_Drop({ param($s, $e)
-            $s.BorderBrush = Get-Pincel '#1FFFFFFF'
+            $s.BorderBrush = Get-Pincel $C.Linea2
             $o = if ($e.Data.GetDataPresent('PanelAtajo')) { [string]$e.Data.GetData('PanelAtajo') } else { '' }
             if ($o -and $o -ne [string]$s.Tag) { $script:movAtajo = @($o, [string]$s.Tag) }
             $e.Handled = $true
@@ -1573,7 +1710,7 @@ function Update-ListaAtajos {
     if (@($script:atajos).Count -lt $script:maxAtajos) {
         $n = New-Object Windows.Controls.Button
         $n.Style = $w.FindResource('Boton'); $n.Margin = '0,0,12,12'; $n.Height = 104
-        $n.Background = Get-Pincel '#00000000'; $n.BorderBrush = Get-Pincel '#33FFFFFF'
+        $n.Background = Get-Pincel '#00000000'; $n.BorderBrush = Get-Pincel $C.LineaFuerte
         $sp = New-Object Windows.Controls.StackPanel
         $mas = New-Texto '+' $C.Teal 26 ([Windows.FontWeights]::Light); $mas.HorizontalAlignment = 'Center'
         $txt = New-Texto (T 'Agregar atajo') $C.Tenue 12 ([Windows.FontWeights]::SemiBold); $txt.HorizontalAlignment = 'Center'
@@ -1628,7 +1765,7 @@ function Update-EditorAtajo {
         $b.Style = $w.FindResource('BotonFlotante'); $b.Width = 30; $b.Height = 30; $b.Margin = '0,0,4,4'; $b.Tag = $n
         $sel = $n -eq $e.icon
         $b.Background = Get-Pincel $(if ($sel) { $e.color -replace '^#', '#33' } else { $C.Tile2 })
-        $b.BorderBrush = Get-Pincel $(if ($sel) { $e.color } else { '#1FFFFFFF' })
+        $b.BorderBrush = Get-Pincel $(if ($sel) { $e.color } else { $C.Linea2 })
         $b.Content = New-IconoVista $n $(if ($sel) { $e.color } else { $C.Tenue }) 15
         [Windows.Automation.AutomationProperties]::SetName($b, (TF 'Icono {0}' $n)); $b.ToolTip = $n
         $b.Add_Click({ param($s) Invoke-Seguro { $script:edicion.icon = [string]$s.Tag; Update-EditorAtajo } })
@@ -1637,7 +1774,7 @@ function Update-EditorAtajo {
     foreach ($par in @(@($ui.EdTipoAbrir, 'open'), @($ui.EdTipoTeclas, 'keys'), @($ui.EdTipoComando, 'command'))) {
         $on = $e.type -eq $par[1]
         $par[0].Background = Get-Pincel $(if ($on) { $C.Tile2 } else { '#00000000' })
-        $par[0].BorderBrush = Get-Pincel $(if ($on) { '#1FFFFFFF' } else { '#00000000' })
+        $par[0].BorderBrush = Get-Pincel $(if ($on) { $C.Linea2 } else { '#00000000' })
         $par[0].Foreground = Get-Pincel $(if ($on) { $C.Texto } else { $C.Tenue })
     }
     $ui.EdAbrir.Visibility = if ($e.type -eq 'open') { 'Visible' } else { 'Collapsed' }
@@ -1703,9 +1840,11 @@ $ui.AbrirPc.Add_Click({ Invoke-Seguro { Open-EnPc } })
 $ui.Detener.Add_Click({ Invoke-Seguro { Exit-Panel } })
 $ui.IdiomaEs.Add_Click({ Invoke-Seguro { Set-Idioma 'es' } })
 $ui.IdiomaEn.Add_Click({ Invoke-Seguro { Set-Idioma 'en' } })
-$ui.AbrirPaginas.Add_Click({ Invoke-Seguro { Show-Paginas } })
-$ui.ListoPaginas.Add_Click({ Invoke-Seguro { Hide-Paginas } })
 $ui.RestablecerPaginas.Add_Click({ Invoke-Seguro { Reset-Paginas } })
+$ui.CambiarTema.Add_Click({ Invoke-Seguro { Switch-Tema } })
+$ui.AbrirMas.Add_Click({ Invoke-Seguro { Switch-MenuMas } })
+$ui.MenuMas.Add_Closed({ $script:menuCerrado = Get-Date })
+$ui.SinCelular.Add_Click({ Invoke-Seguro { $script:sinCelular = $true; Update-Conexion $script:hayCelular } })
 $ui.AbrirAtajos.Add_Click({ Invoke-Seguro { Show-Atajos } })
 $ui.ListoAtajos.Add_Click({ Invoke-Seguro { Hide-Atajos } })
 $ui.RestablecerAtajos.Add_Click({ Invoke-Seguro { Reset-Atajos } })
@@ -1736,7 +1875,7 @@ $ui.EdTeclasCaja.Add_PreviewKeyDown({ param($s, $e)
 })
 $w.Add_KeyDown({ param($s, $e)
     if ($e.Key -ne 'Escape') { return }
-    if ($script:enPaginas) { Invoke-Seguro { Hide-Paginas } }
+    if ($ui.MenuMas.IsOpen) { $ui.MenuMas.IsOpen = $false }
     elseif ($script:enAtajos -and $script:edicion -and -not $ui.EdTeclasCaja.IsKeyboardFocused) { Invoke-Seguro { $script:edicion = $null; Update-ListaAtajos } }
     elseif ($script:enAtajos -and -not $script:edicion) { Invoke-Seguro { Hide-Atajos } }
 })
@@ -1755,9 +1894,7 @@ $w.Add_Closing({ param($s, $e)
             [Windows.Forms.ToolTipIcon]::Info)
     }
 })
-$w.Add_SourceInitialized({
-    if ($hayNativo) { try { [PanelNativo]::BarraOscura((New-Object Windows.Interop.WindowInteropHelper $w).Handle, 0x07090C, 0x1B2029) } catch { } }
-})
+$w.Add_SourceInitialized({ Set-BarraTitulo })
 $w.Add_ContentRendered({
     if ($script:inicioHecho) { return }
     $script:inicioHecho = $true
@@ -1776,7 +1913,9 @@ $relojSenal.Add_Tick({ Invoke-Seguro {
     if ($script:copiadoHasta -and (Get-Date) -gt $script:copiadoHasta) { $script:copiadoHasta = $null; $ui.Copiar.Content = T 'Copiar enlace' }
 } })
 
+Set-Tema $script:tema
 Reset-VistaConexion
+Update-Conexion $false
 Update-Idioma
 $reloj.Start()
 $relojSenal.Start()

@@ -21,14 +21,17 @@ public static class PanelNativo {
     [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
     [DllImport("user32.dll")] static extern bool AllowSetForegroundWindow(int processId);
 
-    // Barra de título oscura (Windows 10 20H1 en adelante) y, en Windows 11, del mismo color que el fondo de la ventana.
-    public static void BarraOscura(IntPtr hwnd, int fondoRgb, int bordeRgb) {
-        int si = 1;
-        if (DwmSetWindowAttribute(hwnd, 20, ref si, 4) != 0) DwmSetWindowAttribute(hwnd, 19, ref si, 4);
-        int fondo = Bgr(fondoRgb), borde = Bgr(bordeRgb);
+    // Barra de título oscura o clara (Windows 10 20H1 en adelante) y, en Windows 11, del mismo color que el fondo de la
+    // ventana, con el borde y el texto que se indiquen.
+    public static void Barra(IntPtr hwnd, bool oscura, int fondoRgb, int bordeRgb, int textoRgb) {
+        int modo = oscura ? 1 : 0;
+        if (DwmSetWindowAttribute(hwnd, 20, ref modo, 4) != 0) DwmSetWindowAttribute(hwnd, 19, ref modo, 4);
+        int fondo = Bgr(fondoRgb), borde = Bgr(bordeRgb), texto = Bgr(textoRgb);
         DwmSetWindowAttribute(hwnd, 35, ref fondo, 4);
         DwmSetWindowAttribute(hwnd, 34, ref borde, 4);
+        DwmSetWindowAttribute(hwnd, 36, ref texto, 4);
     }
+    public static void BarraOscura(IntPtr hwnd, int fondoRgb, int bordeRgb) { Barra(hwnd, true, fondoRgb, bordeRgb, 0xEEF1F6); }
 
     // Deja que la ventana ya abierta pase al frente cuando se vuelve a pulsar el icono del panel.
     public static void PermitirPrimerPlano() { AllowSetForegroundWindow(-1); }
