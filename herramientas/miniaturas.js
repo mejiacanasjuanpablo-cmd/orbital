@@ -1,4 +1,4 @@
-// Genera las miniaturas de las páginas del celular que muestra la ventana del panel en "Páginas del celular", en
+// Genera las miniaturas de las páginas del celular que muestra la ventana del panel en "Selección de widgets", en
 // español (public/miniaturas/<página>.jpg) y en inglés (public/miniaturas/en/<página>.jpg). Vuelve a ejecutarlo cuando
 // cambie el diseño de alguna página.
 //

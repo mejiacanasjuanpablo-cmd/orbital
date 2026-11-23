@@ -8,7 +8,7 @@ $PanelArchivosComunes = @(
     'lib\arranque.ps1', 'lib\lanzador.cs', 'lib\mezclador.ps1',
     'public\index.html', 'public\espera.html', 'public\manifest.webmanifest', 'public\icon-192.png', 'public\icon-512.png'
 )
-# Vistas previas de las páginas del celular (ventana → Páginas del celular). Van en el .zip, pero no se exigen para
+# Vistas previas de las páginas del celular (ventana → Selección de widgets). Van en el .zip, pero no se exigen para
 # arrancar: si falta alguna, la ventana lo indica en esa tarjeta. Las genera herramientas\miniaturas.js (en español y en inglés).
 $PanelMiniaturas = foreach ($carpeta in 'public\miniaturas', 'public\miniaturas\en') {
     foreach ($p in 'inicio', 'mezclador', 'sistema', 'rendimiento', 'procesos', 'enfoque', 'calendario', 'discord', 'comandos') { "$carpeta\$p.jpg" }

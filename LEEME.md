@@ -47,7 +47,7 @@ sin consola. Muestra:
 - los dispositivos autorizados, con un botón **Quitar** para cada uno;
 - la actividad: los botones que pulsas desde el celular y los dispositivos que piden entrar.
 
-Arriba a la derecha eliges el **idioma** (**Español** o **English**) y, con **Páginas del celular**, qué páginas se ven en
+Arriba a la derecha eliges el **idioma** (**Español** o **English**) y, con **Selección de widgets**, qué páginas se ven en
 el celular y en qué orden (ver [Páginas](#páginas)).
 
 - **Cerrar la ventana no detiene el panel:** sigue funcionando y queda un icono junto al reloj. Para volver a la ventana,
@@ -114,7 +114,7 @@ Los nombres de tus botones, relojes y comandos salen tal como los escribiste en 
 
 Desliza a los lados (o usa las flechas del teclado) para cambiar de página. Funciona mejor con el celular en horizontal.
 
-**Elegir qué páginas ves y en qué orden:** en la ventana del panel, en el PC, pulsa **Páginas del celular**. Cada página
+**Elegir qué páginas ves y en qué orden:** en la ventana del panel, en el PC, pulsa **Selección de widgets**. Cada página
 es una tarjeta con su vista previa, en el orden en que salen en el celular:
 - el interruptor de la tarjeta la muestra u oculta (las ocultas se ven tenues, con «Oculta»);
 - para cambiar el orden, arrastra la tarjeta sobre otra: ocupa su lugar. También puedes usar las flechas que aparecen

@@ -86,7 +86,7 @@ ACTIVIDAD ⇒ ACTIVITY
 Mostrar la ventana ⇒ Show the window
 El panel sigue funcionando ⇒ The panel is still running
 Para volver a la ventana, haz clic en este icono o abre el panel desde el menú Inicio. Para cerrarlo del todo, usa «Detener el panel». ⇒ To get back to the window, click this icon or open the panel from the Start menu. To close it completely, use "Stop the panel".
-Páginas del celular ⇒ Phone pages
+Selección de widgets ⇒ Widget selection
 Elige qué páginas ves en el celular y en qué orden ⇒ Choose which pages your phone shows, and in what order
 Restablecer ⇒ Reset
 Vuelve al orden original, con todas las páginas ⇒ Go back to the original order, with every page
@@ -297,11 +297,11 @@ $xaml = @'
         </StackPanel>
       </Border>
       <Button x:Name="AbrirPaginas" DockPanel.Dock="Right" Style="{StaticResource Boton}" Margin="0,0,10,0" Padding="12,7" VerticalAlignment="Center"
-              AutomationProperties.Name="Páginas del celular" ToolTip="Elige qué páginas ves en el celular y en qué orden">
+              AutomationProperties.Name="Selección de widgets" ToolTip="Elige qué páginas ves en el celular y en qué orden">
         <StackPanel Orientation="Horizontal">
           <Path Width="13" Height="13" Stretch="Uniform" Stroke="#2DD4BF" StrokeThickness="1.8" StrokeLineJoin="Round" Margin="0,0,8,0" VerticalAlignment="Center"
                 Data="M4,4 L10,4 L10,10 L4,10 Z M14,4 L20,4 L20,10 L14,10 Z M4,14 L10,14 L10,20 L4,20 Z M14,14 L20,14 L20,20 L14,20 Z"/>
-          <TextBlock Text="Páginas del celular"/>
+          <TextBlock Text="Selección de widgets"/>
         </StackPanel>
       </Button>
     </DockPanel>
@@ -313,7 +313,7 @@ $xaml = @'
       </DockPanel>
     </Border>
 
-    <!-- Páginas del celular: una tarjeta por página, con su vista previa, en el orden en que salen en el celular
+    <!-- Selección de widgets: una tarjeta por página, con su vista previa, en el orden en que salen en el celular
          (ocupa el lugar de la vista de conexión mientras está abierta) -->
     <DockPanel x:Name="VistaPaginas" Grid.Row="2" Visibility="Collapsed" LastChildFill="True">
       <DockPanel DockPanel.Dock="Top" Margin="0,0,0,16" LastChildFill="True">
@@ -323,7 +323,7 @@ $xaml = @'
           <Button x:Name="ListoPaginas" Content="Listo" Style="{StaticResource BotonPrincipal}" Padding="26,8"/>
         </StackPanel>
         <StackPanel VerticalAlignment="Center">
-          <TextBlock Text="Páginas del celular" FontSize="16" FontWeight="SemiBold"/>
+          <TextBlock Text="Selección de widgets" FontSize="16" FontWeight="SemiBold"/>
           <TextBlock Margin="0,3,0,0" Foreground="{StaticResource Tenue}" FontSize="12" TextWrapping="Wrap" LineHeight="17"
                      Text="Activa las que quieres ver y arrástralas para cambiar el orden. La primera es la que aparece al conectar el celular, y cada cambio le llega al momento."/>
         </StackPanel>
@@ -903,7 +903,7 @@ function Remove-Dispositivo([string]$Ip) {
 
 function Open-EnPc { if ($script:token) { Start-Process "http://localhost:$Puerto/#t=$($script:token)" } }
 
-# ---------- Páginas del celular: cuáles se ven y en qué orden. Las guarda el servidor (data\paginas.json) y el celular
+# ---------- Selección de widgets: cuáles se ven y en qué orden. Las guarda el servidor (data\paginas.json) y el celular
 # las recibe con cada lectura del estado, así que cada cambio se guarda en el acto.
 $script:paginas = @()
 $script:enPaginas = $false
