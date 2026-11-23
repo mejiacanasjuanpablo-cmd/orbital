@@ -115,6 +115,44 @@ $xaml = @'
     <Style x:Key="Segmento" TargetType="Button" BasedOn="{StaticResource BotonEnlace}">
       <Setter Property="Padding" Value="14,6"/>
     </Style>
+    <Style x:Key="BotonIcono" TargetType="Button" BasedOn="{StaticResource BotonEnlace}">
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="Width" Value="32"/>
+      <Setter Property="Height" Value="28"/>
+      <Style.Triggers>
+        <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="{StaticResource Tile}"/></Trigger>
+      </Style.Triggers>
+    </Style>
+    <!-- Interruptor (activar o quitar una página del celular); el texto va a la derecha y también se puede pulsar. -->
+    <Style x:Key="Interruptor" TargetType="CheckBox">
+      <Setter Property="Foreground" Value="{StaticResource Texto}"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="CheckBox">
+            <DockPanel Background="Transparent">
+              <Border x:Name="Pista" DockPanel.Dock="Left" Width="34" Height="20" CornerRadius="10" Background="#262C36"
+                      BorderBrush="{StaticResource Linea2}" BorderThickness="1" VerticalAlignment="Center">
+                <Ellipse x:Name="Bola" Width="14" Height="14" Fill="#7D8696" HorizontalAlignment="Left" Margin="2,0,0,0"/>
+              </Border>
+              <ContentPresenter Margin="12,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="False"/>
+            </DockPanel>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="Pista" Property="Background" Value="#2DD4BF"/>
+                <Setter TargetName="Pista" Property="BorderBrush" Value="#2DD4BF"/>
+                <Setter TargetName="Bola" Property="Fill" Value="#07090C"/>
+                <Setter TargetName="Bola" Property="HorizontalAlignment" Value="Right"/>
+                <Setter TargetName="Bola" Property="Margin" Value="0,0,2,0"/>
+              </Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Pista" Property="BorderBrush" Value="#EEF1F6"/></Trigger>
+              <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Pista" Property="Opacity" Value="0.45"/></Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
   </Window.Resources>
 
   <Grid Margin="20,16,20,20">
@@ -141,6 +179,14 @@ $xaml = @'
           <Button x:Name="ModoUsb" Content="Cable USB" Style="{StaticResource Segmento}" ToolTip="El celular se conecta por cable, con la depuración USB"/>
         </StackPanel>
       </Border>
+      <Button x:Name="AbrirPaginas" DockPanel.Dock="Right" Style="{StaticResource Boton}" Margin="0,0,10,0" Padding="12,7" VerticalAlignment="Center"
+              AutomationProperties.Name="Páginas del celular" ToolTip="Elige qué páginas ves en el celular y en qué orden">
+        <StackPanel Orientation="Horizontal">
+          <Path Width="13" Height="13" Stretch="Uniform" Stroke="#2DD4BF" StrokeThickness="1.8" StrokeLineJoin="Round" Margin="0,0,8,0" VerticalAlignment="Center"
+                Data="M4,4 L10,4 L10,10 L4,10 Z M14,4 L20,4 L20,10 L14,10 Z M4,14 L10,14 L10,20 L4,20 Z M14,14 L20,14 L20,20 L14,20 Z"/>
+          <TextBlock Text="Páginas del celular"/>
+        </StackPanel>
+      </Button>
     </DockPanel>
 
     <Border x:Name="Aviso" Grid.Row="1" Visibility="Collapsed" CornerRadius="12" Padding="14,10" Margin="0,0,0,14" BorderThickness="1">
@@ -150,7 +196,28 @@ $xaml = @'
       </DockPanel>
     </Border>
 
-    <Grid Grid.Row="2">
+    <!-- Páginas del celular: cuáles se ven y en qué orden (ocupa el lugar de la vista de conexión mientras está abierta) -->
+    <DockPanel x:Name="VistaPaginas" Grid.Row="2" Visibility="Collapsed" LastChildFill="True">
+      <DockPanel DockPanel.Dock="Bottom" Margin="0,14,0,0" LastChildFill="False">
+        <Button x:Name="RestablecerPaginas" DockPanel.Dock="Left" Content="Restablecer" Style="{StaticResource Boton}"
+                ToolTip="Vuelve al orden original, con todas las páginas"/>
+        <Button x:Name="ListoPaginas" DockPanel.Dock="Right" Content="Listo" Style="{StaticResource BotonPrincipal}" Padding="26,8"/>
+        <TextBlock DockPanel.Dock="Left" Margin="16,0,0,0" VerticalAlignment="Center" FontSize="12" Foreground="{StaticResource Tenue}"
+                   Text="Cada cambio llega al celular al momento, sin recargar."/>
+      </DockPanel>
+      <Border Style="{StaticResource Tarjeta}">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+            <TextBlock Text="PÁGINAS DEL CELULAR" Style="{StaticResource Etiqueta}" Margin="0,0,0,6"/>
+            <TextBlock Foreground="{StaticResource Tenue}" TextWrapping="Wrap" LineHeight="19"
+                       Text="Activa las páginas que quieres ver y ordénalas con las flechas. La primera es la que aparece al conectar el celular."/>
+          </StackPanel>
+          <StackPanel x:Name="ListaPaginas"/>
+        </DockPanel>
+      </Border>
+    </DockPanel>
+
+    <Grid x:Name="VistaConexion" Grid.Row="2">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="316"/>
         <ColumnDefinition Width="16"/>
@@ -229,7 +296,8 @@ $w = [Windows.Markup.XamlReader]::Parse($xaml)
 $ui = @{}
 foreach ($n in 'Logo', 'Punto', 'Estado', 'Modos', 'ModoWifi', 'ModoUsb', 'Aviso', 'AvisoTexto', 'AvisoBoton', 'VistaWifi', 'Qr', 'QrEspera',
     'Direccion', 'Copiar', 'VistaUsb', 'UsbIcono', 'UsbIconoPath', 'UsbTitulo', 'UsbDetalle', 'AbrirCelular', 'TarjetaDispositivos',
-    'ListaDispositivos', 'SinDispositivos', 'ListaActividad', 'AbrirPc', 'Detener') {
+    'ListaDispositivos', 'SinDispositivos', 'ListaActividad', 'AbrirPc', 'Detener',
+    'AbrirPaginas', 'VistaConexion', 'VistaPaginas', 'ListaPaginas', 'RestablecerPaginas', 'ListoPaginas') {
     $ui[$n] = $w.FindName($n)
 }
 try {
@@ -304,6 +372,7 @@ function Show-Aviso([string]$Texto, [string]$Tipo = 'aviso', [string]$Boton, [sc
 function Hide-Aviso { $ui.Aviso.Visibility = 'Collapsed'; $script:avisoAccion = $null }
 
 function Set-Fallo([string]$Texto, [string]$Boton, [scriptblock]$Accion) {
+    Hide-Paginas
     Set-Estado 'No está funcionando' $C.Rojo -Normal
     Show-Aviso $Texto 'error' $Boton $Accion
     $ui.QrEspera.Text = 'Sin conexión'; $ui.QrEspera.Visibility = 'Visible'; $ui.Qr.Source = $null; $script:qrPuesto = $false
@@ -313,7 +382,7 @@ function Set-Fallo([string]$Texto, [string]$Boton, [scriptblock]$Accion) {
 }
 
 function Set-Botones([bool]$Activos) {
-    foreach ($b in $ui.AbrirPc, $ui.Detener, $ui.ModoWifi, $ui.ModoUsb) { $b.IsEnabled = $Activos }
+    foreach ($b in $ui.AbrirPc, $ui.Detener, $ui.ModoWifi, $ui.ModoUsb, $ui.AbrirPaginas) { $b.IsEnabled = $Activos }
 }
 
 function Set-Usb([string]$Titulo, [string]$Detalle, [string]$Color) {
@@ -484,6 +553,7 @@ function Start-Flujo([string]$Modo) {
 
 function Start-Pasos([string]$Modo) {
     $script:modo = $Modo
+    Hide-Paginas
     Set-Botones $false
     Hide-Aviso
     Update-VistaModo
@@ -690,6 +760,127 @@ function Remove-Dispositivo([string]$Ip) {
 
 function Open-EnPc { if ($script:token) { Start-Process "http://localhost:$Puerto/#t=$($script:token)" } }
 
+# ---------- Páginas del celular: cuáles se ven y en qué orden. Las guarda el servidor (data\paginas.json) y el celular
+# las recibe con cada lectura del estado, así que cada cambio se guarda en el acto.
+$script:paginas = @()
+$script:enPaginas = $false
+
+function Show-Paginas {
+    $r = Invoke-PanelApi 'GET' '/api/pc/paginas'
+    if (-not $r) { Show-Aviso 'Para elegir las páginas del celular, el panel tiene que estar funcionando.' 'aviso'; return }
+    Hide-Aviso
+    $script:paginas = @($r.paginas)
+    Update-ListaPaginas
+    $ui.VistaPaginas.MinHeight = $ui.VistaConexion.ActualHeight # la ventana no cambia de alto al pasar de una vista a otra
+    $ui.VistaConexion.Visibility = 'Collapsed'; $ui.VistaPaginas.Visibility = 'Visible'
+    $ui.AbrirPaginas.Visibility = 'Collapsed'; $ui.Modos.Visibility = 'Collapsed'
+    $script:enPaginas = $true
+}
+
+function Hide-Paginas {
+    if (-not $script:enPaginas) { return }
+    $script:enPaginas = $false
+    $ui.VistaPaginas.Visibility = 'Collapsed'; $ui.VistaConexion.Visibility = 'Visible'
+    $ui.AbrirPaginas.Visibility = 'Visible'
+    $ui.Modos.Visibility = if ($PanelSoloWifi) { 'Collapsed' } else { 'Visible' }
+}
+
+function Save-Paginas($Lista, [string]$Foco) {
+    $cuerpo = @{ paginas = @(@($Lista) | Where-Object { $_ } | ForEach-Object { @{ id = [string]$_.id; ver = [bool]$_.ver } }) }
+    $r = Invoke-PanelApi 'POST' '/api/pc/paginas' $cuerpo
+    if (-not $r) { Show-Aviso 'No se pudieron guardar las páginas: el panel no respondió.' 'error' }
+    else { $script:paginas = @($r.paginas) }
+    Update-ListaPaginas $Foco
+}
+
+function Move-Pagina([string]$Id, [int]$Paso) {
+    $l = @($script:paginas).Clone() # copia: si no se puede guardar, la lista de la ventana no cambia
+    $i = 0; while ($i -lt $l.Count -and $l[$i].id -ne $Id) { $i++ }
+    $j = $i + $Paso
+    if ($i -ge $l.Count -or $j -lt 0 -or $j -ge $l.Count) { return }
+    $t = $l[$i]; $l[$i] = $l[$j]; $l[$j] = $t
+    Save-Paginas $l "$Paso|$Id"
+}
+
+function Set-PaginaVisible([string]$Id, [bool]$Ver) {
+    $l = @($script:paginas | ForEach-Object { @{ id = $_.id; ver = $(if ($_.id -eq $Id) { $Ver } else { [bool]$_.ver }) } })
+    Save-Paginas $l "ver|$Id"
+}
+
+function Reset-Paginas {
+    $r = [Windows.MessageBox]::Show($w, '¿Volver al orden original, con todas las páginas?', 'Panel del PC', 'YesNo', 'Question')
+    if ("$r" -eq 'Yes') { Save-Paginas @() }
+}
+
+function New-Flecha([string]$Id, [int]$Paso, [bool]$Activa, [string]$Nombre) {
+    $b = New-Object Windows.Controls.Button
+    $b.Style = $w.FindResource('BotonIcono')
+    $p = New-Object Windows.Shapes.Path
+    $p.Data = [Windows.Media.Geometry]::Parse($(if ($Paso -lt 0) { 'M6,15 L12,9 L18,15' } else { 'M6,9 L12,15 L18,9' }))
+    $p.Stroke = Get-Pincel $C.Texto; $p.StrokeThickness = 2; $p.Width = 12; $p.Height = 12; $p.Stretch = 'Uniform'
+    $p.StrokeStartLineCap = 'Round'; $p.StrokeEndLineCap = 'Round'; $p.StrokeLineJoin = 'Round'
+    $b.Content = $p
+    $b.IsEnabled = $Activa
+    $b.Tag = "$Paso|$Id"
+    $texto = if ($Paso -lt 0) { "Subir $Nombre" } else { "Bajar $Nombre" }
+    [Windows.Automation.AutomationProperties]::SetName($b, $texto)
+    $b.ToolTip = $texto
+    $b.Add_Click({ param($s) Invoke-Seguro { $t = ([string]$s.Tag).Split('|', 2); Move-Pagina $t[1] ([int]$t[0]) } })
+    $b
+}
+
+# Una fila por página: número en el celular (o «–» si está oculta), interruptor con el nombre, y flechas para moverla.
+# $Foco ("-1|id", "1|id" o "ver|id") devuelve el foco al mismo control si el cambio se hizo con el teclado.
+function Update-ListaPaginas([string]$Foco) {
+    $ui.ListaPaginas.Children.Clear()
+    $l = @($script:paginas)
+    $visibles = @($l | Where-Object { $_.ver }).Count
+    $n = 0; $controles = @{}
+    for ($i = 0; $i -lt $l.Count; $i++) {
+        $p = $l[$i]; $ver = [bool]$p.ver; $id = [string]$p.id
+        if ($ver) { $n++ }
+        $fila = New-Object Windows.Controls.Border
+        $fila.Background = Get-Pincel $C.Tile2; $fila.CornerRadius = 10; $fila.Padding = '10,2,4,2'
+        if ($i -lt $l.Count - 1) { $fila.Margin = '0,0,0,5' }
+        $dock = New-Object Windows.Controls.DockPanel
+        $num = New-Texto $(if ($ver) { "$n" } else { '–' }) $(if ($ver) { $C.Teal } else { $C.Apagado }) 12 ([Windows.FontWeights]::SemiBold)
+        $num.Width = 24; $num.FontFamily = 'Cascadia Mono, Consolas'; $num.VerticalAlignment = 'Center'; $num.TextWrapping = 'NoWrap'
+        [Windows.Controls.DockPanel]::SetDock($num, 'Left')
+        $abajo = New-Flecha $id 1 ($i -lt $l.Count - 1) $p.nombre
+        $arriba = New-Flecha $id -1 ($i -gt 0) $p.nombre
+        [Windows.Controls.DockPanel]::SetDock($abajo, 'Right'); [Windows.Controls.DockPanel]::SetDock($arriba, 'Right')
+        $chk = New-Object Windows.Controls.CheckBox
+        $chk.Style = $w.FindResource('Interruptor'); $chk.IsChecked = $ver; $chk.Tag = $id
+        $textos = New-Object Windows.Controls.StackPanel
+        $textos.Orientation = 'Horizontal'
+        $nombre = New-Texto ([string]$p.nombre) $(if ($ver) { $C.Texto } else { $C.Tenue }) 13 ([Windows.FontWeights]::SemiBold)
+        $nombre.TextWrapping = 'NoWrap'
+        $detalle = New-Texto ([string]$p.detalle) $(if ($ver) { $C.Tenue } else { $C.Apagado }) 12
+        $detalle.TextWrapping = 'NoWrap'; $detalle.Margin = '10,1,0,0'
+        [void]$textos.Children.Add($nombre); [void]$textos.Children.Add($detalle)
+        $chk.Content = $textos
+        [Windows.Automation.AutomationProperties]::SetName($chk, "Mostrar $($p.nombre)")
+        if ($ver -and $visibles -eq 1) {
+            $chk.IsEnabled = $false
+            $chk.ToolTip = 'Tiene que quedar al menos una página'
+            [Windows.Controls.ToolTipService]::SetShowOnDisabled($chk, $true)
+        }
+        # Checked/Unchecked (y no Click): así también funciona desde el teclado y con lectores de pantalla.
+        $chk.Add_Checked({ param($s) Invoke-Seguro { Set-PaginaVisible ([string]$s.Tag) $true } })
+        $chk.Add_Unchecked({ param($s) Invoke-Seguro { Set-PaginaVisible ([string]$s.Tag) $false } })
+        [void]$dock.Children.Add($num); [void]$dock.Children.Add($abajo); [void]$dock.Children.Add($arriba); [void]$dock.Children.Add($chk)
+        $fila.Child = $dock
+        [void]$ui.ListaPaginas.Children.Add($fila)
+        $controles["-1|$id"] = $arriba; $controles["1|$id"] = $abajo; $controles["ver|$id"] = $chk
+    }
+    if ($Foco -and [Windows.Input.InputManager]::Current.MostRecentInputDevice -is [Windows.Input.KeyboardDevice]) {
+        $c = $controles[$Foco]
+        # Si la página llegó arriba (o abajo) del todo, esa flecha ya no se puede usar: el foco pasa a la otra.
+        if ($c -and -not $c.IsEnabled -and $Foco -notlike 'ver|*') { $t = $Foco.Split('|', 2); $c = $controles["$(-[int]$t[0])|$($t[1])"] }
+        if ($c -and $c.IsEnabled) { $ui.ListaPaginas.UpdateLayout(); [void]$c.Focus() }
+    }
+}
+
 # ---------- Icono junto al reloj
 $tray = New-Object Windows.Forms.NotifyIcon
 try { $tray.Icon = New-Object Drawing.Icon((Join-Path $Raiz 'panel.ico'), [Windows.Forms.SystemInformation]::SmallIconSize) } catch { $tray.Icon = [Drawing.SystemIcons]::Application }
@@ -717,6 +908,10 @@ $ui.AbrirCelular.Add_Click({ Invoke-Seguro {
 } })
 $ui.ModoWifi.Add_Click({ Invoke-Seguro { if ($script:modo -ne 'wifi') { Switch-Modo 'wifi' } } })
 $ui.ModoUsb.Add_Click({ Invoke-Seguro { if ($script:modo -ne 'usb') { Switch-Modo 'usb' } } })
+$ui.AbrirPaginas.Add_Click({ Invoke-Seguro { Show-Paginas } })
+$ui.ListoPaginas.Add_Click({ Invoke-Seguro { Hide-Paginas } })
+$ui.RestablecerPaginas.Add_Click({ Invoke-Seguro { Reset-Paginas } })
+$w.Add_KeyDown({ param($s, $e) if ($e.Key -eq 'Escape' -and $script:enPaginas) { Invoke-Seguro { Hide-Paginas } } })
 
 # Cerrar la ventana la esconde: el panel sigue funcionando y se vuelve a ella desde el icono o el menú Inicio.
 # Si el panel no está funcionando (por ejemplo, porque falló al arrancar), cerrarla lo cierra todo.

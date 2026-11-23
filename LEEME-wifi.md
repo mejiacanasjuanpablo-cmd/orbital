@@ -26,6 +26,7 @@ No hay que instalar ninguna app en el celular ni activar nada en sus ajustes. Fu
 
 - La ventana también muestra los dispositivos autorizados, con un botón **Quitar** para cada uno, y la actividad:
   los botones que pulsas desde el celular y los dispositivos que piden entrar.
+- Con **Páginas del celular**, arriba en la ventana, eliges qué páginas se ven en el celular y en qué orden.
 - **Cerrar la ventana no detiene el panel:** sigue funcionando y queda un icono junto al reloj. Para volver a la ventana,
   haz clic en ese icono o abre otra vez **Panel Wi-Fi**. Para detenerlo, pulsa **Detener el panel**.
 - Si el celular dice "Sin conexión", revisa que el panel siga en marcha en el PC y que el celular esté en la misma red.
@@ -41,6 +42,11 @@ No hay que instalar ninguna app en el celular ni activar nada en sus ajustes. Fu
 ## Páginas
 
 Desliza a los lados para cambiar de página. Funciona mejor con el celular en horizontal.
+
+**Elegir qué páginas ves y en qué orden:** en la ventana del panel, en el PC, pulsa **Páginas del celular**. Activa o
+quita cada página con su interruptor y muévela con las flechas; la primera es la que aparece al conectar el celular
+(si solo recargas la página, vuelves a la que estabas viendo). Cada cambio llega al celular al momento, sin recargar,
+y se guarda en el PC, en `data/paginas.json`. **Restablecer** vuelve al orden de abajo, con todas las páginas.
 
 1. **Inicio**: reloj, la canción que suena en el PC (con carátula, progreso y controles), volumen, y CPU, RAM, red y disco.
 2. **Mezclador**: el volumen de cada aplicación que usa el sonido del PC, como el mezclador de Windows: una columna por

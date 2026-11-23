@@ -305,6 +305,7 @@ function stats() {
     media: extra.media && extra.media.title ? extra.media : null,
     volume: extra.volume,
     artKey: extra.media && extra.media.artKey === art.key ? art.key : null,
+    paginas: paginasVisibles(),
     time: Date.now(),
   };
 }
@@ -325,6 +326,50 @@ function writeTasks(list) {
   fs.writeFileSync(TASKS_PATH, JSON.stringify(clean, null, 2));
   return clean;
 }
+
+// ---------- Páginas del celular: cuáles se ven y en qué orden. Se eligen en la ventana del panel y se guardan en
+// data/paginas.json; el celular las recibe con cada lectura del estado y se reordena solo.
+const PAGINAS = [
+  { id: 'inicio', nombre: 'Inicio', detalle: 'Reloj, música, volumen y uso del PC' },
+  { id: 'mezclador', nombre: 'Mezclador', detalle: 'Volumen de cada aplicación y salida de audio' },
+  { id: 'sistema', nombre: 'Sistema', detalle: 'Indicadores y botones de atajos' },
+  { id: 'rendimiento', nombre: 'Rendimiento', detalle: 'Historial de CPU, RAM y red, y cada núcleo' },
+  { id: 'procesos', nombre: 'Procesos', detalle: 'Los programas que más CPU y memoria usan' },
+  { id: 'enfoque', nombre: 'Enfoque', detalle: 'Pomodoro, tareas y accesos rápidos' },
+  { id: 'calendario', nombre: 'Calendario', detalle: 'El mes, relojes del mundo y el clima' },
+  { id: 'discord', nombre: 'Discord', detalle: 'Compartir pantalla, micrófono y más' },
+  { id: 'comandos', nombre: 'Comandos', detalle: 'Botones de comandos y su consola' },
+];
+const PAGINAS_PATH = path.join(ROOT, 'data', 'paginas.json');
+// Lista completa, en orden, con { id, ver }. Lo que no se conoce se descarta; las páginas que falten (por ejemplo,
+// una nueva de otra versión) se agregan al final, visibles.
+function normalizarPaginas(lista) {
+  const conocidas = new Set(PAGINAS.map((p) => p.id)), puestas = new Set(), r = [];
+  for (const p of Array.isArray(lista) ? lista : []) {
+    const id = String((p && p.id) || '');
+    if (!conocidas.has(id) || puestas.has(id)) continue;
+    puestas.add(id);
+    r.push({ id, ver: p.ver !== false });
+  }
+  for (const p of PAGINAS) if (!puestas.has(p.id)) r.push({ id: p.id, ver: true });
+  return r;
+}
+function leerPaginas() {
+  let guardadas = null;
+  try { guardadas = JSON.parse(fs.readFileSync(PAGINAS_PATH, 'utf8')).paginas; } catch {}
+  const r = normalizarPaginas(guardadas);
+  return r.some((p) => p.ver) ? r : normalizarPaginas(null); // si quedaron todas ocultas, se ven todas
+}
+let paginas = leerPaginas();
+function guardarPaginas(lista) {
+  const r = normalizarPaginas(lista);
+  if (!r.some((p) => p.ver)) throw new Error('tiene que quedar al menos una página');
+  fs.mkdirSync(path.dirname(PAGINAS_PATH), { recursive: true });
+  fs.writeFileSync(PAGINAS_PATH, JSON.stringify({ paginas: r }, null, 2));
+  paginas = r;
+}
+const paginasVisibles = () => paginas.filter((p) => p.ver).map((p) => p.id);
+const paginasPc = () => ({ paginas: paginas.map((p) => ({ ...PAGINAS.find((x) => x.id === p.id), ver: p.ver })) });
 
 // ---------- Clima (Open-Meteo, solo si está activado en config.json; caché de 15 min)
 let weatherCache = { at: 0, key: '', data: null };
@@ -477,6 +522,12 @@ const handler = async (req, res) => {
             evento('aprobacion', `Dispositivo quitado: ${ip}. Si vuelve a escanear el código, el PC te preguntará otra vez.`);
           }
           return send(res, 200, { ok });
+        }
+        if (url.pathname === '/api/pc/paginas' && req.method === 'GET') return send(res, 200, paginasPc());
+        if (url.pathname === '/api/pc/paginas' && req.method === 'POST') {
+          const body = JSON.parse((await readBody(req)) || '{}');
+          try { guardarPaginas(body.paginas); } catch (e) { return send(res, 400, { error: e.message }); }
+          return send(res, 200, paginasPc());
         }
         if (url.pathname === '/api/pc/detener' && req.method === 'POST') {
           send(res, 200, { ok: true });

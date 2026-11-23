@@ -45,7 +45,8 @@ Los iconos abren la **ventana del panel** en el PC, sin consola. Muestra:
 - en modo cable, si el celular está conectado;
 - la actividad: los botones que pulsas desde el celular y los dispositivos que piden entrar.
 
-Arriba a la derecha puedes cambiar entre **Wi-Fi** y **Cable USB** sin cerrar nada.
+Arriba a la derecha puedes cambiar entre **Wi-Fi** y **Cable USB** sin cerrar nada, y con **Páginas del celular**
+eliges qué páginas se ven en el celular y en qué orden (ver [Páginas](#páginas)).
 
 - **Cerrar la ventana no detiene el panel:** sigue funcionando y queda un icono junto al reloj. Para volver a la ventana,
   haz clic en ese icono o abre otra vez el panel desde el menú Inicio.
@@ -107,6 +108,11 @@ El token de acceso se guarda en `.token`. Si lo borras se genera uno nuevo y ten
 
 Desliza a los lados (o usa las flechas del teclado) para cambiar de página. Funciona mejor con el celular en horizontal.
 
+**Elegir qué páginas ves y en qué orden:** en la ventana del panel, en el PC, pulsa **Páginas del celular**. Activa o
+quita cada página con su interruptor y muévela con las flechas; la primera es la que aparece al conectar el celular
+(si solo recargas la página, vuelves a la que estabas viendo). Cada cambio llega al celular al momento, sin recargar,
+y se guarda en el PC, en `data/paginas.json`. **Restablecer** vuelve al orden de abajo, con todas las páginas.
+
 1. **Inicio**: reloj, la canción que suena en el PC (con carátula, progreso y controles), volumen, y CPU, RAM, red y disco con gráficas.
 2. **Mezclador**: el volumen de cada aplicación que usa el sonido del PC, como el mezclador de Windows: una columna por
    aplicación, con su icono, un control para subir o bajar, el botón de silencio y un medidor que se mueve con el sonido.
@@ -161,7 +167,7 @@ Si añades `"confirm": true` a un botón, pedirá confirmación antes de ejecuta
 ## Compartir el panel
 
 En la carpeta del panel ejecuta `.\empaquetar.ps1`. Crea `Panel-USB.zip` junto a la carpeta, con solo los archivos del programa:
-nunca incluye tu `.token`, tu `config.json` ni tus tareas. Quien lo reciba empieza por la sección **Instalación**.
+nunca incluye tu `.token`, tu `config.json`, tus tareas ni el orden de tus páginas. Quien lo reciba empieza por la sección **Instalación**.
 
 ## Seguridad
 

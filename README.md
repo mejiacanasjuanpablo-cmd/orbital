@@ -9,6 +9,8 @@ Panel de control del PC que se abre en el navegador del celular. Incluye:
 - controles de Discord;
 - botones de atajos y de comandos.
 
+Desde la ventana del panel en el PC eliges qué páginas se ven en el celular y en qué orden.
+
 Se conecta por la red Wi-Fi de la casa, escaneando un código QR, o por cable USB. No hay que instalar nada en el celular, y en el PC solo necesita Node.js y PowerShell, sin otras dependencias.
 
 ![Página de inicio del panel](docs/historia/portada.png)
@@ -44,7 +46,7 @@ El recorrido por cada versión, con capturas y todos los cambios, está en **[HI
 | `lib/qr.js` | Generador de códigos QR, hecho desde cero |
 | `lib/aprobacion.js`, `lib/allow.js` | Aprobación de dispositivos nuevos y lista de dispositivos permitidos en modo Wi-Fi |
 | `lib/requisitos.ps1` | Revisión de requisitos (la usan `verificar`, `instalar`, `iniciar` y la ventana) |
-| `ventana.ps1` | La ventana del panel en el PC: QR, estado, dispositivos, actividad e icono junto al reloj |
+| `ventana.ps1` | La ventana del panel en el PC: QR, estado, dispositivos, actividad, páginas del celular e icono junto al reloj |
 | `lib/lanzador.cs` | `Panel del PC.exe`, que abre la ventana sin consola (lo compila `instalar` en cada PC) |
 | `lib/arranque.ps1` | Arranque compartido por la ventana y el modo consola: token, red, cable USB y servidor |
 | `iniciar.cmd`, `iniciar-wifi.cmd` | Abren la ventana del panel por USB o por Wi-Fi |

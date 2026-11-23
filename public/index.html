@@ -29,6 +29,7 @@
   #pages::-webkit-scrollbar { display: none; }
   .page { flex: 0 0 100%; height: 100%; scroll-snap-align: start; padding: max(var(--gap), env(safe-area-inset-top)) max(var(--gap), env(safe-area-inset-right)) calc(var(--gap) + 18px) max(var(--gap), env(safe-area-inset-left));
           display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: repeat(6, minmax(0, 1fr)); gap: var(--gap); }
+  .page[hidden] { display: none; }
   #dots { position: fixed; left: 50%; bottom: max(5px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; gap: 6px; z-index: 5; }
   #dots button { width: 6px; height: 6px; padding: 0; border: 0; border-radius: 99px; background: var(--dim); transition: width .25s, background .25s; cursor: pointer; }
   #dots button.on { width: 18px; background: var(--text); }
@@ -385,7 +386,7 @@
 
 <div id="pages">
   <!-- 1 · Inicio -->
-  <section class="page" data-name="Inicio">
+  <section class="page" data-id="inicio" data-name="Inicio">
     <div class="tile clock">
       <div class="strip"><span class="live" id="live"></span><span id="host">PC</span><span class="sep">·</span><span id="linkType">USB</span><span class="sep">·</span><span id="stripVol">–</span><span class="sep">·</span><span id="stripStatus">Conectando…</span><button id="fsBtn" class="fs" aria-label="Pantalla completa"><svg class="i"><use id="fsIcon" href="#i-expand"/></svg></button></div>
       <div class="time"><span id="hh">--</span><span class="colon">:</span><span id="mm">--</span><sup id="ss">--</sup></div>
@@ -416,7 +417,7 @@
   </section>
 
   <!-- 2 · Mezclador -->
-  <section class="page" data-name="Mezclador">
+  <section class="page" data-id="mezclador" data-name="Mezclador">
     <div class="tile mixer">
       <div class="head"><span class="cap" style="color:var(--sky)">Mezclador de volumen</span>
         <button class="mix-out" id="mixOut" hidden disabled><svg class="i"><use id="mixOutIcon" href="#i-vol"/></svg><span id="mixDev"></span><svg class="i chev"><use href="#i-chevron"/></svg></button></div>
@@ -425,7 +426,7 @@
   </section>
 
   <!-- 3 · Sistema -->
-  <section class="page" data-name="Sistema">
+  <section class="page" data-id="sistema" data-name="Sistema">
     <div class="tile ring" id="ringCpu"></div>
     <div class="tile ring" id="ringRam"></div>
     <div class="tile ring" id="ringD1"></div>
@@ -434,7 +435,7 @@
   </section>
 
   <!-- 4 · Rendimiento -->
-  <section class="page" data-name="Rendimiento">
+  <section class="page" data-id="rendimiento" data-name="Rendimiento">
     <div class="tile chart perf-cpu"><div class="head"><span class="cap" style="color:var(--teal)">CPU · últimos 3 min</span><span class="v" id="pcpuV">–</span></div><canvas id="chCpu"></canvas></div>
     <div class="tile chart perf-ram"><div class="head"><span class="cap" style="color:var(--violet)">RAM</span><span class="v" id="pramV">–</span></div><canvas id="chRam"></canvas></div>
     <div class="tile chart perf-net"><div class="head"><span class="cap" style="color:var(--orange)">Red</span><span class="legend"><span><i style="background:var(--orange)"></i>Bajada</span><span><i style="background:var(--sky)"></i>Subida</span></span></div><canvas id="chNet"></canvas></div>
@@ -442,13 +443,13 @@
   </section>
 
   <!-- 5 · Procesos -->
-  <section class="page" data-name="Procesos">
+  <section class="page" data-id="procesos" data-name="Procesos">
     <div class="tile plist cpu" style="--c: var(--teal)"><div class="head"><span class="cap" style="color:var(--teal)">Más CPU</span><span id="procCount"></span></div><div class="rows" id="procCpu"></div></div>
     <div class="tile plist mem" style="--c: var(--violet)"><div class="head"><span class="cap" style="color:var(--violet)">Más memoria</span><span>agrupado por programa</span></div><div class="rows" id="procMem"></div></div>
   </section>
 
   <!-- 6 · Enfoque -->
-  <section class="page" data-name="Enfoque">
+  <section class="page" data-id="enfoque" data-name="Enfoque">
     <div class="tile pomo">
       <div class="modes" id="pomoModes"><button data-m="enfoque">Enfoque</button><button data-m="descanso">Descanso</button><button data-m="largo">Descanso largo</button></div>
       <div class="pring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" stroke="rgba(255,255,255,.07)"/><circle id="pomoArc" cx="50" cy="50" r="45" stroke="var(--teal)" stroke-dasharray="282.74" stroke-dashoffset="0" style="transition: stroke-dashoffset .9s linear, stroke .3s"/></svg>
@@ -468,14 +469,14 @@
   </section>
 
   <!-- 7 · Calendario -->
-  <section class="page" data-name="Calendario">
+  <section class="page" data-id="calendario" data-name="Calendario">
     <div class="tile cal"><div class="head"><b id="calTitle"></b><button id="calPrev" aria-label="Mes anterior">‹</button><button id="calToday" aria-label="Hoy" style="width:auto;padding:0 10px;font-size:12px">Hoy</button><button id="calNext" aria-label="Mes siguiente">›</button></div><div class="grid7" id="calGrid"></div></div>
     <div class="tile wclocks" id="wclocks"></div>
     <div class="tile wx" id="wx"><span class="cap" style="color:var(--orange)">Clima</span><div class="off">Cargando…</div></div>
   </section>
 
   <!-- 8 · Discord -->
-  <section class="page" data-name="Discord">
+  <section class="page" data-id="discord" data-name="Discord">
     <div class="dkeys" id="dcKeys"></div>
     <div class="tile dstat">
       <div class="cap" style="color:#818cf8">Discord</div>
@@ -486,7 +487,7 @@
   </section>
 
   <!-- 9 · Comandos -->
-  <section class="page" data-name="Comandos">
+  <section class="page" data-id="comandos" data-name="Comandos">
     <div class="cmds" id="cmds"></div>
     <div class="tile console">
       <div class="head"><span class="cap">Salida</span><span id="consoleMeta"></span></div>
@@ -530,15 +531,52 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   // ---------- Páginas
-  const pagesEl = $('pages'), pages = [...document.querySelectorAll('.page')], dots = $('dots');
-  pages.forEach((p, i) => { const b = document.createElement('button'); b.setAttribute('aria-label', p.dataset.name); b.onclick = () => go(i); dots.appendChild(b); });
+  // Cuáles se ven y en qué orden se elige en la ventana del panel, en el PC; llega con cada lectura del estado (applyPages).
+  // Al abrir el panel se empieza por la primera; si la pestaña solo se recarga, se vuelve a la página en la que estabas.
+  const pagesEl = $('pages'), allPages = [...document.querySelectorAll('.page')], dots = $('dots');
+  let pages = allPages, pagesKey = '';
   const current = () => Math.round(pagesEl.scrollLeft / pagesEl.clientWidth);
   const go = (i) => pagesEl.scrollTo({ left: Math.max(0, Math.min(pages.length - 1, i)) * pagesEl.clientWidth, behavior: 'smooth' });
-  const markDot = () => { const c = current(); [...dots.children].forEach((d, i) => d.classList.toggle('on', i === c)); try { localStorage.setItem('panelPage', c); } catch {} drawSparks(); };
+  const savedPage = () => { try { return sessionStorage.getItem('panelPage') || ''; } catch { return ''; } };
+  const startPage = savedPage(); // se lee ya: el primer markDot (al final del script) la sobrescribe
+  const showPage = (id) => { pagesEl.scrollLeft = Math.max(0, pages.findIndex((p) => p.dataset.id === id)) * pagesEl.clientWidth; };
+  const markDot = () => {
+    const c = current();
+    [...dots.children].forEach((d, i) => d.classList.toggle('on', i === c));
+    try { if (pages[c]) sessionStorage.setItem('panelPage', pages[c].dataset.id); } catch {}
+    drawSparks();
+  };
+  function buildDots() {
+    dots.replaceChildren(...pages.map((p, i) => {
+      const b = document.createElement('button'); b.setAttribute('aria-label', p.dataset.name); b.onclick = () => go(i); return b;
+    }));
+  }
+  function applyPages(ids) {
+    if (!Array.isArray(ids) || ids.join(',') === pagesKey) return;
+    const list = ids.map((id) => allPages.find((p) => p.dataset.id === id)).filter(Boolean);
+    if (!list.length) return;
+    // La primera vez, la página guardada al recargar (o ninguna: la primera del orden). Después, si cambian mientras
+    // miras una página que sigue visible, te quedas en ella.
+    const keep = pagesKey ? (pages[current()] || allPages[0]).dataset.id : startPage;
+    pagesKey = ids.join(',');
+    // Sin el ajuste de desplazamiento mientras se reordena: si no, Chrome se queda en la página que estaba a la vista
+    // antes del cambio y deshace la posición que se pone aquí.
+    pagesEl.style.scrollSnapType = 'none';
+    allPages.forEach((p) => { p.hidden = !list.includes(p); });
+    list.forEach((p) => pagesEl.appendChild(p));
+    pages = list;
+    buildDots();
+    void pagesEl.offsetWidth; // aplica el nuevo orden ya, todavía sin el ajuste
+    showPage(keep);
+    pagesEl.style.scrollSnapType = '';
+    markDot();
+  }
+  buildDots();
   pagesEl.addEventListener('scroll', () => { clearTimeout(markDot.t); markDot.t = setTimeout(markDot, 60); });
   addEventListener('keydown', (e) => { if (e.target.closest('input, textarea')) return; if (e.key === 'ArrowRight') go(current() + 1); if (e.key === 'ArrowLeft') go(current() - 1); });
-  addEventListener('resize', () => { const c = Number(localStorage.getItem('panelPage') || 0); pagesEl.scrollLeft = c * pagesEl.clientWidth; drawSparks(); });
-  try { const c = Number(localStorage.getItem('panelPage') || 0); requestAnimationFrame(() => (pagesEl.scrollLeft = c * pagesEl.clientWidth)); } catch {}
+  addEventListener('resize', () => { showPage(savedPage()); drawSparks(); });
+  try { localStorage.removeItem('panelPage'); } catch {} // antes se guardaba aquí el número de página
+  showPage(startPage);
 
   // ---------- Avisos y confirmación
   let tt; const toast = (m) => { const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 1800); };
@@ -822,6 +860,7 @@
   const fmtB = (b, d) => { const u = ['B', 'KB', 'MB', 'GB', 'TB']; let i = 0; while (b >= 1024 && i < 4) { b /= 1024; i++; } return [b.toFixed(d ?? (b < 10 && i ? 1 : 0)), u[i]]; };
   const fmtUp = (u) => { const d = Math.floor(u / 86400), h = Math.floor((u % 86400) / 3600), m = Math.floor((u % 3600) / 60); return (d ? d + ' d ' : '') + h + ' h ' + m + ' min'; };
   function render(s) {
+    applyPages(s.paginas);
     $('host').textContent = s.host; $('uptime').textContent = fmtUp(s.uptime); $('cpuModel').textContent = s.cpu.model || '';
     const cpu = s.cpu.percent; push('cpu', cpu);
     $('cpuV').innerHTML = `${Math.round(cpu)}<small>%</small>`; $('cpuS').textContent = `${s.cpu.cores} hilos`;
