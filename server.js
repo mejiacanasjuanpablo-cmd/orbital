@@ -1,5 +1,6 @@
-// Panel USB — servidor local sin dependencias.
-// Escucha en 127.0.0.1 (el celular llega por el túnel `adb reverse`) y, en modo Wi-Fi, también en la IP local.
+// Panel del PC — servidor local sin dependencias.
+// Escucha en 127.0.0.1 (para abrirlo en este PC) y en la IP de la red local (PANEL_LAN_IP), por donde entra el celular.
+// Sin PANEL_LAN_IP solo responde a este PC (iniciar.ps1 -SoloPC y las pruebas).
 'use strict';
 
 const http = require('http');
@@ -29,6 +30,60 @@ function findAction(id) {
   }
   return null;
 }
+// ---------- Idioma de los mensajes (español o inglés). Lo elige la ventana del panel, que lo guarda en
+// data/preferencias.json; el celular lo recibe con cada lectura del estado. Si nunca se eligió, se usa el del sistema.
+const PREFS_PATH = path.join(ROOT, 'data', 'preferencias.json');
+function leerIdioma() {
+  try {
+    const p = JSON.parse(fs.readFileSync(PREFS_PATH, 'utf8').replace(/^\uFEFF/, ''));
+    if (p.idioma === 'es' || p.idioma === 'en') return p.idioma;
+  } catch {}
+  return /^en\b/i.test(Intl.DateTimeFormat().resolvedOptions().locale) ? 'en' : 'es';
+}
+let idioma = leerIdioma();
+const EN = {
+  'Conexión rechazada desde {0}. Si es tu celular, escanea el código QR del panel para pedir acceso.': "Connection refused from {0}. If it's your phone, scan the panel's QR code to ask for access.",
+  'Dispositivo quitado: {0}. Si vuelve a escanear el código, el PC te preguntará otra vez.': 'Device removed: {0}. If it scans the code again, this PC will ask you again.',
+  '{0}: falló (código {1})': '{0}: failed (code {1})',
+  '{0} ({1}) pide acceso: responde el aviso que apareció en el PC.': '{0} ({1}) is asking for access: answer the prompt that appeared on this PC.',
+  'Dispositivo autorizado: {0}. Quedó guardado en config.json.': 'Device authorized: {0}. It was saved in config.json.',
+  'No se pudo guardar {0} en config.json: {1}': "Couldn't save {0} in config.json: {1}",
+  'Dispositivo rechazado: {0}. No se volverá a preguntar hasta reiniciar el panel.': "Device rejected: {0}. You won't be asked again until the panel restarts.",
+  'Un dispositivo quiere usar el panel por Wi-Fi.': 'A device wants to use the panel over Wi-Fi.',
+  'Equipo: {0}': 'Device: {0}',
+  '¿Permitir este dispositivo?': 'Allow this device?',
+  'Acepta solo si es tu celular y acabas de escanear el código QR del panel.': "Accept only if it's your phone and you just scanned the panel's QR code.",
+  'Panel del PC: dispositivo nuevo': 'Panel del PC: new device',
+  'token inválido': 'invalid token',
+  'host no permitido': 'host not allowed',
+  'solo desde este PC': 'only from this PC',
+  'idioma inválido': 'invalid language',
+  'tiene que quedar al menos una página': 'at least one page has to stay',
+  'lista de tareas inválida': 'invalid task list',
+  'faltan lat/lon en config.json': 'lat/lon missing in config.json',
+  'falta level o muted': 'level or muted is missing',
+  'el mezclador no está disponible': "the mixer isn't available",
+  'salida inválida': 'invalid output',
+  'el PC no respondió': "the PC didn't respond",
+  'esa salida ya no está conectada': "that output isn't connected anymore",
+  'aplicación inválida': 'invalid app',
+  'falta nivel o silencio': 'nivel or silencio is missing',
+  'acción no encontrada': 'action not found',
+  'no encontrado': 'not found',
+  'prohibido': 'forbidden',
+};
+// Traduce un mensaje escrito en español y rellena {0}, {1}… con los datos.
+function tr(texto, ...datos) {
+  let t = (idioma === 'en' && EN[texto]) || texto;
+  datos.forEach((d, i) => { t = t.split(`{${i}}`).join(String(d)); });
+  return t;
+}
+// Los errores del mezclador llegan en español desde lib/mezclador.ps1.
+function trMezclador(e) {
+  if (idioma !== 'en') return e;
+  return tr(e).replace(/^Windows no dejó cambiar la salida/, "Windows wouldn't switch the output").replace(/^no se pudo cambiar la salida:/, "couldn't switch the output:");
+}
+
 // Lo que se envía al celular: sin los comandos en sí.
 function publicConfig() {
   const cfg = loadConfig();
@@ -306,6 +361,7 @@ function stats() {
     volume: extra.volume,
     artKey: extra.media && extra.media.artKey === art.key ? art.key : null,
     paginas: paginasVisibles(),
+    idioma,
     time: Date.now(),
   };
 }
@@ -316,7 +372,7 @@ function readTasks() {
   try { return JSON.parse(fs.readFileSync(TASKS_PATH, 'utf8')); } catch { return []; }
 }
 function writeTasks(list) {
-  if (!Array.isArray(list) || list.length > 200) throw new Error('lista de tareas inválida');
+  if (!Array.isArray(list) || list.length > 200) throw new Error(tr('lista de tareas inválida'));
   const clean = list.map((t) => ({
     id: String(t.id || crypto.randomUUID()).slice(0, 64),
     text: String(t.text || '').trim().slice(0, 200),
@@ -363,7 +419,7 @@ function leerPaginas() {
 let paginas = leerPaginas();
 function guardarPaginas(lista) {
   const r = normalizarPaginas(lista);
-  if (!r.some((p) => p.ver)) throw new Error('tiene que quedar al menos una página');
+  if (!r.some((p) => p.ver)) throw new Error(tr('tiene que quedar al menos una página'));
   fs.mkdirSync(path.dirname(PAGINAS_PATH), { recursive: true });
   fs.writeFileSync(PAGINAS_PATH, JSON.stringify({ paginas: r }, null, 2));
   paginas = r;
@@ -377,7 +433,7 @@ async function getWeather() {
   const c = loadConfig().clima || {};
   if (!c.activo) return { activo: false };
   const lat = Number(c.lat), lon = Number(c.lon);
-  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return { activo: false, error: 'faltan lat/lon en config.json' };
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return { activo: false, error: tr('faltan lat/lon en config.json') };
   const key = `${lat},${lon}`;
   if (weatherCache.data && weatherCache.key === key && Date.now() - weatherCache.at < 15 * 60 * 1000) return weatherCache.data;
   const u = new URL('https://api.open-meteo.com/v1/forecast');
@@ -441,12 +497,12 @@ function logRejected(addr) {
   const a = normalize(addr), now = Date.now();
   if (now - (rejectedLog.get(a) || 0) < 60000) return;
   rejectedLog.set(a, now);
-  evento('rechazo', `Conexión rechazada desde ${a}. Si es tu celular, escanea el código QR del panel para pedir acceso.`);
+  evento('rechazo', tr('Conexión rechazada desde {0}. Si es tu celular, escanea el código QR del panel para pedir acceso.', a));
 }
 
 // Dispositivos nuevos en modo Wi-Fi: con el token del QR pueden pedir acceso, y el PC pregunta si se permite.
 const { createApprovals, describeDevice, removeDevice } = require('./lib/aprobacion');
-const approvals = LAN_IP ? createApprovals({ configPath: CONFIG_PATH, log: (m) => evento('aprobacion', m) }) : null;
+const approvals = LAN_IP ? createApprovals({ configPath: CONFIG_PATH, log: (m) => evento('aprobacion', m), tr }) : null;
 process.on('exit', () => approvals && approvals.close());
 const isLocal = (addr) => addr === '127.0.0.1' || addr === '::1';
 
@@ -458,7 +514,7 @@ function estadoPc() {
   if (url && !qrFilas) qrFilas = require('./lib/qr').encode(url).modules.map((fila) => fila.map((on) => (on ? '1' : '0')).join(''));
   const ahora = Date.now();
   return {
-    modo: LAN_IP ? 'wifi' : 'usb',
+    modo: LAN_IP ? 'wifi' : 'local',
     puerto: PORT,
     lanIp: LAN_IP,
     url,
@@ -491,8 +547,8 @@ const handler = async (req, res) => {
         return fs.readFile(path.join(ROOT, 'public', 'espera.html'), (err, data) => (err ? send(res, 500, 'error', 'text/plain') : send(res, 200, data, MIME['.html'])));
       }
       if (req.method === 'POST' && p === '/api/solicitar') {
-        if (!tokenOk(req)) { logRejected(remote); return send(res, 401, { error: 'token inválido' }); }
-        return send(res, 200, { estado: approvals.request(remote, describeDevice(req.headers['user-agent'])) });
+        if (!tokenOk(req)) { logRejected(remote); return send(res, 401, { error: tr('token inválido'), idioma }); }
+        return send(res, 200, { estado: approvals.request(remote, describeDevice(req.headers['user-agent'])), idioma });
       }
     }
     // Cualquier otra cosa: se corta la conexión sin responder nada.
@@ -501,27 +557,33 @@ const handler = async (req, res) => {
     return;
   }
   // Protección contra DNS rebinding: solo se aceptan los nombres de host del panel.
-  if (!allowedHosts.has(req.headers.host)) return send(res, 403, { error: 'host no permitido' });
+  if (!allowedHosts.has(req.headers.host)) return send(res, 403, { error: tr('host no permitido') });
   if (LAN_IP && !isLocal(remote) && remote !== LAN_IP) vistos.set(remote, { t: Date.now(), equipo: describeDevice(req.headers['user-agent']) });
 
   const url = new URL(req.url, `http://${req.headers.host}`);
 
   if (url.pathname.startsWith('/api/')) {
-    if (!tokenOk(req)) return send(res, 401, { error: 'token inválido' });
+    if (!tokenOk(req)) return send(res, 401, { error: tr('token inválido') });
 
     try {
       // Ventana del panel en el PC: estado, quitar un dispositivo y detener el panel.
       if (url.pathname.startsWith('/api/pc')) {
-        if (!isLocal(remote)) return send(res, 403, { error: 'solo desde este PC' });
+        if (!isLocal(remote)) return send(res, 403, { error: tr('solo desde este PC') });
         if (url.pathname === '/api/pc' && req.method === 'GET') return send(res, 200, estadoPc());
         if (url.pathname === '/api/pc/quitar' && req.method === 'POST') {
           const ip = String(JSON.parse((await readBody(req)) || '{}').ip || '');
           const ok = removeDevice(CONFIG_PATH, ip);
           if (ok) {
             vistos.delete(ip);
-            evento('aprobacion', `Dispositivo quitado: ${ip}. Si vuelve a escanear el código, el PC te preguntará otra vez.`);
+            evento('aprobacion', tr('Dispositivo quitado: {0}. Si vuelve a escanear el código, el PC te preguntará otra vez.', ip));
           }
           return send(res, 200, { ok });
+        }
+        if (url.pathname === '/api/pc/idioma' && req.method === 'POST') {
+          const pedido = String(JSON.parse((await readBody(req)) || '{}').idioma || '');
+          if (pedido !== 'es' && pedido !== 'en') return send(res, 400, { error: tr('idioma inválido') });
+          idioma = pedido; // la ventana ya lo guardó en data/preferencias.json
+          return send(res, 200, { idioma });
         }
         if (url.pathname === '/api/pc/paginas' && req.method === 'GET') return send(res, 200, paginasPc());
         if (url.pathname === '/api/pc/paginas' && req.method === 'POST') {
@@ -536,7 +598,7 @@ const handler = async (req, res) => {
         }
       }
       // La página de espera sigue preguntando hasta ver que el dispositivo ya está autorizado.
-      if (url.pathname === '/api/solicitar' && req.method === 'POST') return send(res, 200, { estado: 'aprobado' });
+      if (url.pathname === '/api/solicitar' && req.method === 'POST') return send(res, 200, { estado: 'aprobado', idioma });
       if (url.pathname === '/api/config' && req.method === 'GET') return send(res, 200, publicConfig());
       if (url.pathname === '/api/stats' && req.method === 'GET') return send(res, 200, stats());
       if (url.pathname === '/api/tasks' && req.method === 'GET') return send(res, 200, readTasks());
@@ -549,21 +611,21 @@ const handler = async (req, res) => {
         const body = JSON.parse((await readBody(req)) || '{}');
         if (typeof body.muted === 'boolean') control(`mute ${body.muted ? 1 : 0}`);
         else if (Number.isFinite(body.level)) control(`vol ${Math.round(body.level)}`);
-        else return send(res, 400, { error: 'falta level o muted' });
+        else return send(res, 400, { error: tr('falta level o muted') });
         return send(res, 200, { ok: true });
       }
       if (url.pathname === '/api/mixer' && req.method === 'GET') {
         const m = await pedirMezclador();
-        return m ? send(res, 200, m) : send(res, 503, { error: 'el mezclador no está disponible' });
+        return m ? send(res, 200, m) : send(res, 503, { error: tr('el mezclador no está disponible') });
       }
       if (url.pathname === '/api/mixer/salida' && req.method === 'POST') {
         const body = JSON.parse((await readBody(req)) || '{}');
         const id = String(body.id || '');
         // Windows identifica cada salida así: {0.0.0.00000000}.{guid}
-        if (!/^\{[0-9.]{1,40}\}\.\{[0-9a-f-]{36}\}$/i.test(id)) return send(res, 400, { error: 'salida inválida' });
+        if (!/^\{[0-9.]{1,40}\}\.\{[0-9a-f-]{36}\}$/i.test(id)) return send(res, 400, { error: tr('salida inválida') });
         const r = await preguntar(`salida ${id}`, 5000);
-        if (!r) return send(res, 503, { error: 'el PC no respondió' });
-        return r.error ? send(res, 500, { error: r.error }) : send(res, 200, r);
+        if (!r) return send(res, 503, { error: tr('el PC no respondió') });
+        return r.error ? send(res, 500, { error: trMezclador(r.error) }) : send(res, 200, r);
       }
       if (url.pathname === '/api/mixer/icono' && req.method === 'GET') {
         return send(res, 200, { data: iconosMezclador.get(url.searchParams.get('k')) || null });
@@ -571,24 +633,24 @@ const handler = async (req, res) => {
       if (url.pathname === '/api/mixer' && req.method === 'POST') {
         const body = JSON.parse((await readBody(req)) || '{}');
         const clave = String(body.clave || '');
-        if (!clave || clave.length > 500 || /[\r\n]/.test(clave)) return send(res, 400, { error: 'aplicación inválida' });
+        if (!clave || clave.length > 500 || /[\r\n]/.test(clave)) return send(res, 400, { error: tr('aplicación inválida') });
         if (typeof body.silencio === 'boolean') control(`appmute ${body.silencio ? 1 : 0} ${clave}`);
         else if (Number.isFinite(body.nivel)) control(`appvol ${Math.min(100, Math.max(0, Math.round(body.nivel)))} ${clave}`);
-        else return send(res, 400, { error: 'falta nivel o silencio' });
+        else return send(res, 400, { error: tr('falta nivel o silencio') });
         return send(res, 200, { ok: true });
       }
       if (url.pathname === '/api/action' && req.method === 'POST') {
         const { id } = JSON.parse((await readBody(req)) || '{}');
         const action = findAction(id);
-        if (!action) return send(res, 404, { error: 'acción no encontrada' });
+        if (!action) return send(res, 404, { error: tr('acción no encontrada') });
         const started = Date.now();
         // Música y volumen: al proceso de control permanente (instantáneo). Si no está listo, con un PowerShell nuevo.
         const rapido = action.type === 'media' && MEDIA.has(action.key) && control(`media ${action.key} ${mediaTimes(action)}`);
         const result = rapido ? { code: 0, stdout: '', stderr: '' } : await runPowerShell(scriptFor(action), { cwd: action.cwd, timeoutMs: (action.timeout || 60) * 1000 });
-        evento(result.code === 0 ? 'accion' : 'error', result.code === 0 ? action.label : `${action.label}: falló (código ${result.code})`);
+        evento(result.code === 0 ? 'accion' : 'error', result.code === 0 ? action.label : tr('{0}: falló (código {1})', action.label, result.code));
         return send(res, 200, { ...result, ms: Date.now() - started, showOutput: action.type === 'command' });
       }
-      return send(res, 404, { error: 'no encontrado' });
+      return send(res, 404, { error: tr('no encontrado') });
     } catch (e) {
       dlog('ERROR', req.method, url.pathname, String(e.message || e));
       return send(res, 500, { error: String(e.message || e) });
@@ -598,19 +660,19 @@ const handler = async (req, res) => {
   // Archivos estáticos de /public
   const rel = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
   const file = path.normalize(path.join(ROOT, 'public', rel));
-  if (!file.startsWith(path.join(ROOT, 'public'))) return send(res, 403, 'prohibido', 'text/plain');
+  if (!file.startsWith(path.join(ROOT, 'public'))) return send(res, 403, tr('prohibido'), 'text/plain');
   fs.readFile(file, (err, data) => {
-    if (err) return send(res, 404, 'no encontrado', 'text/plain');
+    if (err) return send(res, 404, tr('no encontrado'), 'text/plain');
     send(res, 200, data, MIME[path.extname(file)] || 'application/octet-stream');
   });
 };
 
 http.createServer(handler).listen(PORT, '127.0.0.1', () => {
-  console.log(`Panel USB escuchando en http://localhost:${PORT}`);
+  console.log(`Panel del PC escuchando en http://localhost:${PORT}`);
   if (!process.env.PANEL_TOKEN) console.log(`Abrir en este PC: http://localhost:${PORT}/#t=${TOKEN}`);
 });
 if (LAN_IP) {
   http.createServer(handler)
     .on('error', (e) => console.log(`No se pudo escuchar en la red Wi-Fi (${LAN_IP}): ${e.message}`))
-    .listen(PORT, LAN_IP, () => console.log(`Modo Wi-Fi: también en http://${LAN_IP}:${PORT}`));
+    .listen(PORT, LAN_IP, () => console.log(`Y en la red local: http://${LAN_IP}:${PORT}`));
 }

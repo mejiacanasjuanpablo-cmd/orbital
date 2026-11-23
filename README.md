@@ -9,17 +9,16 @@ Panel de control del PC que se abre en el navegador del celular. Incluye:
 - controles de Discord;
 - botones de atajos y de comandos.
 
-Desde la ventana del panel en el PC eliges qué páginas se ven en el celular y en qué orden.
+Desde la ventana del panel en el PC eliges qué páginas se ven en el celular y en qué orden, y el idioma: español o inglés.
 
-Se conecta por la red Wi-Fi de la casa, escaneando un código QR, o por cable USB. No hay que instalar nada en el celular, y en el PC solo necesita Node.js y PowerShell, sin otras dependencias.
+Se conecta por la red Wi-Fi de la casa, escaneando un código QR y aprobando el celular en el PC. No hay que instalar nada en el celular, y en el PC solo necesita Node.js y PowerShell, sin otras dependencias.
 
 ![Página de inicio del panel](docs/historia/portada.png)
 
 ## Usarlo
 
-- **Guía completa (USB y Wi-Fi):** [LEEME.md](LEEME.md)
-- **Guía de la edición solo Wi-Fi** (la que va en el .zip para compartir): [LEEME-wifi.md](LEEME-wifi.md)
-- **En corto:** doble clic en `instalar.cmd`, que revisa los requisitos y crea la ventana del panel y los iconos. Luego abre **Panel Wi-Fi**, escanea el QR con el celular y acepta el aviso en el PC.
+- **Guía:** [LEEME.md](LEEME.md) (es la misma que va en el .zip para compartir).
+- **En corto:** doble clic en `instalar.cmd`, que revisa los requisitos y crea la ventana del panel y su icono. Luego abre **Panel del PC**, escanea el QR con el celular y acepta el aviso en el PC.
 
 ## Versiones
 
@@ -40,23 +39,23 @@ El recorrido por cada versión, con capturas y todos los cambios, está en **[HI
 | Archivo | Para qué |
 |---|---|
 | `server.js` | Servidor HTTP en Node, sin dependencias |
-| `public/` | La página del celular (`index.html`), la de espera de aprobación (`espera.html`) y el manifest de la app |
-| `public/miniaturas/` | Vistas previas de las páginas, para elegirlas en la ventana (con datos de ejemplo) |
+| `public/` | La página del celular (`index.html`), la de espera de aprobación (`espera.html`) y el manifest de la app; cada una trae su traducción al inglés |
+| `public/miniaturas/` | Vistas previas de las páginas, para elegirlas en la ventana (con datos de ejemplo; en `en/`, en inglés) |
 | `lib/media.ps1` | Música que suena en el PC, controles de música y volumen |
 | `lib/mezclador.ps1` | Mezclador: volumen, silencio y nivel de sonido de cada aplicación, y salida de audio |
 | `lib/keys.ps1` | Atajos de teclado (SendInput con scan codes) |
 | `lib/qr.js` | Generador de códigos QR, hecho desde cero |
-| `lib/aprobacion.js`, `lib/allow.js` | Aprobación de dispositivos nuevos y lista de dispositivos permitidos en modo Wi-Fi |
+| `lib/aprobacion.js`, `lib/allow.js` | Aprobación de dispositivos nuevos y lista de dispositivos permitidos |
 | `lib/requisitos.ps1` | Revisión de requisitos (la usan `verificar`, `instalar`, `iniciar` y la ventana) |
-| `ventana.ps1` | La ventana del panel en el PC: QR, estado, dispositivos, actividad, páginas del celular e icono junto al reloj |
+| `ventana.ps1` | La ventana del panel en el PC: QR, estado, dispositivos, actividad, páginas del celular, idioma e icono junto al reloj |
 | `lib/lanzador.cs` | `Panel del PC.exe`, que abre la ventana sin consola (lo compila `instalar` en cada PC) |
-| `lib/arranque.ps1` | Arranque compartido por la ventana y el modo consola: token, red, cable USB y servidor |
-| `iniciar.cmd`, `iniciar-wifi.cmd` | Abren la ventana del panel por USB o por Wi-Fi |
+| `lib/arranque.ps1` | Arranque compartido por la ventana y el modo consola: token, red y servidor |
+| `iniciar.cmd` | Abre la ventana del panel |
 | `iniciar.ps1` | Modo consola, con los mensajes del servidor a la vista |
 | `instalar.*`, `verificar.*`, `empaquetar.ps1` | Instalación, verificación de requisitos y .zip para compartir |
 | `herramientas/miniaturas.js` | Vuelve a generar `public/miniaturas/` con datos de ejemplo (Node 22+ y Edge); no va en el .zip |
 
 ## Datos personales
 
-`.token`, `config.json`, `data/` y `debug.log` son de cada PC y están en `.gitignore`, así que nunca se suben.
+`.token`, `config.json`, `data/` (tareas, orden de las páginas e idioma) y `debug.log` son de cada PC y están en `.gitignore`, así que nunca se suben.
 La configuración de ejemplo es `config.ejemplo.json`; la primera vez, el servidor crea `config.json` a partir de ella.

@@ -32,11 +32,34 @@
   </div>
 </main>
 <script>
-  // Página que ve un dispositivo nuevo en modo Wi-Fi mientras se aprueba en el PC.
+  // Página que ve un dispositivo nuevo mientras se aprueba en el PC.
   // Lee el token del código QR (#t=...) y pide acceso; cuando el PC lo aprueba, recarga y aparece el panel.
+  // El idioma (español o inglés) llega con cada respuesta del PC; hasta entonces, el último conocido o el del celular.
+  const EN = {
+    'Conectando con el PC…': 'Connecting to the PC…', 'Un momento.': 'One moment.',
+    'El código no es válido': "The code isn't valid",
+    'Vuelve a escanear el código QR que aparece en la ventana "Panel del PC" del PC.': 'Scan the QR code shown in the "Panel del PC" window on the PC again.',
+    'Acceso aprobado': 'Access approved', 'Abriendo el panel…': 'Opening the panel…',
+    'El PC rechazó este dispositivo': 'The PC rejected this device',
+    'Si fue un error, cierra y vuelve a abrir "Panel del PC" en el PC y escanea el código otra vez.': 'If it was a mistake, close and reopen "Panel del PC" on the PC and scan the code again.',
+    'Acepta el aviso en el PC': 'Accept the prompt on the PC',
+    'En la pantalla del PC apareció la pregunta "¿Permitir este dispositivo?". Pulsa Sí y el panel se abrirá aquí solo.': 'The question "Allow this device?" appeared on the PC\'s screen. Press Yes and the panel will open here by itself.',
+    'Buscando el PC…': 'Looking for the PC…',
+    'Comprueba que el celular esté en la misma red Wi-Fi que el PC y que "Panel del PC" siga abierto.': 'Check that your phone is on the same Wi-Fi network as the PC and that "Panel del PC" is still open.',
+    'Escanea el código QR': 'Scan the QR code',
+    'Abre "Panel del PC" en el PC y escanea con la cámara del celular el código que aparece en la ventana.': 'Open "Panel del PC" on the PC and scan the code shown in the window with your phone\'s camera.',
+  };
+  let lang = 'es';
+  try { lang = localStorage.getItem('panelLang') || (/^en\b/i.test(navigator.language) ? 'en' : 'es'); } catch {}
+  const t = (s) => (lang === 'en' && EN[s]) || s;
+  const setLang = (l) => {
+    if (l !== 'es' && l !== 'en') return;
+    lang = l; document.documentElement.lang = l;
+    try { localStorage.setItem('panelLang', l); } catch {}
+  };
   const $ = (id) => document.getElementById(id);
   const show = (title, msg, color, spinning) => {
-    $('title').textContent = title; $('msg').textContent = msg;
+    $('title').textContent = t(title); $('msg').textContent = t(msg);
     $('icon').style.setProperty('--c', color || 'var(--teal)');
     $('spin').classList.toggle('hidden', !spinning);
   };
@@ -45,25 +68,28 @@
   try { if (fromHash) localStorage.setItem('panelToken', fromHash); token = fromHash || localStorage.getItem('panelToken'); } catch {}
 
   async function ask() {
-    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 8000);
+    const ctl = new AbortController(); const tm = setTimeout(() => ctl.abort(), 8000);
     try {
       const r = await fetch('/api/solicitar', { method: 'POST', cache: 'no-store', signal: ctl.signal, headers: { 'x-panel-token': token } });
+      const body = await r.json().catch(() => ({}));
+      setLang(body.idioma);
       if (r.status === 401) {
         try { localStorage.removeItem('panelToken'); } catch {}
-        return show('El código no es válido', 'Vuelve a escanear el código QR que aparece en la ventana "Panel Wi-Fi" del PC.', 'var(--red)', false);
+        return show('El código no es válido', 'Vuelve a escanear el código QR que aparece en la ventana "Panel del PC" del PC.', 'var(--red)', false);
       }
-      const { estado } = await r.json();
+      const { estado } = body;
       if (estado === 'aprobado') { show('Acceso aprobado', 'Abriendo el panel…', 'var(--teal)', true); return location.reload(); }
-      if (estado === 'rechazado') return show('El PC rechazó este dispositivo', 'Si fue un error, cierra y vuelve a abrir "Panel Wi-Fi" en el PC y escanea el código otra vez.', 'var(--red)', false);
+      if (estado === 'rechazado') return show('El PC rechazó este dispositivo', 'Si fue un error, cierra y vuelve a abrir "Panel del PC" en el PC y escanea el código otra vez.', 'var(--red)', false);
       show('Acepta el aviso en el PC', 'En la pantalla del PC apareció la pregunta "¿Permitir este dispositivo?". Pulsa Sí y el panel se abrirá aquí solo.', 'var(--orange)', true);
     } catch {
-      show('Buscando el PC…', 'Comprueba que el celular esté en la misma red Wi-Fi que el PC y que "Panel Wi-Fi" siga abierto.', 'var(--orange)', true);
-    } finally { clearTimeout(t); }
+      show('Buscando el PC…', 'Comprueba que el celular esté en la misma red Wi-Fi que el PC y que "Panel del PC" siga abierto.', 'var(--orange)', true);
+    } finally { clearTimeout(tm); }
     setTimeout(ask, 2000);
   }
 
-  if (!token) show('Escanea el código QR', 'Abre "Panel Wi-Fi" en el PC y escanea con la cámara del celular el código que aparece en la ventana.', 'var(--teal)', false);
-  else ask();
+  document.documentElement.lang = lang;
+  if (!token) show('Escanea el código QR', 'Abre "Panel del PC" en el PC y escanea con la cámara del celular el código que aparece en la ventana.', 'var(--teal)', false);
+  else { show('Conectando con el PC…', 'Un momento.', 'var(--teal)', true); ask(); }
 </script>
 </body>
 </html>

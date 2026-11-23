@@ -1,6 +1,6 @@
 ﻿# Arranque del panel: funciones que comparten la ventana (ventana.ps1), el modo consola (iniciar.ps1) e instalar.ps1.
-# Solo define funciones; no hace nada al cargarse. Necesita lib\requisitos.ps1 (Invoke-Oculto, Find-Adb).
-# Todos los programas externos (adb, node, el compilador) se ejecutan con Invoke-Oculto, sin ventanas de consola.
+# Solo define funciones; no hace nada al cargarse. Necesita lib\requisitos.ps1 (Invoke-Oculto).
+# Todos los programas externos (node, el compilador) se ejecutan con Invoke-Oculto, sin ventanas de consola.
 
 # Token fijo guardado en .token, para que el icono de la pantalla de inicio del celular siga funcionando.
 # Para invalidarlo (por ejemplo, si cambias de celular), borra el archivo .token.
@@ -33,7 +33,7 @@ function Get-PanelRed {
     [pscustomobject]@{ Ip = @($cfg.IPv4Address.IPAddress)[0]; Nombre = "$($cfg.NetProfile.Name)"; Publica = ($categoria -eq 'Public') }
 }
 
-# ¿Responde el panel en este puerto? (en 127.0.0.1 o, en modo Wi-Fi, en la IP de la red local)
+# ¿Responde el panel en este puerto? (en 127.0.0.1 o en la IP de la red local)
 function Test-Panel([int]$Puerto, [string]$Ip = '127.0.0.1') {
     try {
         $r = [Net.HttpWebRequest]::Create("http://${Ip}:$Puerto/")
@@ -43,69 +43,11 @@ function Test-Panel([int]$Puerto, [string]$Ip = '127.0.0.1') {
     } catch { return $false }
 }
 
-# ---------- Celular por cable (adb)
-function Start-Adb([string]$Adb) { Invoke-Oculto $Adb @('start-server') -SinSalida -EsperaMs 20000 | Out-Null }
-
-# El celular que ve adb: Serial y Estado (device = listo, unauthorized = falta aceptar el aviso, offline = conectando).
-# Si hay varios, prefiere uno listo. Devuelve $null si no hay ninguno.
-function Get-CelularAdb([string]$Adb) {
-    $salida = (Invoke-Oculto $Adb @('devices') -EsperaMs 10000).Salida
-    $lista = @($salida -split "`r?`n" | ForEach-Object {
-        if ($_ -match '^(\S+)\t(\S+)') { [pscustomobject]@{ Serial = $Matches[1]; Estado = $Matches[2] } }
-    })
-    $listo = $lista | Where-Object { $_.Estado -eq 'device' } | Select-Object -First 1
-    if ($listo) { return $listo }
-    $lista | Select-Object -First 1
-}
-
-function Get-IpWifiCelular([string]$Adb, [string]$Serial) {
-    $salida = (Invoke-Oculto $Adb @('-s', $Serial, 'shell', 'ip -4 addr show wlan0') -EsperaMs 8000).Salida
-    if ($salida -match 'inet (\d+\.\d+\.\d+\.\d+)/') { return $Matches[1] }
-    $null
-}
-
-function Get-ModeloCelular([string]$Adb, [string]$Serial) {
-    "$((Invoke-Oculto $Adb @('-s', $Serial, 'shell', 'getprop ro.product.model') -EsperaMs 8000).Salida)".Trim()
-}
-
-# Túnel USB: el localhost del celular apunta al localhost del PC; nada se expone a la red Wi-Fi.
-# Se pierde al desconectar el cable, por eso se revisa cada pocos segundos. Devuelve $true si está activo.
-function Set-TunelUsb([string]$Adb, [string]$Serial, [int]$Puerto) {
-    $lista = (Invoke-Oculto $Adb @('-s', $Serial, 'reverse', '--list') -EsperaMs 8000).Salida
-    if ($lista -match "tcp:$Puerto\b") { return $true }
-    (Invoke-Oculto $Adb @('-s', $Serial, 'reverse', "tcp:$Puerto", "tcp:$Puerto") -EsperaMs 8000).Codigo -eq 0
-}
-
-function Remove-TunelUsb([string]$Adb, [string]$Serial, [int]$Puerto) {
-    Invoke-Oculto $Adb @('-s', $Serial, 'reverse', '--remove', "tcp:$Puerto") -EsperaMs 5000 | Out-Null
-}
-
-# Abre el panel en el Chrome del celular. application_id hace que Chrome reutilice la misma pestaña en lugar de
-# abrir una nueva cada vez; ?v= cambia en cada apertura para que recargue y muestre siempre la última versión.
-function Open-PanelEnCelular([string]$Adb, [string]$Serial, [string]$Servidor, [int]$Puerto, [string]$Token) {
-    $abrir = "http://${Servidor}:$Puerto/?v=$([DateTime]::Now.Ticks)#t=$Token"
-    Invoke-Oculto $Adb @('-s', $Serial, 'shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', "'$abrir'",
-        '--es', 'com.android.browser.application_id', 'panelusb') -EsperaMs 10000 | Out-Null
-}
-
-# ---------- Dispositivos del modo Wi-Fi (config.json → wifi.dispositivos)
+# ---------- Dispositivos autorizados (config.json → wifi.dispositivos)
 function Test-ListaWifiVacia([string]$Raiz) {
     [IO.File]::ReadAllText((Join-Path $Raiz 'config.json')) -notmatch '"dispositivos"\s*:\s*\[\s*"'
 }
 
-# Modo Wi-Fi con el celular conectado por cable: si todavía no hay ningún dispositivo autorizado, se autoriza su IP.
-# Devuelve 'agregado', 'ya-estaba' u 'otros' (la lista ya tiene otros dispositivos y este no está).
-function Add-CelularPorCable([string]$Raiz, [string]$Ip) {
-    $ruta = Join-Path $Raiz 'config.json'
-    $txt = [IO.File]::ReadAllText($ruta)
-    if ($txt -match [regex]::Escape("`"$Ip`"")) { return 'ya-estaba' }
-    if ($txt -match '"dispositivos"\s*:\s*\[\s*\]') {
-        $txt = [regex]::Replace($txt, '"dispositivos"\s*:\s*\[\s*\]', "`"dispositivos`": [`"$Ip`"]")
-        [IO.File]::WriteAllText($ruta, $txt, (New-Object Text.UTF8Encoding $false))
-        return 'agregado'
-    }
-    'otros'
-}
 
 # ---------- Servidor
 # Arranca server.js sin ventana. PANEL_PADRE hace que el servidor se cierre solo si este proceso desaparece.

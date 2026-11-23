@@ -55,10 +55,10 @@ static class Lanzador {
                 using (var ps = PowerShell.Create()) {
                     ps.Runspace = rs;
                     ps.AddCommand(script);
-                    // Solo se aceptan los parámetros conocidos: -Wifi y -Puerto <número>.
+                    // Solo se acepta -Puerto <número>. Lo demás (por ejemplo, el -Wifi que pasan los iconos de versiones
+                    // anteriores) se ignora: el panel siempre funciona por Wi-Fi.
                     for (int i = 0; i < args.Length; i++) {
-                        if (string.Equals(args[i], "-Wifi", StringComparison.OrdinalIgnoreCase)) ps.AddParameter("Wifi");
-                        else if (string.Equals(args[i], "-Puerto", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length) {
+                        if (string.Equals(args[i], "-Puerto", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length) {
                             int puerto;
                             if (int.TryParse(args[++i], out puerto)) ps.AddParameter("Puerto", puerto);
                         }

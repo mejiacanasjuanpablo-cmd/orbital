@@ -1,23 +1,23 @@
-# Panel USB
+# Panel del PC
 
-Panel de control del PC que se abre en el Chrome de un celular Android, por cable USB o por la red Wi-Fi de la casa.
-No hay que instalar ninguna app en el celular. Funciona en Windows 10 y 11.
+Panel de control del PC que se abre en el navegador del celular por la red Wi-Fi de la casa.
+No hay que instalar ninguna app en el celular ni activar nada en sus ajustes. Funciona en Windows 10 y 11, en español o en inglés.
 
 ## Instalación (una sola vez)
 
-1. Descomprime `Panel-USB.zip` en una carpeta fija (por ejemplo, en Documentos). No lo ejecutes desde dentro del .zip.
-2. Doble clic en **`instalar.cmd`**. Revisa los requisitos y pregunta antes de instalar lo que falte:
-   - **Node.js 18 o superior** (obligatorio). Se instala con winget; si el PC no tiene winget, abre la página oficial.
-   - **adb**, las herramientas oficiales de Google (solo para el modo con cable). Se descarga de dl.google.com
-     y solo se instala si la firma digital es de Google.
+1. Descomprime `Panel-del-PC.zip` en una carpeta fija (por ejemplo, en Documentos). No lo ejecutes desde dentro del .zip.
+2. Doble clic en **`instalar.cmd`**. Revisa los requisitos y pregunta antes de instalar lo que falte
+   (**Node.js 18 o superior**, con winget; si el PC no tiene winget, abre la página oficial).
    También crea `config.json`, la ventana del panel (`Panel del PC.exe`, que se compila en el propio PC con lo que trae
-   Windows) y los iconos **Panel USB** y **Panel Wi-Fi** en el menú Inicio.
+   Windows) y el icono **Panel del PC** en el menú Inicio.
    Si Windows avisa de que el archivo viene de internet, elige **Más información → Ejecutar de todas formas**.
-3. **Solo para el modo con cable (USB):** en el celular, **Ajustes > Acerca del teléfono**, toca 7 veces **Número de compilación**,
-   y después **Opciones de desarrollador > Depuración USB**. Al conectar el cable, marca **Permitir siempre desde este ordenador**
-   y acepta. **Para el modo Wi-Fi no hace falta tocar nada del celular.**
+3. La primera vez que abras el panel, Windows puede preguntar si permites que Node.js use la red:
+   permítelo en **redes privadas**.
 
-Si mueves la carpeta a otro sitio, vuelve a ejecutar `instalar.cmd` para que los iconos apunten a la nueva ubicación.
+Si mueves la carpeta a otro sitio, vuelve a ejecutar `instalar.cmd` para que el icono apunte a la nueva ubicación.
+
+**Si vienes de una versión anterior** (con los iconos **Panel USB** y **Panel Wi-Fi**): vuelve a ejecutar `instalar.cmd`.
+Los cambia por el icono **Panel del PC**. Mientras tanto, los dos iconos viejos siguen funcionando y abren el panel por Wi-Fi.
 
 ### Verificar requisitos
 
@@ -28,67 +28,60 @@ Doble clic en **`verificar.cmd`** en cualquier momento. Revisa y muestra con `[O
 | Archivos del panel completos | Sí |
 | Windows 10/11, PowerShell 5.1 y .NET Framework 4.5+ | Sí |
 | Node.js 18 o superior (ofrece instalarlo o actualizarlo) | Sí |
-| Componentes de Windows que usa el panel: atajos de teclado, volumen y música | Sí (volumen y música, opcionales) |
+| Componentes de Windows que usa el panel: atajos de teclado, volumen, música y mezclador | Sí (volumen, música y mezclador, opcionales) |
 | Puerto 8787 libre (o ya en uso por el panel) | Sí |
-| adb, para el modo USB (ofrece instalarlo) | Solo para USB |
-| Red local marcada como Privada y permiso de Node.js en el firewall | Solo para Wi-Fi |
-| Celular conectado por cable, autorizado y con Chrome | Opcional |
+| El PC conectado a una red local, marcada como Privada | Sí (que sea Privada, recomendado) |
+| Permiso de Node.js en el firewall de Windows | Lo pide Windows la primera vez |
 | Discord instalado | Opcional |
 
 Si falta algo obligatorio, el panel tampoco arranca: lo avisa y te manda a `verificar.cmd`.
 
 ## Usar
 
-Los iconos abren la **ventana del panel** en el PC, sin consola. Muestra:
+Abre **Panel del PC** desde el menú Inicio (o doble clic en `iniciar.cmd`). Se abre la **ventana del panel** en el PC,
+sin consola. Muestra:
 - si el panel está en marcha;
-- en modo Wi-Fi, el código QR y los dispositivos autorizados, con un botón **Quitar** para cada uno;
-- en modo cable, si el celular está conectado;
+- el **código QR** para conectar el celular y la dirección, con un botón para copiarla;
+- los dispositivos autorizados, con un botón **Quitar** para cada uno;
 - la actividad: los botones que pulsas desde el celular y los dispositivos que piden entrar.
 
-Arriba a la derecha puedes cambiar entre **Wi-Fi** y **Cable USB** sin cerrar nada, y con **Páginas del celular**
-eliges qué páginas se ven en el celular y en qué orden (ver [Páginas](#páginas)).
+Arriba a la derecha eliges el **idioma** (**Español** o **English**) y, con **Páginas del celular**, qué páginas se ven en
+el celular y en qué orden (ver [Páginas](#páginas)).
 
 - **Cerrar la ventana no detiene el panel:** sigue funcionando y queda un icono junto al reloj. Para volver a la ventana,
-  haz clic en ese icono o abre otra vez el panel desde el menú Inicio.
+  haz clic en ese icono o abre otra vez el panel desde el menú Inicio (no se arranca otro).
 - **Para detenerlo,** pulsa **Detener el panel**, en la ventana o en el menú del icono junto al reloj.
-- **Para ver los mensajes del servidor en una consola** (por ejemplo, para diagnosticar), usa el modo consola de antes:
-  `.\iniciar.ps1` o `.\iniciar.ps1 -Wifi`, y Ctrl+C para detenerlo.
+- **Para probarlo sin celular:** **Abrir en este PC** en la ventana.
+- **Para ver los mensajes del servidor en una consola** (por ejemplo, para diagnosticar), usa el modo consola:
+  `.\iniciar.ps1` (o `.\iniciar.ps1 -SoloPC`, que lo abre solo en el navegador del PC), y Ctrl+C para detenerlo.
 
-### Por cable (Panel USB)
+### Conectar el celular
 
-- Abre **Panel USB** desde el menú Inicio (o doble clic en `iniciar.cmd`). El panel se abre solo en el celular.
-- Para probarlo sin celular: **Abrir en este PC** en la ventana, o `.\iniciar.ps1 -SoloPC`.
-- Si desconectas el cable con el panel en marcha, al volver a conectarlo el panel se recupera solo en unos segundos.
-- En este modo no se expone nada a la red: el celular llega al PC solo por el cable.
+1. Con el celular en la **misma red Wi-Fi** que el PC, escanea con la cámara el código QR de la ventana.
+   Se abre el panel en el navegador (si se abre en uno que no sea Chrome, usa "Abrir en Chrome").
+2. **La primera vez, el PC pide permiso:** aparece el aviso "Panel del PC: dispositivo nuevo" con la IP y el modelo
+   del celular. Pulsa **Sí** y el panel se abre solo en el celular.
+   Pulsa **No** si no lo reconoces: ese dispositivo no podrá volver a pedir acceso hasta que reinicies el panel.
+3. En el celular, en Chrome: menú ⋮ > **Agregar a pantalla principal**. Desde ese icono se abre directo y a pantalla completa.
 
-### Por Wi-Fi (Panel Wi-Fi)
-
-- Abre **Panel Wi-Fi** desde el menú Inicio (o doble clic en `iniciar-wifi.cmd`). El celular tiene que estar en la misma red que el PC.
-- **La ventana muestra un código QR.** Escanéalo con la cámara del celular: se abre el panel (si se abre en otro navegador,
-  usa "Abrir en Chrome"). No hace falta el cable ni el modo desarrollador.
-- **La primera vez, el PC pide permiso:** aparece el aviso "Panel del PC: dispositivo nuevo" con la IP y el modelo del celular.
-  Pulsa **Sí** y el panel se abre solo en el celular. Pulsa **No** si no lo reconoces: ese dispositivo no podrá volver a pedir
-  acceso hasta que reinicies el panel. Después, en Chrome: ⋮ > **Agregar a pantalla principal**.
 - Para pedir acceso hace falta el token que va dentro del QR: un equipo de la red que no lo tenga no puede ni abrir el aviso.
 - Los dispositivos aprobados se guardan en `config.json` → `"wifi": { "dispositivos": ["192.168.1.50"] }`. Para quitar uno,
   pulsa **Quitar** en la ventana (o borra su IP del archivo; se aplica al instante). A cualquier otro equipo se le corta
   la conexión sin responderle.
-- Si cambia la IP del celular, vuelve a escanear el QR y apruébalo otra vez; para que no cambie, resérvala en el router.
-- Si el celular está conectado por cable al abrir Panel Wi-Fi, se autoriza solo y se le abre el panel (sin QR ni aviso).
-- Si el router cambia la IP del PC, el icono del celular deja de funcionar: abre Panel Wi-Fi y usa la dirección nueva que muestra.
-- La red debe estar marcada como **Privada** en Windows. Úsalo solo en redes de confianza (la de tu casa), no en redes públicas:
-  la conexión no va cifrada.
-- Cierra en Chrome las pestañas viejas del panel que empiezan por `localhost`: son del modo USB y en modo Wi-Fi no se conectan.
+- Si el router cambia la IP del PC o del celular, el icono del celular deja de funcionar: vuelve a escanear el QR
+  y aprueba el aviso. Para evitarlo, reserva esas IP en el router.
+- La red debe estar marcada como **Privada** en Windows (Configuración > Red e Internet > propiedades de la red).
+  Úsalo solo en redes de confianza (la de tu casa), no en redes públicas: la conexión no va cifrada.
 
 ### Si no abre en el celular
 
-- La ventana dice "Esperando al celular" o "Acepta el aviso en el celular": desbloquea el celular. Si aparece
-  "Permitir depuración USB", marca **Permitir siempre desde este ordenador** y acepta. La ventana espera lo que haga falta
-  y abre el panel en cuanto el celular responde.
-- Al pulsar el icono con el panel ya abierto, solo se muestra la ventana y se vuelve a abrir en el celular (no se arranca otro).
-- El panel dice "Sin conexión": revisa que el panel siga en marcha en el PC (la ventana o el icono junto al reloj).
+- El celular dice "Buscando el PC…" o "Sin conexión": revisa que el panel siga en marcha en el PC (la ventana o el icono
+  junto al reloj) y que el celular esté en la misma red Wi-Fi.
+- La ventana avisa de que la red está marcada como **Pública**: cámbiala a Privada con el botón del aviso.
 - La ventana dice que hay otra copia del panel abierta: es una ventana de consola de una versión anterior.
   Pulsa **Cerrarla y continuar**.
+- Si tienes en el celular pestañas viejas del panel que empiezan por `localhost`, ciérralas: eran del modo por cable,
+  que ya no existe.
 
 ### Pantalla completa
 
@@ -96,13 +89,15 @@ eliges qué páginas se ven en el celular y en qué orden (ver [Páginas](#pági
 - Mientras el panel está abierto, la pantalla del celular no se apaga.
 - Para salir de la pantalla completa, desliza desde arriba y pulsa Atrás, o toca el botón otra vez.
 
-### Como app en la pantalla de inicio
+El token de acceso se guarda en `.token`. Si lo borras se genera uno nuevo y tendrás que volver a escanear el código QR.
 
-En Chrome del celular: menú ⋮ > **Agregar a pantalla principal**. El icono abre el panel directamente a pantalla completa.
-Hazlo desde el modo que vayas a usar (USB o Wi-Fi): cada uno tiene su propia dirección. Solo funciona mientras el panel
-está en marcha en el PC.
+## Idioma
 
-El token de acceso se guarda en `.token`. Si lo borras se genera uno nuevo y tendrás que volver a abrir el panel desde el script.
+En la ventana del panel, arriba a la derecha: **Español** o **English**. Cambia a la vez la ventana, la página del
+celular (al momento, sin recargar), la página de espera de los celulares nuevos y el aviso del PC para aprobarlos.
+Se guarda en el PC, en `data/preferencias.json`; la primera vez se usa el idioma de Windows.
+
+Los nombres de tus botones, relojes y comandos salen tal como los escribiste en `config.json`.
 
 ## Páginas
 
@@ -157,7 +152,7 @@ Los botones `prev`, `playpause` y `next` del grupo `media` son los que usa la ta
 que esté sonando (Spotify, Opera, Chrome… cualquiera que aparezca en los controles de música de Windows), sin importar
 qué ventana esté al frente.
 
-Cada botón admite `"icon"` y `"color"` (por ejemplo `"#2dd4bf"`). Iconos disponibles:
+Cada botón admite `"label"`, `"icon"` y `"color"` (por ejemplo `"#2dd4bf"`). Iconos disponibles:
 `play` `pause` `prev` `next` `vol` `mute` `music` `folder` `download` `briefcase` `globe` `calculator`
 `scissors` `activity` `monitor` `flame` `wifi` `clock` `lock` `moon` `terminal` `book` `share` `mic` `headphones` `eye` `chat`.
 
@@ -172,13 +167,16 @@ Si añades `"confirm": true` a un botón, pedirá confirmación antes de ejecuta
 
 ## Compartir el panel
 
-En la carpeta del panel ejecuta `.\empaquetar.ps1`. Crea `Panel-USB.zip` junto a la carpeta, con solo los archivos del programa:
-nunca incluye tu `.token`, tu `config.json`, tus tareas ni el orden de tus páginas. Quien lo reciba empieza por la sección **Instalación**.
+En la carpeta del panel ejecuta `.\empaquetar.ps1`. Crea `Panel-del-PC.zip` junto a la carpeta, con solo los archivos del
+programa: nunca incluye tu `.token`, tu `config.json` ni la carpeta `data` (tus tareas, el orden de tus páginas y el idioma).
+Quien lo reciba empieza por la sección **Instalación**.
 
 ## Seguridad
 
-- En modo USB el servidor solo escucha en `127.0.0.1`; el celular llega a él únicamente por el túnel `adb reverse`.
-  En modo Wi-Fi también escucha en la IP local del PC y solo acepta los dispositivos de `wifi.dispositivos`.
-- Todas las peticiones necesitan el token de `.token` (48 caracteres aleatorios, distinto en cada PC), y se rechazan
-  las que llegan con otro nombre de host (protección contra DNS rebinding).
+- El servidor escucha en `127.0.0.1` (para abrirlo en el propio PC) y en la IP local del PC. Solo entran el propio PC y
+  los celulares que aprobaste (`wifi.dispositivos`); a cualquier otro equipo de la red se le corta la conexión sin responderle.
+- Para pedir acceso hace falta el token que va dentro del QR (48 caracteres aleatorios, distinto en cada PC, guardado en `.token`).
+  El QR se genera en el propio PC, sin internet. Si crees que alguien vio el QR, borra `.token`: se genera uno nuevo.
+- Todas las peticiones necesitan ese token, y se rechazan las que llegan con otro nombre de host (protección contra DNS rebinding).
 - El celular solo puede ejecutar los botones definidos en `config.json`, nunca comandos arbitrarios.
+- La conexión no va cifrada: úsalo solo en redes de confianza (la de tu casa), no en redes públicas.

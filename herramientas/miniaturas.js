@@ -1,5 +1,6 @@
-// Genera las miniaturas de las páginas del celular que muestra la ventana del panel en "Páginas del celular"
-// (public/miniaturas/<página>.jpg). Vuelve a ejecutarlo cuando cambie el diseño de alguna página.
+// Genera las miniaturas de las páginas del celular que muestra la ventana del panel en "Páginas del celular", en
+// español (public/miniaturas/<página>.jpg) y en inglés (public/miniaturas/en/<página>.jpg). Vuelve a ejecutarlo cuando
+// cambie el diseño de alguna página.
 //
 // Sirve la página del celular desde aquí mismo y responde a todo con datos de ejemplo y con config.ejemplo.json:
 // no usa el servidor del panel, ni tu config.json, ni lo que pasa en este PC.
@@ -16,6 +17,8 @@ const os = require('os');
 const ROOT = path.join(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 const SALIDA = path.join(PUBLIC, 'miniaturas');
+let IDIOMA = 'es'; // el de la tanda que se está generando
+const en = () => IDIOMA === 'en';
 const ICONOS = process.argv[2] ? JSON.parse(fs.readFileSync(process.argv[2], 'utf8')) : {};
 const EDGE = ['C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', 'C:/Program Files/Microsoft/Edge/Application/msedge.exe'].find((p) => fs.existsSync(p));
 const PAGINAS = ['inicio', 'mezclador', 'sistema', 'rendimiento', 'procesos', 'enfoque', 'calendario', 'discord', 'comandos'];
@@ -53,10 +56,11 @@ function stats() {
     mem: { total: 16 * GB, free: 16 * GB * (0.46 + ola(0.03, 0.4)) },
     disks: [{ name: 'C:', total: 1000e9, free: 412e9 }, { name: 'D:', total: 2000e9, free: 1320e9 }],
     net: { rxBps: Math.max(0, 900e3 + ola(700e3, 1.7) + Math.random() * 300e3), txBps: Math.max(0, 120e3 + ola(90e3, 2.3)) },
-    media: { app: 'Spotify.exe', title: 'Luces de la ciudad', artist: 'Banda de ejemplo', status: 'playing', position: 74, duration: 213, artKey: null },
+    media: { app: 'Spotify.exe', title: en() ? 'City lights' : 'Luces de la ciudad', artist: en() ? 'Sample band' : 'Banda de ejemplo', status: 'playing', position: 74, duration: 213, artKey: null },
     volume: { level: 64, muted: false },
     artKey: null,
     paginas: PAGINAS,
+    idioma: IDIOMA,
     time: Date.now(),
   };
 }
@@ -65,27 +69,25 @@ const dia = (i) => new Date(hoy.getTime() + i * 86400e3).toISOString().slice(0, 
 const RESPUESTAS = {
   '/api/config': () => config,
   '/api/stats': stats,
-  '/api/tasks': () => [
-    { id: '1', text: 'Enviar el informe semanal', done: true },
-    { id: '2', text: 'Revisar los pendientes del proyecto', done: false },
-    { id: '3', text: 'Llamar a soporte técnico', done: false },
-    { id: '4', text: 'Comprar café', done: false },
-  ],
+  '/api/tasks': () => (en() ? ['Send the weekly report', 'Review the project to-dos', 'Call tech support', 'Buy coffee']
+    : ['Enviar el informe semanal', 'Revisar los pendientes del proyecto', 'Llamar a soporte técnico', 'Comprar café'])
+    .map((text, i) => ({ id: String(i + 1), text, done: i === 0 })),
   '/api/weather': () => ({ activo: true, ciudad: 'Madrid', now: { temp: 18, feels: 17, hum: 62, code: 2, wind: 9, day: true },
     days: [2, 3, 61, 1, 0].map((code, i) => ({ date: dia(i), code, max: 19 + i, min: 9 + (i % 3), rain: 10 })) }),
   '/api/art': () => ({ key: null, data: null }),
   '/api/mixer': () => {
     const s = (k) => `{0.0.0.00000000}.{0000000${k}-0000-0000-0000-000000000000}`;
     return {
-      dispositivo: 'Altavoces (Realtek(R) Audio)', salida: s(1),
-      salidas: [{ id: s(1), nombre: 'Altavoces (Realtek(R) Audio)', tipo: 'altavoces' }, { id: s(2), nombre: 'Audífonos (Bluetooth)', tipo: 'audifonos' }],
+      dispositivo: en() ? 'Speakers (Realtek(R) Audio)' : 'Altavoces (Realtek(R) Audio)', salida: s(1),
+      salidas: [{ id: s(1), nombre: en() ? 'Speakers (Realtek(R) Audio)' : 'Altavoces (Realtek(R) Audio)', tipo: 'altavoces' },
+        { id: s(2), nombre: en() ? 'Headphones (Bluetooth)' : 'Audífonos (Bluetooth)', tipo: 'audifonos' }],
       general: { nivel: 64, silencio: false, pico: 0.62 },
       apps: [
         { clave: 'discord', nombre: 'Discord', nivel: 72, silencio: false, pico: 0.34, activa: true, sistema: false, icono: !!ICONOS.discord },
         { clave: 'edge', nombre: 'Microsoft Edge', nivel: 100, silencio: false, pico: 0, activa: false, sistema: false, icono: !!ICONOS.edge },
         { clave: 'steam', nombre: 'Steam', nivel: 40, silencio: true, pico: 0, activa: false, sistema: false, icono: !!ICONOS.steam },
         { clave: 'vlc', nombre: 'VLC media player', nivel: 86, silencio: false, pico: 0.74, activa: true, sistema: false, icono: !!ICONOS.vlc },
-        { clave: 'sistema', nombre: 'Sonidos del sistema', nivel: 100, silencio: false, pico: 0, activa: false, sistema: true },
+        { clave: 'sistema', nombre: en() ? 'System sounds' : 'Sonidos del sistema', nivel: 100, silencio: false, pico: 0, activa: false, sistema: true },
       ],
     };
   },
@@ -136,16 +138,23 @@ async function esperar(url, ms = 20000) {
     // La página pide el estado cada 1,5 s; aquí, cada 50 ms, para llenar en segundos las gráficas de 3 minutos.
     await c.send('Page.addScriptToEvaluateOnNewDocument', { source: 'const _si = window.setInterval; window.setInterval = (f, ms, ...a) => _si(f, ms === 1500 ? 50 : ms, ...a);' });
     await c.send('Emulation.setDeviceMetricsOverride', { width: ANCHO, height: ALTO, deviceScaleFactor: 1, mobile: true });
-    await c.send('Page.navigate', { url: `http://127.0.0.1:${puerto}/#t=ejemplo` });
-    await sleep(9000);
-    fs.mkdirSync(SALIDA, { recursive: true });
-    for (const [i, id] of PAGINAS.entries()) {
-      await c.send('Runtime.evaluate', { expression: `document.getElementById('pages').scrollLeft = ${i} * document.getElementById('pages').clientWidth` });
-      await sleep(1200);
-      const r = await c.send('Page.captureScreenshot', { format: 'jpeg', quality: 82, clip: { x: 0, y: 0, width: ANCHO, height: ALTO, scale: ESCALA } });
-      const destino = path.join(SALIDA, `${id}.jpg`);
-      fs.writeFileSync(destino, Buffer.from(r.data, 'base64'));
-      console.log(`${id}.jpg  ${Math.round(fs.statSync(destino).size / 1024)} KB`);
+    for (const idioma of ['es', 'en']) {
+      IDIOMA = idioma;
+      const carpeta = idioma === 'es' ? SALIDA : path.join(SALIDA, idioma);
+      fs.mkdirSync(carpeta, { recursive: true });
+      // El celular toma el idioma del estado (stats.idioma); se guarda también para que empiece ya en ese idioma.
+      await c.send('Page.navigate', { url: `http://127.0.0.1:${puerto}/#t=ejemplo` });
+      await sleep(1500);
+      await c.send('Runtime.evaluate', { expression: `localStorage.setItem('panelLang', '${idioma}'); location.reload()` });
+      await sleep(9000);
+      for (const [i, id] of PAGINAS.entries()) {
+        await c.send('Runtime.evaluate', { expression: `document.getElementById('pages').scrollLeft = ${i} * document.getElementById('pages').clientWidth` });
+        await sleep(1200);
+        const r = await c.send('Page.captureScreenshot', { format: 'jpeg', quality: 82, clip: { x: 0, y: 0, width: ANCHO, height: ALTO, scale: ESCALA } });
+        const destino = path.join(carpeta, `${id}.jpg`);
+        fs.writeFileSync(destino, Buffer.from(r.data, 'base64'));
+        console.log(`${path.relative(SALIDA, destino)}  ${Math.round(fs.statSync(destino).size / 1024)} KB`);
+      }
     }
     try { await c.send('Browser.close'); } catch {}
     c.close();

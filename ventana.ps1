@@ -1,8 +1,8 @@
-﻿# Panel del PC: ventana para arrancar y controlar el panel, sin consola.
+﻿# Panel del PC: ventana para arrancar y controlar el panel, sin consola. El celular entra por la red Wi-Fi de la casa.
 # La abre "Panel del PC.exe" (lo crea instalar.cmd) o, si no existe, iniciar.cmd con PowerShell oculto.
-#   ventana.ps1             modo USB (en la edición solo Wi-Fi, siempre Wi-Fi)
-#   ventana.ps1 -Wifi       modo Wi-Fi
-#   ventana.ps1 -Puerto N   otro puerto (por defecto 8787)
+#   ventana.ps1             puerto 8787
+#   ventana.ps1 -Puerto N   otro puerto
+# -Wifi se acepta y no hace nada: lo pasan los iconos "Panel Wi-Fi" de versiones anteriores.
 # Para ver los mensajes del servidor en una consola, usa iniciar.ps1.
 param([int]$Puerto = 8787, [switch]$Wifi)
 $ErrorActionPreference = 'Stop'
@@ -10,13 +10,122 @@ $Raiz = $PSScriptRoot
 Set-Location $Raiz
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Windows.Forms, System.Drawing
 
+# ---------- Idioma: español o inglés. Es el mismo para la ventana y para el celular: se guarda en data\preferencias.json
+# y el servidor se lo pasa al celular. Los textos se escriben en español; T() da su traducción y TF() la rellena con datos.
+$archivoPreferencias = Join-Path $Raiz 'data\preferencias.json'
+function Get-IdiomaGuardado {
+    try { $p = [IO.File]::ReadAllText($archivoPreferencias).TrimStart([char]0xFEFF) | ConvertFrom-Json; if ($p.idioma -in 'es', 'en') { return [string]$p.idioma } } catch { }
+    if ((Get-UICulture).TwoLetterISOLanguageName -eq 'en') { 'en' } else { 'es' } # la primera vez, el de Windows
+}
+$script:idioma = Get-IdiomaGuardado
+# Una traducción por línea: «español ⇒ inglés». {0}, {1}… son los datos que se rellenan.
+$EN = New-Object 'Collections.Generic.Dictionary[string,string]'
+foreach ($linea in @'
+Faltan archivos del panel. Vuelve a descomprimir el .zip del panel completo. ⇒ Some panel files are missing. Unzip the full panel .zip again.
+Arrancando… ⇒ Starting…
+Buscando la red… ⇒ Looking for the network…
+Arrancando el servidor… ⇒ Starting the server…
+En marcha por Wi-Fi · {0} ⇒ Running over Wi-Fi · {0}
+No está funcionando ⇒ Not running
+Deteniendo… ⇒ Stopping…
+{0} pide entrar: responde el aviso del PC ⇒ {0} wants to connect: answer the prompt on this PC
+Preparando… ⇒ Getting ready…
+Sin conexión ⇒ No connection
+Faltan archivos del panel: {0}. Vuelve a descomprimir el .zip del panel completo. ⇒ Some panel files are missing: {0}. Unzip the full panel .zip again.
+Node.js {0} es muy antiguo (se necesita la versión {1} o superior). La revisión de requisitos te ofrece instalarlo. ⇒ Node.js {0} is too old (version {1} or later is needed). The requirements check offers to install it.
+No se encontró Node.js, que el panel necesita. La revisión de requisitos te ofrece instalarlo. ⇒ Node.js, which the panel needs, wasn't found. The requirements check offers to install it.
+Revisar requisitos ⇒ Check requirements
+Este PC no está conectado a una red local. Conéctalo al router (por cable o Wi-Fi), en la misma red que el celular. ⇒ This PC isn't connected to a local network. Connect it to the router (by cable or Wi-Fi), on the same network as your phone.
+Reintentar ⇒ Try again
+Windows tiene la red «{0}» marcada como Pública, así que el celular no podrá entrar. Si es la red de tu casa, cámbiala a Privada. ⇒ Windows has the network "{0}" marked as Public, so your phone won't be able to connect. If it's your home network, change it to Private.
+Abrir configuración ⇒ Open settings
+Hay otra copia del panel abierta en el puerto {0}, probablemente en una ventana de consola. ⇒ Another copy of the panel is open on port {0}, probably in a console window.
+Cerrarla y continuar ⇒ Close it and continue
+No se pudo abrir Node.js: {0} ⇒ Couldn't start Node.js: {0}
+El servidor del panel no arrancó. ⇒ The panel server didn't start.
+El servidor del panel no arrancó: {0} ⇒ The panel server didn't start: {0}
+El panel se detuvo. ⇒ The panel stopped.
+El panel se detuvo: {0} ⇒ The panel stopped: {0}
+Volver a arrancar ⇒ Start again
+el puerto {0} lo está usando otro programa. ⇒ port {0} is being used by another program.
+Windows no dejó abrir el puerto del panel. ⇒ Windows didn't allow opening the panel's port.
+Aquí verás lo que hagas desde el celular y los dispositivos que pidan entrar. ⇒ Here you'll see what you do from your phone and the devices that ask to connect.
+Error: {0} ⇒ Error: {0}
+Error inesperado: {0} ⇒ Unexpected error: {0}
+todavía no se ha conectado ⇒ hasn't connected yet
+conectado ahora ⇒ connected now
+hace un momento ⇒ a moment ago
+hace {0} min ⇒ {0} min ago
+hace {0} h ⇒ {0} h ago
+Quitar ⇒ Remove
+Dejar de permitir {0} ⇒ Stop allowing {0}
+¿Quitar {0} de los dispositivos autorizados? ⇒ Remove {0} from the authorized devices?
+Dejará de poder usar el panel. Si vuelve a escanear el código, este PC te preguntará otra vez. ⇒ It will no longer be able to use the panel. If it scans the code again, this PC will ask you again.
+CONECTA TU CELULAR ⇒ CONNECT YOUR PHONE
+Escanéalo con la cámara del celular. Tiene que estar en la misma red Wi-Fi que este PC. ⇒ Scan it with your phone's camera. It has to be on the same Wi-Fi network as this PC.
+Copiar enlace ⇒ Copy link
+Copiado ⇒ Copied
+Copia la dirección completa del panel, para abrirla a mano en el celular ⇒ Copies the panel's full address, to open it by hand on your phone
+Abrir en este PC ⇒ Open on this PC
+Abre el panel en el navegador de este PC ⇒ Opens the panel in this PC's browser
+Detener el panel ⇒ Stop the panel
+Cierra el panel: el celular deja de poder usarlo hasta que lo vuelvas a abrir ⇒ Closes the panel: your phone can't use it until you open it again
+Si cierras esta ventana, el panel sigue funcionando. Vuelve a ella desde el menú Inicio o desde el icono junto al reloj. ⇒ If you close this window, the panel keeps running. Come back to it from the Start menu or from the icon next to the clock.
+DISPOSITIVOS AUTORIZADOS ⇒ AUTHORIZED DEVICES
+Todavía ninguno. Escanea el código con el celular y acepta el aviso que aparecerá en este PC. ⇒ None yet. Scan the code with your phone and accept the prompt that will appear on this PC.
+ACTIVIDAD ⇒ ACTIVITY
+Mostrar la ventana ⇒ Show the window
+El panel sigue funcionando ⇒ The panel is still running
+Para volver a la ventana, haz clic en este icono o abre el panel desde el menú Inicio. Para cerrarlo del todo, usa «Detener el panel». ⇒ To get back to the window, click this icon or open the panel from the Start menu. To close it completely, use "Stop the panel".
+Páginas del celular ⇒ Phone pages
+Elige qué páginas ves en el celular y en qué orden ⇒ Choose which pages your phone shows, and in what order
+Restablecer ⇒ Reset
+Vuelve al orden original, con todas las páginas ⇒ Go back to the original order, with every page
+Listo ⇒ Done
+Activa las que quieres ver y arrástralas para cambiar el orden. La primera es la que aparece al conectar el celular, y cada cambio le llega al momento. ⇒ Turn on the ones you want and drag them to change the order. The first one is what your phone shows when it connects, and every change reaches it right away.
+Para elegir las páginas del celular, el panel tiene que estar funcionando. ⇒ To choose the phone pages, the panel has to be running.
+No se pudieron guardar las páginas: el panel no respondió. ⇒ The pages couldn't be saved: the panel didn't respond.
+¿Volver al orden original, con todas las páginas? ⇒ Go back to the original order, with every page?
+Al conectar ⇒ On connect
+Oculta ⇒ Hidden
+Sin vista previa ⇒ No preview
+Mover {0} antes ⇒ Move {0} earlier
+Mover {0} después ⇒ Move {0} later
+Mover antes ⇒ Move earlier
+Mover después ⇒ Move later
+Mostrar {0} ⇒ Show {0}
+Tiene que quedar al menos una página ⇒ At least one page has to stay
+Inicio ⇒ Home
+Mezclador ⇒ Mixer
+Sistema ⇒ System
+Rendimiento ⇒ Performance
+Procesos ⇒ Processes
+Enfoque ⇒ Focus
+Calendario ⇒ Calendar
+Comandos ⇒ Commands
+Reloj, música, volumen y uso del PC ⇒ Clock, music, volume and PC usage
+Volumen de cada aplicación y salida de audio ⇒ Volume of each app, and audio output
+Indicadores y botones de atajos ⇒ Gauges and shortcut buttons
+Historial de CPU, RAM y red, y cada núcleo ⇒ CPU, RAM and network history, and each core
+Los programas que más CPU y memoria usan ⇒ The programs using the most CPU and memory
+Pomodoro, tareas y accesos rápidos ⇒ Pomodoro, tasks and quick links
+El mes, relojes del mundo y el clima ⇒ The month, world clocks and the weather
+Compartir pantalla, micrófono y más ⇒ Screen sharing, microphone and more
+Botones de comandos y su consola ⇒ Command buttons and their console
+'@ -split "`r?`n") {
+    $partes = $linea -split ' ⇒ ', 2
+    if ($partes.Count -eq 2) { $EN[$partes[0]] = $partes[1] }
+}
+function T([string]$Texto) { if ($script:idioma -eq 'en' -and $Texto -and $EN.ContainsKey($Texto)) { $EN[$Texto] } else { $Texto } }
+function Format-Texto([string]$Texto, [object[]]$Datos) { $t = T $Texto; if ($Datos -and $Datos.Count) { $t -f $Datos } else { $t } }
+function TF([string]$Formato) { Format-Texto $Formato $args }
+
 if (-not (Test-Path (Join-Path $Raiz 'lib\requisitos.ps1')) -or -not (Test-Path (Join-Path $Raiz 'lib\arranque.ps1'))) {
-    [void][Windows.MessageBox]::Show('Faltan archivos del panel. Vuelve a descomprimir el .zip del panel completo.', 'Panel del PC', 'OK', 'Error')
+    [void][Windows.MessageBox]::Show((T 'Faltan archivos del panel. Vuelve a descomprimir el .zip del panel completo.'), 'Panel del PC', 'OK', 'Error')
     return
 }
 . (Join-Path $Raiz 'lib\requisitos.ps1')
 . (Join-Path $Raiz 'lib\arranque.ps1')
-$modoInicial = if ($Wifi -or $PanelSoloWifi) { 'wifi' } else { 'usb' }
 
 # Funciones nativas (barra de título oscura, pasar al frente). Ya vienen dentro de Panel del PC.exe; si no, se compilan.
 if (-not ('PanelNativo' -as [type])) {
@@ -24,16 +133,13 @@ if (-not ('PanelNativo' -as [type])) {
 }
 $hayNativo = [bool]('PanelNativo' -as [type])
 
-# Una sola ventana por puerto: si ya hay una abierta, se le pide que se muestre (en el modo pedido) y esta termina.
+# Una sola ventana por puerto: si ya hay una abierta, se le pide que se muestre y esta termina.
 $creada = $false
 $mutex = New-Object Threading.Mutex($true, "Local\PanelDelPC-$Puerto", [ref]$creada)
-$senal = @{}
-foreach ($m in 'wifi', 'usb') {
-    $senal[$m] = New-Object Threading.EventWaitHandle($false, [Threading.EventResetMode]::AutoReset, "Local\PanelDelPC-$Puerto-$m")
-}
+$senal = New-Object Threading.EventWaitHandle($false, [Threading.EventResetMode]::AutoReset, "Local\PanelDelPC-$Puerto-mostrar")
 if (-not $creada) {
     if ($hayNativo) { [PanelNativo]::PermitirPrimerPlano() }
-    [void]$senal[$modoInicial].Set()
+    [void]$senal.Set()
     return
 }
 
@@ -173,11 +279,12 @@ $xaml = @'
           <TextBlock x:Name="Estado" Text="Arrancando…" Foreground="{StaticResource Tenue}"/>
         </StackPanel>
       </StackPanel>
-      <Border x:Name="Modos" DockPanel.Dock="Right" VerticalAlignment="Center" Background="{StaticResource Tile}"
+      <!-- Idioma de la ventana y del celular; cada idioma se nombra en sí mismo -->
+      <Border x:Name="Idiomas" DockPanel.Dock="Right" VerticalAlignment="Center" Background="{StaticResource Tile}"
               BorderBrush="{StaticResource Linea}" BorderThickness="1" CornerRadius="12" Padding="3">
         <StackPanel Orientation="Horizontal">
-          <Button x:Name="ModoWifi" Content="Wi-Fi" Style="{StaticResource Segmento}" ToolTip="El celular entra por la red Wi-Fi de la casa"/>
-          <Button x:Name="ModoUsb" Content="Cable USB" Style="{StaticResource Segmento}" ToolTip="El celular se conecta por cable, con la depuración USB"/>
+          <Button x:Name="IdiomaEs" Content="Español" Style="{StaticResource Segmento}"/>
+          <Button x:Name="IdiomaEn" Content="English" Style="{StaticResource Segmento}"/>
         </StackPanel>
       </Border>
       <Button x:Name="AbrirPaginas" DockPanel.Dock="Right" Style="{StaticResource Boton}" Margin="0,0,10,0" Padding="12,7" VerticalAlignment="Center"
@@ -245,18 +352,6 @@ $xaml = @'
             </Border>
           </StackPanel>
 
-          <StackPanel x:Name="VistaUsb" Visibility="Collapsed">
-            <TextBlock Text="CELULAR POR CABLE" Style="{StaticResource Etiqueta}"/>
-            <Border x:Name="UsbIcono" Width="76" Height="76" CornerRadius="22" Background="#1AFB923C" HorizontalAlignment="Center" Margin="0,36,0,18">
-              <Path x:Name="UsbIconoPath" Width="36" Height="36" Stretch="Uniform" Stroke="#FB923C" StrokeThickness="1.8"
-                    StrokeLineJoin="Round" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                    Data="M8,2.5 L16,2.5 A2,2 0 0 1 18,4.5 L18,19.5 A2,2 0 0 1 16,21.5 L8,21.5 A2,2 0 0 1 6,19.5 L6,4.5 A2,2 0 0 1 8,2.5 Z M10.5,18.2 L13.5,18.2"/>
-            </Border>
-            <TextBlock x:Name="UsbTitulo" Text="Buscando el celular…" FontSize="16" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap"/>
-            <TextBlock x:Name="UsbDetalle" Margin="6,8,6,0" Foreground="{StaticResource Tenue}" TextAlignment="Center" TextWrapping="Wrap" LineHeight="19"/>
-            <Button x:Name="AbrirCelular" Content="Abrir en el celular" Style="{StaticResource BotonPrincipal}" Margin="0,24,0,0"
-                    HorizontalAlignment="Center" Visibility="Collapsed" ToolTip="Vuelve a abrir el panel en el Chrome del celular"/>
-          </StackPanel>
         </Grid>
       </Border>
 
@@ -293,9 +388,8 @@ $xaml = @'
 
 $w = [Windows.Markup.XamlReader]::Parse($xaml)
 $ui = @{}
-foreach ($n in 'Logo', 'Punto', 'Estado', 'Modos', 'ModoWifi', 'ModoUsb', 'Aviso', 'AvisoTexto', 'AvisoBoton', 'VistaWifi', 'Qr', 'QrEspera',
-    'Direccion', 'Copiar', 'VistaUsb', 'UsbIcono', 'UsbIconoPath', 'UsbTitulo', 'UsbDetalle', 'AbrirCelular', 'TarjetaDispositivos',
-    'ListaDispositivos', 'SinDispositivos', 'ListaActividad', 'AbrirPc', 'Detener',
+foreach ($n in 'Logo', 'Punto', 'Estado', 'Idiomas', 'IdiomaEs', 'IdiomaEn', 'Aviso', 'AvisoTexto', 'AvisoBoton', 'Qr', 'QrEspera',
+    'Direccion', 'Copiar', 'TarjetaDispositivos', 'ListaDispositivos', 'SinDispositivos', 'ListaActividad', 'AbrirPc', 'Detener',
     'AbrirPaginas', 'VistaConexion', 'VistaPaginas', 'ListaPaginas', 'RestablecerPaginas', 'ListoPaginas') {
     $ui[$n] = $w.FindName($n)
 }
@@ -306,16 +400,37 @@ try {
     $ui.Logo.Background = New-Object Windows.Media.ImageBrush $logo
 } catch { }
 
+# Textos fijos de la plantilla, en español, para traducirlos (y volver) al cambiar de idioma. Los que cambia el código
+# (estado, aviso, QR, enlace) y los nombres de los idiomas no entran.
+$script:textosFijos = New-Object Collections.ArrayList
+$noTraducir = 'Estado', 'QrEspera', 'AvisoTexto', 'AvisoBoton', 'Direccion', 'Copiar', 'IdiomaEs', 'IdiomaEn'
+function Find-TextosFijos($Elemento) {
+    if ($Elemento -isnot [Windows.DependencyObject]) { return }
+    if ($Elemento -is [Windows.FrameworkElement] -and $Elemento.Name -in $noTraducir) { return }
+    $guardar = { param($P, $V) if ($V -is [string] -and $V.Trim()) { [void]$script:textosFijos.Add([pscustomobject]@{ E = $Elemento; P = $P; Es = $V }) } }
+    if ($Elemento -is [Windows.Controls.TextBlock]) { & $guardar 'Text' $Elemento.Text }
+    if ($Elemento -is [Windows.Controls.ContentControl]) { & $guardar 'Content' $Elemento.Content }
+    if ($Elemento -is [Windows.FrameworkElement]) { & $guardar 'ToolTip' $Elemento.ToolTip }
+    & $guardar 'Auto' ([Windows.Automation.AutomationProperties]::GetName($Elemento))
+    foreach ($hijo in [Windows.LogicalTreeHelper]::GetChildren($Elemento)) { Find-TextosFijos $hijo }
+}
+Find-TextosFijos $w
+function Set-TextosFijos {
+    foreach ($f in $script:textosFijos) {
+        $v = T $f.Es
+        switch ($f.P) {
+            'Text' { $f.E.Text = $v }
+            'Content' { $f.E.Content = $v }
+            'ToolTip' { $f.E.ToolTip = $v }
+            'Auto' { [Windows.Automation.AutomationProperties]::SetName($f.E, $v) }
+        }
+    }
+}
+
 # ---------- Estado
-$script:modo = $modoInicial
 $script:token = $null
 $script:servidor = $null       # proceso de node (server.js)
 $script:errServidor = $null    # lo que el servidor escribe en stderr (solo se lee si se cierra)
-$script:adb = $null
-$script:serial = $null
-$script:modelo = ''
-$script:tunel = $false
-$script:abierto = $false
 $script:lanIp = $null
 $script:url = $null
 $script:qrPuesto = $false
@@ -325,7 +440,10 @@ $script:inicioHecho = $false
 $script:avisoBandeja = $false
 $script:avisoAccion = $null
 $script:copiadoHasta = $null
-$script:estadoNormal = @('Arrancando…', $C.Naranja)
+$script:estadoNormal = @('Arrancando…', $C.Naranja, @())
+$script:estadoActual = $script:estadoNormal
+$script:avisoActual = $null
+$script:qrEspera = 'Preparando…'
 $script:eventosLocales = New-Object Collections.ArrayList
 $script:eventosServidor = @()
 $script:firmaActividad = $null
@@ -345,68 +463,89 @@ function New-Texto([string]$Texto, [string]$Color = $C.Texto, [double]$Tamano = 
 function Update-Ui { $w.Dispatcher.Invoke([Action] {}, [Windows.Threading.DispatcherPriority]::Background) }
 
 function Invoke-Seguro([scriptblock]$Bloque) {
-    try { & $Bloque } catch { try { Add-EventoLocal "Error: $($_.Exception.Message)" 'error' } catch { } }
+    try { & $Bloque } catch { try { Add-EventoLocal 'Error: {0}' 'error' $_.Exception.Message } catch { } }
 }
 
-function Get-NombreModo([string]$Modo) { if ($Modo -eq 'wifi') { 'Wi-Fi' } else { 'cable USB' } }
-
-function Set-Estado([string]$Texto, [string]$Color, [switch]$Normal) {
-    $ui.Estado.Text = $Texto
+# El texto va en español (con {0}, {1}… para $Datos); se guarda así para volver a mostrarlo si cambia el idioma.
+function Set-Estado([string]$Texto, [string]$Color, [switch]$Normal, [object[]]$Datos = @()) {
+    $script:estadoActual = @($Texto, $Color, $Datos)
+    if ($Normal) { $script:estadoNormal = $script:estadoActual }
+    $t = Format-Texto $Texto $Datos
+    $ui.Estado.Text = $t
     $ui.Punto.Fill = Get-Pincel $Color
-    if ($Normal) { $script:estadoNormal = @($Texto, $Color) }
-    $t = "Panel del PC: $Texto"
-    $tray.Text = if ($t.Length -gt 63) { $t.Substring(0, 63) } else { $t }
+    $b = "Panel del PC: $t"
+    $tray.Text = if ($b.Length -gt 63) { $b.Substring(0, 63) } else { $b }
 }
 
-function Show-Aviso([string]$Texto, [string]$Tipo = 'aviso', [string]$Boton, [scriptblock]$Accion) {
+function Show-Aviso([string]$Texto, [string]$Tipo = 'aviso', [string]$Boton, [scriptblock]$Accion, [object[]]$Datos = @()) {
+    $script:avisoActual = @{ Texto = $Texto; Boton = $Boton; Datos = $Datos }
     $color = @{ error = $C.Rojo; aviso = $C.Naranja; info = $C.Teal }[$Tipo]
     $ui.Aviso.Background = Get-Pincel ($color -replace '^#', '#1A')
     $ui.Aviso.BorderBrush = Get-Pincel ($color -replace '^#', '#4D')
-    $ui.AvisoTexto.Text = $Texto
-    $ui.AvisoBoton.Content = $Boton
+    $ui.AvisoTexto.Text = Format-Texto $Texto $Datos
+    $ui.AvisoBoton.Content = T $Boton
     $ui.AvisoBoton.Visibility = if ($Boton) { 'Visible' } else { 'Collapsed' }
     $script:avisoAccion = $Accion
     $ui.Aviso.Visibility = 'Visible'
 }
 function Hide-Aviso { $ui.Aviso.Visibility = 'Collapsed'; $script:avisoAccion = $null }
 
-function Set-Fallo([string]$Texto, [string]$Boton, [scriptblock]$Accion) {
+function Set-Fallo([string]$Texto, [string]$Boton, [scriptblock]$Accion, [object[]]$Datos = @()) {
     Hide-Paginas
     Set-Estado 'No está funcionando' $C.Rojo -Normal
-    Show-Aviso $Texto 'error' $Boton $Accion
-    $ui.QrEspera.Text = 'Sin conexión'; $ui.QrEspera.Visibility = 'Visible'; $ui.Qr.Source = $null; $script:qrPuesto = $false
-    Set-Usb 'El panel no está funcionando' 'Revisa el aviso de arriba.' $C.Rojo
-    $ui.AbrirCelular.Visibility = 'Collapsed'
+    Show-Aviso $Texto 'error' $Boton $Accion $Datos
+    Set-QrEspera 'Sin conexión'; $ui.Qr.Source = $null; $script:qrPuesto = $false
     Show-Ventana
 }
 
+function Set-QrEspera([string]$Texto) {
+    $script:qrEspera = $Texto
+    $ui.QrEspera.Text = T $Texto; $ui.QrEspera.Visibility = 'Visible'
+}
+
+# El idioma no depende del servidor: sus botones funcionan siempre.
 function Set-Botones([bool]$Activos) {
-    foreach ($b in $ui.AbrirPc, $ui.Detener, $ui.ModoWifi, $ui.ModoUsb, $ui.AbrirPaginas) { $b.IsEnabled = $Activos }
+    foreach ($b in $ui.AbrirPc, $ui.Detener, $ui.AbrirPaginas) { $b.IsEnabled = $Activos }
 }
 
-function Set-Usb([string]$Titulo, [string]$Detalle, [string]$Color) {
-    $ui.UsbTitulo.Text = $Titulo
-    $ui.UsbDetalle.Text = $Detalle
-    $ui.UsbIconoPath.Stroke = Get-Pincel $Color
-    $ui.UsbIcono.Background = Get-Pincel ($Color -replace '^#', '#1A')
+function Reset-VistaConexion {
+    $ui.Qr.Source = $null; Set-QrEspera 'Preparando…'; $ui.Direccion.Text = ''
+    $script:qrPuesto = $false; $script:url = $null; $script:firmaDispositivos = $null; $script:firmaActividad = $null
 }
 
-function Update-VistaModo {
-    $esWifi = $script:modo -eq 'wifi'
-    $ui.VistaWifi.Visibility = if ($esWifi) { 'Visible' } else { 'Collapsed' }
-    $ui.VistaUsb.Visibility = if ($esWifi) { 'Collapsed' } else { 'Visible' }
-    $ui.TarjetaDispositivos.Visibility = if ($esWifi) { 'Visible' } else { 'Collapsed' }
-    $ui.Modos.Visibility = if ($PanelSoloWifi) { 'Collapsed' } else { 'Visible' }
-    foreach ($par in @(@($ui.ModoWifi, $esWifi), @($ui.ModoUsb, (-not $esWifi)))) {
-        $on = $par[1]
+# ---------- Cambiar de idioma: se guarda, se avisa al servidor (que se lo pasa al celular) y se vuelve a dibujar todo.
+function Set-Idioma([string]$Idioma) {
+    if ($Idioma -notin 'es', 'en' -or $Idioma -eq $script:idioma) { return }
+    $script:idioma = $Idioma
+    try {
+        $prefs = @{}
+        if (Test-Path $archivoPreferencias) { ([IO.File]::ReadAllText($archivoPreferencias).TrimStart([char]0xFEFF) | ConvertFrom-Json).PSObject.Properties | ForEach-Object { $prefs[$_.Name] = $_.Value } }
+        $prefs.idioma = $Idioma
+        New-Item -ItemType Directory -Force (Split-Path $archivoPreferencias) | Out-Null
+        [IO.File]::WriteAllText($archivoPreferencias, ($prefs | ConvertTo-Json -Compress), (New-Object Text.UTF8Encoding $false))
+    } catch { }
+    [void](Invoke-PanelApi 'POST' '/api/pc/idioma' @{ idioma = $Idioma })
+    Update-Idioma
+}
+
+function Update-Idioma {
+    Set-TextosFijos
+    foreach ($par in @(@($ui.IdiomaEs, 'es'), @($ui.IdiomaEn, 'en'))) {
+        $on = $script:idioma -eq $par[1]
         $par[0].Background = Get-Pincel $(if ($on) { $C.Tile2 } else { '#00000000' })
         $par[0].BorderBrush = Get-Pincel $(if ($on) { '#1FFFFFFF' } else { '#00000000' })
         $par[0].Foreground = Get-Pincel $(if ($on) { $C.Texto } else { $C.Tenue })
     }
-    $ui.Qr.Source = $null; $ui.QrEspera.Text = 'Preparando…'; $ui.QrEspera.Visibility = 'Visible'; $ui.Direccion.Text = ''
-    Set-Usb 'Buscando el celular…' '' $C.Naranja
-    $ui.AbrirCelular.Visibility = 'Collapsed'
-    $script:qrPuesto = $false; $script:url = $null; $script:firmaDispositivos = $null; $script:firmaActividad = $null
+    $ui.Copiar.Content = T $(if ($script:copiadoHasta) { 'Copiado' } else { 'Copiar enlace' })
+    $ui.Copiar.ToolTip = T 'Copia la dirección completa del panel, para abrirla a mano en el celular'
+    $ui.QrEspera.Text = T $script:qrEspera
+    Set-Estado $script:estadoActual[0] $script:estadoActual[1] -Datos $script:estadoActual[2]
+    $a = $script:avisoActual
+    if ($a -and $ui.Aviso.Visibility -eq 'Visible') { $ui.AvisoTexto.Text = Format-Texto $a.Texto $a.Datos; $ui.AvisoBoton.Content = T $a.Boton }
+    $itemMostrar.Text = T 'Mostrar la ventana'; $itemAbrir.Text = T 'Abrir en este PC'; $itemDetener.Text = T 'Detener el panel'
+    $script:firmaActividad = $null; Update-Actividad
+    $script:firmaDispositivos = $null # los dispositivos se vuelven a dibujar con la próxima lectura
+    if ($script:enPaginas) { Update-ListaPaginas }
 }
 
 # El código QR llega del servidor como filas de "0" y "1"; se dibuja como imagen, con un margen blanco.
@@ -425,8 +564,9 @@ function Set-Qr($Filas) {
     $script:qrPuesto = $true
 }
 
-function Add-EventoLocal([string]$Mensaje, [string]$Tipo = 'local') {
-    [void]$script:eventosLocales.Add([pscustomobject]@{ t = [DateTimeOffset]::Now.ToUnixTimeMilliseconds(); tipo = $Tipo; msg = $Mensaje })
+# Lo de esta ventana se guarda en español y se traduce al mostrarlo; lo del servidor ya llega en el idioma de ese momento.
+function Add-EventoLocal([string]$Mensaje, [string]$Tipo = 'local', [object[]]$Datos = @()) {
+    [void]$script:eventosLocales.Add([pscustomobject]@{ t = [DateTimeOffset]::Now.ToUnixTimeMilliseconds(); tipo = $Tipo; msg = $Mensaje; datos = $Datos; local = $true })
     while ($script:eventosLocales.Count -gt 20) { $script:eventosLocales.RemoveAt(0) }
     Update-Actividad
 }
@@ -435,13 +575,12 @@ function Add-EventoLocal([string]$Mensaje, [string]$Tipo = 'local') {
 function Update-Actividad {
     $todos = @(@($script:eventosServidor) + @($script:eventosLocales) | Where-Object { $_ } |
         Sort-Object { [double]$_.t } -Descending | Select-Object -First 7)
-    $firma = ($todos | ForEach-Object { "$($_.t)|$($_.msg)" }) -join "`n"
+    $firma = "$($script:idioma)`n" + (($todos | ForEach-Object { "$($_.t)|$($_.msg)" }) -join "`n")
     if ($null -ne $script:firmaActividad -and $firma -eq $script:firmaActividad) { return }
     $script:firmaActividad = $firma
     $ui.ListaActividad.Children.Clear()
     if (-not $todos.Count) {
-        $vacio = if ($script:modo -eq 'wifi') { 'Aquí verás lo que hagas desde el celular y los dispositivos que pidan entrar.' } else { 'Aquí verás lo que hagas desde el celular.' }
-        [void]$ui.ListaActividad.Children.Add((New-Texto $vacio $C.Tenue))
+        [void]$ui.ListaActividad.Children.Add((New-Texto (T 'Aquí verás lo que hagas desde el celular y los dispositivos que pidan entrar.') $C.Tenue))
         return
     }
     foreach ($e in $todos) {
@@ -452,18 +591,19 @@ function Update-Actividad {
         [Windows.Controls.DockPanel]::SetDock($hora, 'Left')
         $color = switch ($e.tipo) { 'rechazo' { $C.Naranja } 'error' { $C.Rojo } 'aprobacion' { $C.Teal } default { $C.Texto } }
         [void]$fila.Children.Add($hora)
-        [void]$fila.Children.Add((New-Texto ([string]$e.msg) $color))
+        $msg = if ($e.local) { Format-Texto ([string]$e.msg) @($e.datos) } else { [string]$e.msg }
+        [void]$fila.Children.Add((New-Texto $msg $color))
         [void]$ui.ListaActividad.Children.Add($fila)
     }
 }
 
 function Format-Hace($Ms) {
-    if ($null -eq $Ms) { return 'todavía no se ha conectado' }
+    if ($null -eq $Ms) { return (T 'todavía no se ha conectado') }
     $Ms = [double]$Ms
-    if ($Ms -lt 20000) { 'conectado ahora' }
-    elseif ($Ms -lt 120000) { 'hace un momento' }
-    elseif ($Ms -lt 3600000) { "hace $([math]::Floor($Ms / 60000)) min" }
-    else { "hace $([math]::Floor($Ms / 3600000)) h" }
+    if ($Ms -lt 20000) { T 'conectado ahora' }
+    elseif ($Ms -lt 120000) { T 'hace un momento' }
+    elseif ($Ms -lt 3600000) { TF 'hace {0} min' ([math]::Floor($Ms / 60000)) }
+    else { TF 'hace {0} h' ([math]::Floor($Ms / 3600000)) }
 }
 
 function Update-Dispositivos($Lista) {
@@ -485,8 +625,8 @@ function Update-Dispositivos($Lista) {
         $punto.Fill = Get-Pincel $(if ($f.Activo) { $C.Verde } else { $C.Apagado })
         [Windows.Controls.DockPanel]::SetDock($punto, 'Left')
         $quitar = New-Object Windows.Controls.Button
-        $quitar.Content = 'Quitar'; $quitar.Style = $w.FindResource('BotonEnlace'); $quitar.Tag = $f.Ip; $quitar.VerticalAlignment = 'Center'
-        $quitar.ToolTip = "Dejar de permitir $($f.Ip)"
+        $quitar.Content = T 'Quitar'; $quitar.Style = $w.FindResource('BotonEnlace'); $quitar.Tag = $f.Ip; $quitar.VerticalAlignment = 'Center'
+        $quitar.ToolTip = TF 'Dejar de permitir {0}' $f.Ip
         $quitar.Add_Click({ param($s) Invoke-Seguro { Remove-Dispositivo $s.Tag } })
         [Windows.Controls.DockPanel]::SetDock($quitar, 'Right')
         $textos = New-Object Windows.Controls.StackPanel
@@ -524,8 +664,8 @@ function Invoke-PanelApi([string]$Metodo, [string]$Ruta, $Cuerpo = $null) {
 }
 
 function Format-ErrorServidor([string]$Texto) {
-    if ($Texto -match 'EADDRINUSE') { return "el puerto $Puerto lo está usando otro programa." }
-    if ($Texto -match 'EACCES|EADDRNOTAVAIL') { return 'Windows no dejó abrir el puerto del panel.' }
+    if ($Texto -match 'EADDRINUSE') { return (TF 'el puerto {0} lo está usando otro programa.' $Puerto) }
+    if ($Texto -match 'EACCES|EADDRNOTAVAIL') { return (T 'Windows no dejó abrir el puerto del panel.') }
     $lineas = @($Texto -split "`r?`n" | Where-Object { $_ -match '\S' })
     $linea = ($lineas | Where-Object { $_ -match 'Error' } | Select-Object -First 1)
     if (-not $linea) { $linea = $lineas | Select-Object -Last 1 }
@@ -540,125 +680,93 @@ function Stop-Servidor {
         [void](Invoke-PanelApi 'POST' '/api/pc/detener')
         if (-not $p.WaitForExit(3000)) { try { $p.Kill() } catch { } }
     }
-    if ($script:modo -eq 'usb' -and $script:adb -and $script:serial) { Remove-TunelUsb $script:adb $script:serial $Puerto }
-    $script:serial = $null; $script:tunel = $false; $script:abierto = $false
 }
 
-function Start-Flujo([string]$Modo) {
+function Start-Flujo {
     if ($script:arrancando) { return }
     $script:arrancando = $true
-    try { Start-Pasos $Modo } finally { $script:arrancando = $false; Set-Botones $true }
+    try { Start-Pasos } finally { $script:arrancando = $false; Set-Botones $true }
 }
 
-function Start-Pasos([string]$Modo) {
-    $script:modo = $Modo
+function Start-Pasos {
     Hide-Paginas
     Set-Botones $false
     Hide-Aviso
-    Update-VistaModo
+    Reset-VistaConexion
     Set-Estado 'Arrancando…' $C.Naranja -Normal
     Update-Ui
 
     # 1. Archivos y Node.js
     $faltan = Get-ArchivosFaltantes $Raiz
-    if ($faltan.Count) { Set-Fallo "Faltan archivos del panel: $($faltan -join ', '). Vuelve a descomprimir el .zip del panel completo."; return }
+    if ($faltan.Count) { Set-Fallo 'Faltan archivos del panel: {0}. Vuelve a descomprimir el .zip del panel completo.' -Datos ($faltan -join ', '); return }
     $nv = Get-NodeVersion
     if (-not $nv) { Update-RutaSesion; $nv = Get-NodeVersion }
     if (-not $nv -or $nv -lt $PanelNodeMinimo) {
-        $que = if ($nv) { "Node.js $nv es muy antiguo (se necesita la versión $($PanelNodeMinimo.Major) o superior)." } else { 'No se encontró Node.js, que el panel necesita.' }
-        Set-Fallo "$que La revisión de requisitos te ofrece instalarlo." 'Revisar requisitos' { Start-Process (Join-Path $Raiz 'verificar.cmd') }
+        $requisitos = { Start-Process (Join-Path $Raiz 'verificar.cmd') }
+        if ($nv) { Set-Fallo 'Node.js {0} es muy antiguo (se necesita la versión {1} o superior). La revisión de requisitos te ofrece instalarlo.' 'Revisar requisitos' $requisitos -Datos $nv, $PanelNodeMinimo.Major }
+        else { Set-Fallo 'No se encontró Node.js, que el panel necesita. La revisión de requisitos te ofrece instalarlo.' 'Revisar requisitos' $requisitos }
         return
     }
     $script:token = Get-PanelToken $Raiz
     Initialize-PanelConfig $Raiz
 
-    # 2. Red (Wi-Fi) y adb (cable)
-    $script:lanIp = $null
-    if ($Modo -eq 'wifi') {
-        Set-Estado 'Buscando la red…' $C.Naranja; Update-Ui
-        $red = Get-PanelRed
-        if (-not $red) {
-            Set-Fallo 'Este PC no está conectado a una red local. Conéctalo al router (por cable o Wi-Fi), en la misma red que el celular.' 'Reintentar' { Start-Flujo 'wifi' }
-            return
-        }
-        $script:lanIp = $red.Ip
-        if ($red.Publica) {
-            Show-Aviso "Windows tiene la red «$($red.Nombre)» marcada como Pública, así que el celular no podrá entrar. Si es la red de tu casa, cámbiala a Privada." 'aviso' 'Abrir configuración' { Start-Process 'ms-settings:network' }
-        }
-    }
-    $script:adb = if ($PanelSoloWifi) { $null } else { Find-Adb }
-    if ($Modo -eq 'usb' -and -not $script:adb) {
-        Set-Fallo 'Falta adb (las herramientas de Android), que el modo por cable necesita. La revisión de requisitos te ofrece instalarlo; también puedes usar el modo Wi-Fi.' 'Revisar requisitos' { Start-Process (Join-Path $Raiz 'verificar.cmd') }
+    # 2. Red local
+    Set-Estado 'Buscando la red…' $C.Naranja; Update-Ui
+    $red = Get-PanelRed
+    if (-not $red) {
+        Set-Fallo 'Este PC no está conectado a una red local. Conéctalo al router (por cable o Wi-Fi), en la misma red que el celular.' 'Reintentar' { Start-Flujo }
         return
     }
-    if ($script:adb) { Set-Estado 'Buscando el celular…' $C.Naranja; Update-Ui; Start-Adb $script:adb }
+    $script:lanIp = $red.Ip
+    if ($red.Publica) {
+        Show-Aviso 'Windows tiene la red «{0}» marcada como Pública, así que el celular no podrá entrar. Si es la red de tu casa, cámbiala a Privada.' 'aviso' 'Abrir configuración' { Start-Process 'ms-settings:network' } -Datos $red.Nombre
+    }
 
-    # 3. ¿Ya hay un panel en marcha en este puerto?
+    # 3. ¿Ya hay un panel en marcha en este puerto? Si es uno de esta misma red, se usa; si no (por ejemplo, uno de una
+    #    versión anterior abierto por cable), se cierra.
     $script:servidor = $null; $script:errServidor = $null
     if (Test-Panel $Puerto) {
         $e = Invoke-PanelApi 'GET' '/api/pc'
         if (-not $e) {
-            Set-Fallo "Hay otra copia del panel abierta en el puerto $Puerto, probablemente en una ventana de consola." 'Cerrarla y continuar' {
+            Set-Fallo 'Hay otra copia del panel abierta en el puerto {0}, probablemente en una ventana de consola.' 'Cerrarla y continuar' {
                 if (Stop-OtraCopia $Puerto) { Start-Sleep -Milliseconds 1000 }
-                Start-Flujo $script:modo
-            }
+                Start-Flujo
+            } -Datos $Puerto
             return
         }
         $proc = Get-ProcesoEnPuerto $Puerto
-        if ($proc -and $e.modo -eq $Modo -and ($Modo -ne 'wifi' -or $e.lanIp -eq $script:lanIp)) { $script:servidor = $proc }
+        if ($proc -and $e.modo -eq 'wifi' -and $e.lanIp -eq $script:lanIp) { $script:servidor = $proc }
         else {
             [void](Invoke-PanelApi 'POST' '/api/pc/detener')
             if ($proc) { [void]$proc.WaitForExit(3000) }
         }
     }
+    if ($script:servidor) { [void](Invoke-PanelApi 'POST' '/api/pc/idioma' @{ idioma = $script:idioma }) }
 
     # 4. Arranca el servidor y espera a que responda
     if (-not $script:servidor) {
         Set-Estado 'Arrancando el servidor…' $C.Naranja; Update-Ui
         try { $script:servidor = Start-PanelServidor $Raiz $Puerto $script:token $script:lanIp }
-        catch { Set-Fallo "No se pudo abrir Node.js: $($_.Exception.Message)" 'Revisar requisitos' { Start-Process (Join-Path $Raiz 'verificar.cmd') }; return }
+        catch { Set-Fallo 'No se pudo abrir Node.js: {0}' 'Revisar requisitos' { Start-Process (Join-Path $Raiz 'verificar.cmd') } -Datos $_.Exception.Message; return }
         $script:errServidor = $script:servidor.StandardError.ReadToEndAsync()
         $ok = $false
         for ($i = 0; $i -lt 40; $i++) {
-            if ((Test-Panel $Puerto) -and (-not $script:lanIp -or (Test-Panel $Puerto $script:lanIp))) { $ok = $true; break }
+            if ((Test-Panel $Puerto) -and (Test-Panel $Puerto $script:lanIp)) { $ok = $true; break }
             if ($script:servidor.HasExited) { break }
             Start-Sleep -Milliseconds 250; Update-Ui
         }
         if (-not $ok) {
             Stop-Servidor
             $detalle = if ($script:errServidor -and $script:errServidor.Wait(1000)) { Format-ErrorServidor $script:errServidor.Result } else { '' }
-            Set-Fallo "El servidor del panel no arrancó$(if ($detalle) { ": $detalle" } else { '.' })" 'Reintentar' { Start-Flujo $script:modo }
+            if ($detalle) { Set-Fallo 'El servidor del panel no arrancó: {0}' 'Reintentar' { Start-Flujo } -Datos $detalle }
+            else { Set-Fallo 'El servidor del panel no arrancó.' 'Reintentar' { Start-Flujo } }
             return
         }
     }
 
     # 5. Listo
-    if ($Modo -eq 'wifi') {
-        Set-Estado "En marcha por Wi-Fi · $($script:lanIp)" $C.Verde -Normal
-        Update-Ui
-        # Si el celular está conectado por cable, se autoriza su IP (si todavía no hay ninguno) y se le abre el panel.
-        if ($script:adb) {
-            $cel = Get-CelularAdb $script:adb
-            if ($cel -and $cel.Estado -eq 'device') {
-                $ip = Get-IpWifiCelular $script:adb $cel.Serial
-                if ($ip -and (Add-CelularPorCable $Raiz $ip) -eq 'agregado') { Add-EventoLocal "Celular autorizado por cable: $ip." 'aprobacion' }
-                Open-PanelEnCelular $script:adb $cel.Serial $script:lanIp $Puerto $script:token
-                Add-EventoLocal 'Panel abierto en el celular, que estaba conectado por cable. Ya puedes desconectarlo.'
-            }
-        }
-    } else {
-        Update-Usb
-    }
+    Set-Estado 'En marcha por Wi-Fi · {0}' $C.Verde -Normal -Datos $script:lanIp
     Update-Tick -Forzar
-}
-
-function Switch-Modo([string]$Modo) {
-    Hide-Aviso
-    Set-Estado "Cambiando a $(Get-NombreModo $Modo)…" $C.Naranja
-    Set-Botones $false
-    Update-Ui
-    Stop-Servidor
-    Start-Flujo $Modo
 }
 
 function Exit-Panel {
@@ -675,50 +783,6 @@ function Exit-Panel {
     $app.Shutdown()
 }
 
-# ---------- Celular por cable: túnel, reconexión y apertura
-function Update-Usb {
-    if ($script:modo -ne 'usb' -or -not $script:adb -or -not $script:servidor) { return }
-    $cel = Get-CelularAdb $script:adb
-    $antes = $script:tunel
-    if (-not $cel -or $cel.Estado -ne 'device') {
-        $script:tunel = $false
-        $ui.AbrirCelular.Visibility = 'Collapsed'
-        if ($antes) { Add-EventoLocal 'Celular desconectado. El panel se vuelve a conectar solo en cuanto conectes el cable.' 'rechazo' }
-        if ($cel -and $cel.Estado -eq 'unauthorized') {
-            Set-Estado 'Esperando permiso en el celular' $C.Naranja -Normal
-            Set-Usb 'Acepta el aviso en el celular' 'Desbloquéalo y pulsa Permitir en «¿Permitir depuración USB?». Marca «Permitir siempre desde este equipo» para que no vuelva a preguntar.' $C.Naranja
-        } elseif ($cel) {
-            Set-Estado 'Conectando con el celular…' $C.Naranja -Normal
-            Set-Usb 'Conectando con el celular…' 'Un momento.' $C.Naranja
-        } else {
-            Set-Estado 'Esperando al celular' $C.Naranja -Normal
-            Set-Usb 'Conecta el celular por cable' 'Con la depuración USB activada. El panel se abrirá solo en cuanto lo conectes.' $C.Naranja
-        }
-        return
-    }
-    if ($cel.Serial -ne $script:serial) {
-        $script:serial = $cel.Serial
-        $script:modelo = Get-ModeloCelular $script:adb $cel.Serial
-        $script:abierto = $false
-    }
-    if (-not (Set-TunelUsb $script:adb $script:serial $Puerto)) {
-        $script:tunel = $false
-        Set-Estado 'No se pudo conectar con el celular' $C.Rojo -Normal
-        Set-Usb 'No se pudo crear el túnel USB' 'Desconecta el cable y vuelve a conectarlo.' $C.Rojo
-        return
-    }
-    $script:tunel = $true
-    if (-not $antes -and $script:abierto) { Add-EventoLocal 'Celular reconectado: el panel volvió a conectarse.' 'aprobacion' }
-    if (-not $script:abierto) {
-        Open-PanelEnCelular $script:adb $script:serial 'localhost' $Puerto $script:token
-        $script:abierto = $true
-        Add-EventoLocal 'Panel abierto en el celular.'
-    }
-    Set-Estado 'En marcha por cable' $C.Verde -Normal
-    Set-Usb 'Celular conectado' "$(if ($script:modelo) { "$($script:modelo) · " })Si desconectas el cable, el panel se vuelve a conectar solo." $C.Teal
-    $ui.AbrirCelular.Visibility = 'Visible'
-}
-
 # ---------- Actualización periódica
 function Update-Tick([switch]$Forzar) {
     if (($script:arrancando -and -not $Forzar) -or $script:saliendo) { return }
@@ -727,30 +791,28 @@ function Update-Tick([switch]$Forzar) {
     if ($script:servidor.HasExited) {
         $detalle = if ($script:errServidor -and $script:errServidor.Wait(500)) { Format-ErrorServidor $script:errServidor.Result } else { '' }
         $script:servidor = $null
-        Set-Fallo "El panel se detuvo$(if ($detalle) { ": $detalle" } else { '.' })" 'Volver a arrancar' { Start-Flujo $script:modo }
+        if ($detalle) { Set-Fallo 'El panel se detuvo: {0}' 'Volver a arrancar' { Start-Flujo } -Datos $detalle }
+        else { Set-Fallo 'El panel se detuvo.' 'Volver a arrancar' { Start-Flujo } }
         return
     }
     $e = Invoke-PanelApi 'GET' '/api/pc'
     if ($e) {
-        if ($script:modo -eq 'wifi') {
-            if (-not $script:qrPuesto -and $e.qr) {
-                Set-Qr @($e.qr)
-                $script:url = $e.url
-                $ui.Direccion.Text = "$($e.lanIp):$($e.puerto)"
-            }
-            Update-Dispositivos $e.dispositivos
+        if (-not $script:qrPuesto -and $e.qr) {
+            Set-Qr @($e.qr)
+            $script:url = $e.url
+            $ui.Direccion.Text = "$($e.lanIp):$($e.puerto)"
         }
+        Update-Dispositivos $e.dispositivos
         $script:eventosServidor = @($e.actividad)
         Update-Actividad
-        if ($e.pendiente) { Set-Estado "$($e.pendiente) pide entrar: responde el aviso del PC" $C.Teal }
-        else { Set-Estado $script:estadoNormal[0] $script:estadoNormal[1] }
+        if ($e.pendiente) { Set-Estado '{0} pide entrar: responde el aviso del PC' $C.Teal -Datos $e.pendiente }
+        else { Set-Estado $script:estadoNormal[0] $script:estadoNormal[1] -Datos $script:estadoNormal[2] }
     }
-    if ($script:modo -eq 'usb' -and ($Forzar -or $script:ticks % 2 -eq 0)) { Update-Usb }
 }
 
 function Remove-Dispositivo([string]$Ip) {
-    $r = [Windows.MessageBox]::Show($w, "¿Quitar $Ip de los dispositivos autorizados?`n`nDejará de poder usar el panel. Si vuelve a escanear el código, este PC te preguntará otra vez.",
-        'Panel del PC', 'YesNo', 'Question')
+    $texto = (TF '¿Quitar {0} de los dispositivos autorizados?' $Ip) + "`n`n" + (T 'Dejará de poder usar el panel. Si vuelve a escanear el código, este PC te preguntará otra vez.')
+    $r = [Windows.MessageBox]::Show($w, $texto, 'Panel del PC', 'YesNo', 'Question')
     if ("$r" -ne 'Yes') { return }
     [void](Invoke-PanelApi 'POST' '/api/pc/quitar' @{ ip = $Ip })
     $script:firmaDispositivos = $null
@@ -775,7 +837,7 @@ function Show-Paginas {
     Update-ListaPaginas
     $ui.VistaPaginas.MinHeight = $ui.VistaConexion.ActualHeight # la ventana no cambia de alto al pasar de una vista a otra
     $ui.VistaConexion.Visibility = 'Collapsed'; $ui.VistaPaginas.Visibility = 'Visible'
-    $ui.AbrirPaginas.Visibility = 'Collapsed'; $ui.Modos.Visibility = 'Collapsed'
+    $ui.AbrirPaginas.Visibility = 'Collapsed'
     $script:enPaginas = $true
 }
 
@@ -784,7 +846,6 @@ function Hide-Paginas {
     $script:enPaginas = $false
     $ui.VistaPaginas.Visibility = 'Collapsed'; $ui.VistaConexion.Visibility = 'Visible'
     $ui.AbrirPaginas.Visibility = 'Visible'
-    $ui.Modos.Visibility = if ($PanelSoloWifi) { 'Collapsed' } else { 'Visible' }
 }
 
 function Save-Paginas($Lista, [string]$Foco) {
@@ -810,7 +871,7 @@ function Set-PaginaVisible([string]$Id, [bool]$Ver) {
 }
 
 function Reset-Paginas {
-    $r = [Windows.MessageBox]::Show($w, '¿Volver al orden original, con todas las páginas?', 'Panel del PC', 'YesNo', 'Question')
+    $r = [Windows.MessageBox]::Show($w, (T '¿Volver al orden original, con todas las páginas?'), 'Panel del PC', 'YesNo', 'Question')
     if ("$r" -eq 'Yes') { Save-Paginas @() }
 }
 
@@ -854,12 +915,16 @@ function Update-TarjetaPagina([string]$Id) {
     else { $m.BorderBrush = Get-Pincel $(if ($activa) { '#59FFFFFF' } else { '#1FFFFFFF' }); $m.BorderThickness = 1 }
 }
 
-# Vista previa de cada página (public\miniaturas\<página>.jpg, las genera herramientas\miniaturas.js). Se cargan una vez;
-# si falta alguna, la tarjeta lo dice y todo lo demás funciona igual.
+# Vista previa de cada página en el idioma de la ventana (public\miniaturas\<página>.jpg, y en inglés en
+# public\miniaturas\en; las genera herramientas\miniaturas.js). Se cargan una vez; si falta la del inglés se usa la del
+# español, y si falta también, la tarjeta lo dice y todo lo demás funciona igual.
 function Get-Miniatura([string]$Id) {
-    if ($script:miniaturas.ContainsKey($Id)) { return $script:miniaturas[$Id] }
+    $clave = "$($script:idioma)|$Id"
+    if ($script:miniaturas.ContainsKey($clave)) { return $script:miniaturas[$clave] }
     $img = $null
     $ruta = Join-Path $Raiz "public\miniaturas\$Id.jpg"
+    $rutaEn = Join-Path $Raiz "public\miniaturas\en\$Id.jpg"
+    if ($script:idioma -eq 'en' -and (Test-Path $rutaEn)) { $ruta = $rutaEn }
     if (Test-Path $ruta) {
         try {
             $img = New-Object Windows.Media.Imaging.BitmapImage
@@ -867,7 +932,7 @@ function Get-Miniatura([string]$Id) {
             $img.Freeze()
         } catch { $img = $null }
     }
-    $script:miniaturas[$Id] = $img
+    $script:miniaturas[$clave] = $img
     $img
 }
 
@@ -884,7 +949,7 @@ function New-Pastilla([string]$Texto, [string]$Color, [string]$Punto) {
         $o.Width = 6; $o.Height = 6; $o.Fill = Get-Pincel $Punto; $o.Margin = '0,1,6,0'; $o.VerticalAlignment = 'Center'
         [void]$sp.Children.Add($o)
     }
-    $t = New-Texto $Texto $Color 11 ([Windows.FontWeights]::SemiBold)
+    $t = New-Texto (T $Texto) $Color 11 ([Windows.FontWeights]::SemiBold)
     $t.TextWrapping = 'NoWrap'
     [void]$sp.Children.Add($t)
     $b.Child = $sp
@@ -901,8 +966,8 @@ function New-Flecha([string]$Id, [int]$Paso, [bool]$Activa, [string]$Nombre) {
     $b.Content = $p
     $b.IsEnabled = $Activa
     $b.Tag = "$Paso|$Id"
-    [Windows.Automation.AutomationProperties]::SetName($b, $(if ($Paso -lt 0) { "Mover $Nombre antes" } else { "Mover $Nombre después" }))
-    $b.ToolTip = if ($Paso -lt 0) { 'Mover antes' } else { 'Mover después' }
+    [Windows.Automation.AutomationProperties]::SetName($b, $(if ($Paso -lt 0) { TF 'Mover {0} antes' $Nombre } else { TF 'Mover {0} después' $Nombre }))
+    $b.ToolTip = if ($Paso -lt 0) { T 'Mover antes' } else { T 'Mover después' }
     $b.Add_Click({ param($s) Invoke-Seguro { $t = ([string]$s.Tag).Split('|', 2); Move-Pagina $t[1] ([int]$t[0]) } })
     $b
 }
@@ -917,11 +982,11 @@ function Update-ListaPaginas([string]$Foco) {
     $visibles = @($l | Where-Object { $_.ver }).Count
     $n = 0; $controles = @{}
     for ($i = 0; $i -lt $l.Count; $i++) {
-        $p = $l[$i]; $ver = [bool]$p.ver; $id = [string]$p.id; $nombre = [string]$p.nombre
+        $p = $l[$i]; $ver = [bool]$p.ver; $id = [string]$p.id; $nombre = T ([string]$p.nombre)
         if ($ver) { $n++ }
         $tarjeta = New-Object Windows.Controls.StackPanel
         $tarjeta.Margin = '0,0,16,16'; $tarjeta.Tag = $id; $tarjeta.AllowDrop = $true; $tarjeta.Background = Get-Pincel '#00000000'
-        $tarjeta.ToolTip = [string]$p.detalle
+        $tarjeta.ToolTip = T ([string]$p.detalle)
 
         # Vista previa
         $vista = New-Object Windows.Controls.Grid
@@ -936,7 +1001,7 @@ function Update-ListaPaginas([string]$Foco) {
             $marco.Background = $pincel
         } else {
             $marco.Background = Get-Pincel $C.Tile2
-            $sin = New-Texto 'Sin vista previa' $C.Apagado 12
+            $sin = New-Texto (T 'Sin vista previa') $C.Apagado 12
             $sin.HorizontalAlignment = 'Center'; $sin.VerticalAlignment = 'Center'
             $marco.Child = $sin
         }
@@ -975,10 +1040,10 @@ function Update-ListaPaginas([string]$Foco) {
         $chk = New-Object Windows.Controls.CheckBox
         $chk.Style = $w.FindResource('Interruptor'); $chk.Padding = '0'; $chk.IsChecked = $ver; $chk.Tag = $id; $chk.VerticalAlignment = 'Center'
         [Windows.Controls.DockPanel]::SetDock($chk, 'Right')
-        [Windows.Automation.AutomationProperties]::SetName($chk, "Mostrar $nombre")
+        [Windows.Automation.AutomationProperties]::SetName($chk, (TF 'Mostrar {0}' $nombre))
         if ($ver -and $visibles -eq 1) {
             $chk.IsEnabled = $false
-            $chk.ToolTip = 'Tiene que quedar al menos una página'
+            $chk.ToolTip = T 'Tiene que quedar al menos una página'
             [Windows.Controls.ToolTipService]::SetShowOnDisabled($chk, $true)
         }
         # Checked/Unchecked (y no Click): así también funciona desde el teclado y con lectores de pantalla.
@@ -1039,11 +1104,13 @@ $tray = New-Object Windows.Forms.NotifyIcon
 try { $tray.Icon = New-Object Drawing.Icon((Join-Path $Raiz 'panel.ico'), [Windows.Forms.SystemInformation]::SmallIconSize) } catch { $tray.Icon = [Drawing.SystemIcons]::Application }
 $tray.Text = 'Panel del PC'
 $menu = New-Object Windows.Forms.ContextMenuStrip
-$item = $menu.Items.Add('Mostrar la ventana'); $item.Font = New-Object Drawing.Font($item.Font, [Drawing.FontStyle]::Bold)
-$item.Add_Click({ Invoke-Seguro { Show-Ventana } })
-$menu.Items.Add('Abrir en este PC').Add_Click({ Invoke-Seguro { Open-EnPc } })
+$itemMostrar = $menu.Items.Add('Mostrar la ventana'); $itemMostrar.Font = New-Object Drawing.Font($itemMostrar.Font, [Drawing.FontStyle]::Bold)
+$itemMostrar.Add_Click({ Invoke-Seguro { Show-Ventana } })
+$itemAbrir = $menu.Items.Add('Abrir en este PC')
+$itemAbrir.Add_Click({ Invoke-Seguro { Open-EnPc } })
 [void]$menu.Items.Add((New-Object Windows.Forms.ToolStripSeparator))
-$menu.Items.Add('Detener el panel').Add_Click({ Invoke-Seguro { Exit-Panel } })
+$itemDetener = $menu.Items.Add('Detener el panel')
+$itemDetener.Add_Click({ Invoke-Seguro { Exit-Panel } })
 $tray.ContextMenuStrip = $menu
 $tray.Add_MouseClick({ param($s, $e) if ($e.Button -eq [Windows.Forms.MouseButtons]::Left) { Invoke-Seguro { Show-Ventana } } })
 $tray.Add_BalloonTipClicked({ Invoke-Seguro { Show-Ventana } })
@@ -1052,15 +1119,12 @@ $tray.Visible = $true
 # ---------- Eventos de la ventana
 $ui.AvisoBoton.Add_Click({ Invoke-Seguro { $accion = $script:avisoAccion; Hide-Aviso; if ($accion) { & $accion } } })
 $ui.Copiar.Add_Click({ Invoke-Seguro {
-    if ($script:url) { [Windows.Clipboard]::SetText($script:url); $ui.Copiar.Content = 'Copiado'; $script:copiadoHasta = (Get-Date).AddSeconds(2) }
+    if ($script:url) { [Windows.Clipboard]::SetText($script:url); $ui.Copiar.Content = T 'Copiado'; $script:copiadoHasta = (Get-Date).AddSeconds(2) }
 } })
 $ui.AbrirPc.Add_Click({ Invoke-Seguro { Open-EnPc } })
 $ui.Detener.Add_Click({ Invoke-Seguro { Exit-Panel } })
-$ui.AbrirCelular.Add_Click({ Invoke-Seguro {
-    if ($script:serial) { Open-PanelEnCelular $script:adb $script:serial 'localhost' $Puerto $script:token; Add-EventoLocal 'Panel abierto otra vez en el celular.' }
-} })
-$ui.ModoWifi.Add_Click({ Invoke-Seguro { if ($script:modo -ne 'wifi') { Switch-Modo 'wifi' } } })
-$ui.ModoUsb.Add_Click({ Invoke-Seguro { if ($script:modo -ne 'usb') { Switch-Modo 'usb' } } })
+$ui.IdiomaEs.Add_Click({ Invoke-Seguro { Set-Idioma 'es' } })
+$ui.IdiomaEn.Add_Click({ Invoke-Seguro { Set-Idioma 'en' } })
 $ui.AbrirPaginas.Add_Click({ Invoke-Seguro { Show-Paginas } })
 $ui.ListoPaginas.Add_Click({ Invoke-Seguro { Hide-Paginas } })
 $ui.RestablecerPaginas.Add_Click({ Invoke-Seguro { Reset-Paginas } })
@@ -1075,8 +1139,8 @@ $w.Add_Closing({ param($s, $e)
     $w.Hide()
     if (-not $script:avisoBandeja) {
         $script:avisoBandeja = $true
-        $tray.ShowBalloonTip(6000, 'El panel sigue funcionando',
-            'Para volver a la ventana, haz clic en este icono o abre el panel desde el menú Inicio. Para cerrarlo del todo, usa «Detener el panel».',
+        $tray.ShowBalloonTip(6000, (T 'El panel sigue funcionando'),
+            (T 'Para volver a la ventana, haz clic en este icono o abre el panel desde el menú Inicio. Para cerrarlo del todo, usa «Detener el panel».'),
             [Windows.Forms.ToolTipIcon]::Info)
     }
 })
@@ -1086,10 +1150,10 @@ $w.Add_SourceInitialized({
 $w.Add_ContentRendered({
     if ($script:inicioHecho) { return }
     $script:inicioHecho = $true
-    [void]$w.Dispatcher.BeginInvoke([Action] { Invoke-Seguro { Start-Flujo $script:modo } }, [Windows.Threading.DispatcherPriority]::Background)
+    [void]$w.Dispatcher.BeginInvoke([Action] { Invoke-Seguro { Start-Flujo } }, [Windows.Threading.DispatcherPriority]::Background)
 })
 
-# Cada 1,5 s: estado del servidor (QR, dispositivos, actividad) y, en modo USB, el cable.
+# Cada 1,5 s: estado del servidor (QR, dispositivos y actividad).
 $reloj = New-Object Windows.Threading.DispatcherTimer
 $reloj.Interval = [TimeSpan]::FromMilliseconds(1500)
 $reloj.Add_Tick({ Invoke-Seguro { Update-Tick } })
@@ -1097,29 +1161,19 @@ $reloj.Add_Tick({ Invoke-Seguro { Update-Tick } })
 $relojSenal = New-Object Windows.Threading.DispatcherTimer
 $relojSenal.Interval = [TimeSpan]::FromMilliseconds(400)
 $relojSenal.Add_Tick({ Invoke-Seguro {
-    foreach ($m in 'wifi', 'usb') {
-        if (-not $senal[$m].WaitOne(0)) { continue }
-        Show-Ventana
-        if ($script:arrancando) { continue }
-        if ($m -ne $script:modo) {
-            Show-Aviso "El panel está abierto en modo $(Get-NombreModo $script:modo)." 'info' "Cambiar a $(Get-NombreModo $m)" ([scriptblock]::Create("Switch-Modo '$m'"))
-        } elseif ($m -eq 'usb' -and $script:tunel) {
-            Open-PanelEnCelular $script:adb $script:serial 'localhost' $Puerto $script:token
-            Add-EventoLocal 'Panel abierto otra vez en el celular.'
-        }
-    }
-    if ($script:copiadoHasta -and (Get-Date) -gt $script:copiadoHasta) { $ui.Copiar.Content = 'Copiar enlace'; $script:copiadoHasta = $null }
+    if ($senal.WaitOne(0)) { Show-Ventana }
+    if ($script:copiadoHasta -and (Get-Date) -gt $script:copiadoHasta) { $script:copiadoHasta = $null; $ui.Copiar.Content = T 'Copiar enlace' }
 } })
 
-Update-VistaModo
-Update-Actividad
+Reset-VistaConexion
+Update-Idioma
 $reloj.Start()
 $relojSenal.Start()
 $app = New-Object Windows.Application
 $app.ShutdownMode = [Windows.ShutdownMode]::OnExplicitShutdown
 $app.Add_DispatcherUnhandledException({ param($s, $e)
     $e.Handled = $true
-    try { Add-EventoLocal "Error inesperado: $($e.Exception.Message)" 'error' } catch { }
+    try { Add-EventoLocal 'Error inesperado: {0}' 'error' $e.Exception.Message } catch { }
 })
 try { [void]$app.Run($w) }
 finally {

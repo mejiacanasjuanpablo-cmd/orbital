@@ -1,11 +1,6 @@
 ﻿# Verificación de requisitos del panel. La usan verificar.ps1, instalar.ps1, iniciar.ps1, ventana.ps1 y empaquetar.ps1.
 # Solo define funciones y listas; no hace nada al cargarse.
 
-# Edición "solo Wi-Fi": la copia que se comparte en Panel-WiFi.zip trae el archivo EDICION-WIFI.txt.
-# Con él, el panel funciona solo por Wi-Fi (sin cable, sin adb y sin modo desarrollador en el celular).
-$PanelMarcaWifi = 'EDICION-WIFI.txt'
-$PanelSoloWifi = Test-Path (Join-Path (Split-Path $PSScriptRoot -Parent) $PanelMarcaWifi)
-
 # Archivos sin los que el panel no funciona (también son los que se empaquetan, junto con la guía y los instaladores).
 $PanelArchivosComunes = @(
     'server.js', 'config.ejemplo.json', 'panel.ico', 'ventana.ps1', 'iniciar.ps1', 'iniciar.cmd',
@@ -14,24 +9,13 @@ $PanelArchivosComunes = @(
     'public\index.html', 'public\espera.html', 'public\manifest.webmanifest', 'public\icon-192.png', 'public\icon-512.png'
 )
 # Vistas previas de las páginas del celular (ventana → Páginas del celular). Van en el .zip, pero no se exigen para
-# arrancar: si falta alguna, la ventana lo indica en esa tarjeta. Las genera herramientas\miniaturas.js.
-$PanelMiniaturas = @('inicio', 'mezclador', 'sistema', 'rendimiento', 'procesos', 'enfoque', 'calendario', 'discord', 'comandos') |
-    ForEach-Object { "public\miniaturas\$_.jpg" }
-# En la edición completa, iniciar.cmd abre el modo USB e iniciar-wifi.cmd el modo Wi-Fi.
-# En la edición solo Wi-Fi, iniciar.cmd abre directamente el modo Wi-Fi.
-$PanelArchivos = if ($PanelSoloWifi) { $PanelArchivosComunes } else { $PanelArchivosComunes + 'iniciar-wifi.cmd' }
+# arrancar: si falta alguna, la ventana lo indica en esa tarjeta. Las genera herramientas\miniaturas.js (en español y en inglés).
+$PanelMiniaturas = foreach ($carpeta in 'public\miniaturas', 'public\miniaturas\en') {
+    foreach ($p in 'inicio', 'mezclador', 'sistema', 'rendimiento', 'procesos', 'enfoque', 'calendario', 'discord', 'comandos') { "$carpeta\$p.jpg" }
+}
+$PanelArchivos = $PanelArchivosComunes
 # server.js usa fetch y AbortSignal.timeout, disponibles desde Node.js 18.
 $PanelNodeMinimo = [version]'18.0.0'
-
-function Find-Adb {
-    $cmd = Get-Command adb -ErrorAction SilentlyContinue
-    if ($cmd) { return $cmd.Source }
-    $candidates = @("$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe", "$env:LOCALAPPDATA\Microsoft\WinGet\Links\adb.exe")
-    $candidates += Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\Google.PlatformTools*" -Recurse -Filter adb.exe -ErrorAction SilentlyContinue |
-        Select-Object -ExpandProperty FullName
-    foreach ($c in $candidates) { if ($c -and (Test-Path $c)) { return $c } }
-    return $null
-}
 
 function Get-NodeVersion {
     try { $v = (Invoke-Oculto 'node' @('--version') -EsperaMs 10000).Salida -replace '^v', ''; if ($v -match '^\d+\.\d+\.\d+') { return [version]$Matches[0] } } catch { }
@@ -39,8 +23,8 @@ function Get-NodeVersion {
 }
 
 # Ejecuta un programa sin abrir ninguna ventana de consola (también desde la ventana del panel) y devuelve
-# su código de salida y lo que escribió. -SinSalida no captura nada: para "adb start-server", cuyo proceso
-# de fondo heredaría la salida y nunca la cerraría.
+# su código de salida y lo que escribió. -SinSalida no captura nada: para programas que dejan un proceso
+# de fondo, que heredaría la salida y nunca la cerraría.
 function Invoke-Oculto {
     param([string]$Programa, [string[]]$Argumentos = @(), [int]$EsperaMs = 15000, [switch]$SinSalida)
     $psi = New-Object Diagnostics.ProcessStartInfo $Programa
@@ -125,19 +109,7 @@ function Get-Requisitos([string]$Raiz, [int]$Puerto = 8787) {
         }
     }
 
-    # 6. adb (solo para el modo USB; la edición solo Wi-Fi no lo usa)
-    $adb = $null
-    if (-not $PanelSoloWifi) {
-        $adb = Find-Adb
-        if ($adb) {
-            $ver = (Invoke-Nativo { & $adb version } | Select-Object -First 1) -replace '.*version ', ''
-            $r += New-Requisito 'adb (modo USB)' 'OK' "versión $ver" $false
-        } else {
-            $r += New-Requisito 'adb (modo USB)' 'AVISO' 'no está instalado; solo hace falta para usar el cable' $false 'Se puede instalar ahora (herramientas oficiales de Google).' 'Adb'
-        }
-    }
-
-    # 7. Puerto del panel
+    # 6. Puerto del panel
     $l = Get-NetTCPConnection -LocalPort $Puerto -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
     if (-not $l) { $r += New-Requisito "Puerto $Puerto" 'OK' 'libre' $true }
     else {
@@ -146,54 +118,28 @@ function Get-Requisitos([string]$Raiz, [int]$Puerto = 8787) {
         else { $r += New-Requisito "Puerto $Puerto" 'FALTA' "lo usa otro programa ($($p.Name))" $true "Cierra ese programa o arranca el panel con otro puerto: .\iniciar.ps1 -Puerto 8788" }
     }
 
-    # 8. Red local (para el modo Wi-Fi; en la edición solo Wi-Fi es obligatoria)
+    # 7. Red local: el celular entra por la red Wi-Fi de la casa
     $cfg = Get-NetIPConfiguration -ErrorAction SilentlyContinue | Where-Object { $_.IPv4DefaultGateway -and $_.NetAdapter.Status -eq 'Up' } |
         Where-Object { $_.IPv4Address.IPAddress -match '^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)' } | Select-Object -First 1
-    if (-not $cfg -and $PanelSoloWifi) { $r += New-Requisito 'Red (modo Wi-Fi)' 'FALTA' 'el PC no está conectado a una red local' $true 'Conecta el PC al router (por cable o Wi-Fi), en la misma red que el celular.' }
-    elseif (-not $cfg) { $r += New-Requisito 'Red (modo Wi-Fi)' 'AVISO' 'el PC no está conectado a una red local' $false 'El modo USB funciona igual. Para el Wi-Fi, conecta el PC al router.' }
+    if (-not $cfg) { $r += New-Requisito 'Red local' 'FALTA' 'el PC no está conectado a una red local' $true 'Conecta el PC al router (por cable o Wi-Fi), en la misma red que el celular.' }
     else {
         $cat = "$((Get-NetConnectionProfile -InterfaceIndex $cfg.InterfaceIndex -ErrorAction SilentlyContinue).NetworkCategory)"
         $ip = @($cfg.IPv4Address.IPAddress)[0]
-        if ($cat -eq 'Public') { $r += New-Requisito 'Red (modo Wi-Fi)' 'AVISO' "$ip en una red marcada como Pública" $false 'Si es la red de tu casa, márcala como Privada: Configuración > Red e Internet > propiedades de la red.' }
-        else { $r += New-Requisito 'Red (modo Wi-Fi)' 'OK' "$ip, red privada" $false }
+        if ($cat -eq 'Public') { $r += New-Requisito 'Red local' 'AVISO' "$ip en una red marcada como Pública" $false 'Si es la red de tu casa, márcala como Privada: Configuración > Red e Internet > propiedades de la red.' }
+        else { $r += New-Requisito 'Red local' 'OK' "$ip, red privada" $true }
     }
 
-    # 9. Firewall de Windows para Node.js (solo para el modo Wi-Fi)
+    # 8. Firewall de Windows para Node.js
     $permitido = $false
     try {
         $permitido = [bool](Get-NetFirewallApplicationFilter -ErrorAction Stop | Where-Object { $_.Program -match '\\node\.exe$' } |
             Get-NetFirewallRule | Where-Object { $_.Enabled -eq 'True' -and $_.Direction -eq 'Inbound' -and $_.Action -eq 'Allow' -and ("$($_.Profile)" -match 'Private|Any') })
     } catch { }
-    if ($permitido) { $r += New-Requisito 'Firewall (modo Wi-Fi)' 'OK' 'Node.js permitido en redes privadas' $false }
-    else { $r += New-Requisito 'Firewall (modo Wi-Fi)' 'INFO' 'Node.js aún no tiene permiso' $false 'La primera vez que abras Panel Wi-Fi, Windows preguntará: permite el acceso en redes privadas.' }
+    if ($permitido) { $r += New-Requisito 'Firewall' 'OK' 'Node.js permitido en redes privadas' $false }
+    else { $r += New-Requisito 'Firewall' 'INFO' 'Node.js aún no tiene permiso' $false 'La primera vez que abras el panel, Windows preguntará: permite el acceso en redes privadas.' }
 
-    # 10. Celular (opcional: solo si está conectado por cable)
-    if ($adb) {
-        Invoke-Nativo { & $adb start-server } | Out-Null
-        $lineas = Invoke-Nativo { & $adb devices } | Select-Object -Skip 1 | Where-Object { $_ -match '\S' -and $_ -notmatch '^\*' }
-        $listo = $lineas | Where-Object { $_ -match '\tdevice$' } | Select-Object -First 1
-        if ($listo) {
-            $serial = ($listo -split "`t")[0]
-            $model = "$(Invoke-Nativo { & $adb -s $serial shell getprop ro.product.model } | Select-Object -First 1)".Trim()
-            $chrome = (Invoke-Nativo { & $adb -s $serial shell pm list packages com.android.chrome }) -join ' '
-            if ($chrome -match 'package:com\.android\.chrome') { $r += New-Requisito 'Celular' 'OK' "$model conectado, con Chrome" $false }
-            else { $r += New-Requisito 'Celular' 'AVISO' "$model conectado, pero sin Google Chrome" $false 'Instala Google Chrome en el celular desde Play Store.' }
-        } elseif ($lineas -match 'unauthorized') {
-            $r += New-Requisito 'Celular' 'AVISO' 'conectado pero sin autorizar' $false "Desbloquéalo y acepta 'Permitir depuración USB' (marca 'Permitir siempre')."
-        } else {
-            $pnp = Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue
-            $adbIf = $pnp | Where-Object { $_.FriendlyName -match 'ADB' }
-            if ($adbIf | Where-Object { $_.Status -ne 'OK' }) {
-                $r += New-Requisito 'Celular' 'AVISO' 'Windows ve el celular pero falla el controlador ADB' $false 'Instala el controlador USB del fabricante del celular (o el Google USB Driver) y vuelve a conectarlo.'
-            } elseif (-not $adbIf -and ($pnp | Where-Object { $_.Class -eq 'WPD' -and $_.FriendlyName -notmatch 'Volume|Volumen' })) {
-                $r += New-Requisito 'Celular' 'INFO' 'hay un dispositivo conectado, pero sin depuración USB' $false 'En el celular: Opciones de desarrollador > activa Depuración USB.'
-            } else {
-                $r += New-Requisito 'Celular' 'INFO' 'no hay ninguno conectado por cable' $false 'Opcional: conéctalo para revisarlo también.'
-            }
-        }
-    }
 
-    # 11. Discord (opcional: solo para la página Discord)
+    # 9. Discord (opcional: solo para la página Discord)
     if (Test-Path "$env:LOCALAPPDATA\Discord\Update.exe") { $r += New-Requisito 'Discord (opcional)' 'OK' 'instalado' $false }
     else { $r += New-Requisito 'Discord (opcional)' 'INFO' 'no está instalado' $false 'Solo hace falta para los botones de la página Discord.' }
 
@@ -228,40 +174,6 @@ function Install-NodeLts {
     }
 }
 
-# Descarga adb directamente de Google (dl.google.com), comprueba la firma digital de Google y lo deja en
-# %LOCALAPPDATA%\Android\Sdk\platform-tools. Es más fiable que winget, cuyo paquete a veces falla por cambios del archivo.
-function Install-AdbGoogle([string]$Destino = "$env:LOCALAPPDATA\Android\Sdk") {
-    $url = 'https://dl.google.com/android/repository/platform-tools-latest-windows.zip'
-    $id = [guid]::NewGuid().ToString('N')
-    $zip = Join-Path $env:TEMP "platform-tools-$id.zip"
-    $tmp = Join-Path $env:TEMP "platform-tools-$id"
-    $prevProg = $ProgressPreference; $ProgressPreference = 'SilentlyContinue'
-    try {
-        Write-Host "Descargando adb desde dl.google.com..." -ForegroundColor Cyan
-        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-        Invoke-WebRequest $url -OutFile $zip -UseBasicParsing
-        Expand-Archive $zip -DestinationPath $tmp -Force
-        $nuevo = Join-Path $tmp 'platform-tools\adb.exe'
-        if (-not (Test-AdbFirmado $nuevo)) { throw 'la firma digital de adb.exe no es de Google; no se instaló' }
-        $actual = Join-Path $Destino 'platform-tools\adb.exe'
-        if (Test-Path $actual) { Invoke-Nativo { & $actual kill-server } | Out-Null; Start-Sleep -Milliseconds 500 }
-        New-Item -ItemType Directory -Force $Destino | Out-Null
-        Copy-Item (Join-Path $tmp 'platform-tools') $Destino -Recurse -Force
-        Write-Host "adb instalado en $Destino\platform-tools" -ForegroundColor Green
-        return $true
-    } catch {
-        Write-Host "No se pudo instalar adb: $($_.Exception.Message)" -ForegroundColor Red
-        return $false
-    } finally {
-        $ProgressPreference = $prevProg
-        Remove-Item $zip, $tmp -Recurse -Force -ErrorAction SilentlyContinue
-    }
-}
-
-function Test-AdbFirmado([string]$Ruta) {
-    $s = Get-AuthenticodeSignature $Ruta
-    return ($s.Status -eq 'Valid' -and $s.SignerCertificate.Subject -match 'O=Google')
-}
 
 # Verifica, muestra el resultado y, si se pide, ofrece instalar lo que falta. Devuelve $true si no falta nada obligatorio.
 function Invoke-Verificacion([string]$Raiz, [int]$Puerto = 8787, [switch]$Instalar, [switch]$SinPreguntas) {
@@ -275,12 +187,11 @@ function Invoke-Verificacion([string]$Raiz, [int]$Puerto = 8787, [switch]$Instal
         $hecho = $false
         foreach ($q in $instalables) {
             Write-Host ""
-            if ($q.Instalar -eq 'Node') { $pregunta = '¿Instalar Node.js LTS ahora? (obligatorio para el panel)' }
-            else { $pregunta = '¿Descargar e instalar adb ahora? (unos 15 MB desde dl.google.com; solo para el modo USB)' }
+            $pregunta = '¿Instalar Node.js LTS ahora? (obligatorio para el panel)'
             if ($SinPreguntas) { Write-Host "$pregunta -> omitido (-SinPreguntas)" -ForegroundColor DarkGray; continue }
             $resp = Read-Host "$pregunta (S/N)"
             if ($resp -notmatch '^(s|si|sí|y|yes)$') { continue }
-            if ($q.Instalar -eq 'Node') { Install-NodeLts } else { [void](Install-AdbGoogle) }
+            Install-NodeLts
             $hecho = $true
         }
         if ($hecho) {

@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
-<title>Panel USB</title>
+<title>Panel del PC</title>
 <style>
   :root {
     --bg: #07090c; --tile: #10141a; --tile-2: #161b23; --line: rgba(255,255,255,.07); --line-2: rgba(255,255,255,.12);
@@ -388,7 +388,7 @@
   <!-- 1 · Inicio -->
   <section class="page" data-id="inicio" data-name="Inicio">
     <div class="tile clock">
-      <div class="strip"><span class="live" id="live"></span><span id="host">PC</span><span class="sep">·</span><span id="linkType">USB</span><span class="sep">·</span><span id="stripVol">–</span><span class="sep">·</span><span id="stripStatus">Conectando…</span><button id="fsBtn" class="fs" aria-label="Pantalla completa"><svg class="i"><use id="fsIcon" href="#i-expand"/></svg></button></div>
+      <div class="strip"><span class="live" id="live"></span><span id="host">PC</span><span class="sep">·</span><span id="linkType">Wi-Fi</span><span class="sep">·</span><span id="stripVol">–</span><span class="sep">·</span><span id="stripStatus">Conectando…</span><button id="fsBtn" class="fs" aria-label="Pantalla completa"><svg class="i"><use id="fsIcon" href="#i-expand"/></svg></button></div>
       <div class="time"><span id="hh">--</span><span class="colon">:</span><span id="mm">--</span><sup id="ss">--</sup></div>
       <div class="date" id="date"></div>
       <div class="meta"><span>Encendido <b id="uptime">–</b></span><span id="cpuModel"></span></div>
@@ -503,6 +503,83 @@
 
 <script>
 (() => {
+  // ---------- Idioma: español o inglés. Lo elige la ventana del panel, en el PC, y llega con cada lectura del estado
+  // (setLang); el celular recuerda el último para no mostrar el otro un instante al abrir. Los textos se escriben en
+  // español: t() da su traducción y rellena {0}, {1}…
+  const EN = {
+    // Textos fijos de la página
+    'Pantalla completa': 'Full screen', 'Conectando…': 'Connecting…', 'Encendido': 'Up for',
+    'Sin reproducción': 'No playback', 'Nada sonando': 'Nothing playing', 'Reproduce algo en el PC': 'Play something on the PC',
+    'Anterior': 'Previous', 'Reproducir o pausar': 'Play or pause', 'Siguiente': 'Next', 'Silenciar': 'Mute', 'Volumen': 'Volume',
+    'Red': 'Network', 'Disco': 'Disk', 'Mezclador de volumen': 'Volume mixer', 'Cargando…': 'Loading…',
+    'CPU · últimos 3 min': 'CPU · last 3 min', 'Bajada': 'Down', 'Subida': 'Up', 'Núcleos': 'Cores',
+    'Más CPU': 'Top CPU', 'Más memoria': 'Top memory', 'agrupado por programa': 'grouped by program',
+    'Enfoque': 'Focus', 'Descanso': 'Break', 'Descanso largo': 'Long break', 'Listo para enfocarte': 'Ready to focus',
+    'Reiniciar': 'Reset', 'Iniciar o pausar': 'Start or pause', 'Saltar': 'Skip',
+    'Tareas': 'Tasks', 'Nueva tarea…': 'New task…', 'Agregar': 'Add',
+    'Mes anterior': 'Previous month', 'Hoy': 'Today', 'Mes siguiente': 'Next month', 'Clima': 'Weather',
+    'Comprobando…': 'Checking…',
+    'Estos botones envían atajos globales. Configúralos una vez en Discord:': 'These buttons send global shortcuts. Set them up once in Discord:',
+    'Ajustes de usuario → Atajos de teclado → Añadir un atajo': 'User Settings → Keybinds → Add a Keybind',
+    'Salida': 'Output', 'Pulsa un comando para ver aquí su resultado.': 'Tap a command to see its result here.',
+    'Cancelar': 'Cancel', 'Sí, hacerlo': 'Yes, do it', 'Salida de audio': 'Audio output', 'Cerrar': 'Close',
+    // Nombres de las páginas
+    'Inicio': 'Home', 'Mezclador': 'Mixer', 'Sistema': 'System', 'Rendimiento': 'Performance', 'Procesos': 'Processes',
+    'Calendario': 'Calendar', 'Comandos': 'Commands',
+    // Textos del código
+    'Este PC': 'This PC', 'el PC no respondió a tiempo': "the PC didn't respond in time",
+    '¿{0}?': '{0}?', 'Ejecutando {0}…': 'Running {0}…', '(sin salida)': '(no output)', 'Error: {0}': 'Error: {0}',
+    'Botón no configurado': 'Button not set up',
+    'Aplicación': 'App', 'General': 'Master', 'Volumen de {0}': '{0} volume', 'Silenciar {0}': 'Mute {0}',
+    'Salida de audio: {0}': 'Audio output: {0}', '. Toca para cambiarla': '. Tap to change it', 'Salida: {0}': 'Output: {0}',
+    'No se pudo cambiar la salida: {0}': "Couldn't switch the output: {0}",
+    'Ninguna aplicación está usando el sonido ahora. Cuando alguna suene, aparecerá aquí.': 'No app is using sound right now. When one plays, it will show up here.',
+    'No se pudo leer el mezclador del PC: {0}': "Couldn't read the PC's mixer: {0}",
+    'Reproductor': 'Player', 'Música': 'Music', 'Reproduciendo': 'Playing',
+    '{0} hilos': '{0} threads', '{0}% de {1} {2}': '{0}% of {1} {2}', '{0} · {1} {2} libres': '{0} · {1} {2} free',
+    'Disco {0}': 'Disk {0}', 'de {0} {1}': 'of {0} {1}', '{0} {1} libres': '{0} {1} free',
+    'Silencio': 'Muted', 'Abierto en el PC': 'Open on the PC', 'Cerrado': 'Closed',
+    'Conectado': 'Connected', 'Token inválido': 'Invalid token', 'Sin conexión': 'No connection', 'Falta el token': 'Token missing',
+    'Recopilando…': 'Collecting…', '{0} procesos': '{0} processes',
+    '¡Sesión terminada! Toca descansar': 'Session done! Time for a break', '¡Descanso terminado! A enfocarse': 'Break over! Back to focus',
+    '{0} · {1} hoy': '{0} · {1} today', 'En pausa': 'Paused', '{0} · {1} sesiones hoy': '{0} · {1} sessions today',
+    '{0} pendiente': '{0} pending', '{0} pendientes': '{0} pending', 'Completar': 'Complete', 'Eliminar': 'Delete',
+    'Sin tareas. Escribe una arriba.': 'No tasks. Write one above.', 'No se pudo guardar: {0}': "Couldn't save: {0}",
+    'Relojes del mundo': 'World clocks', 'Aquí': 'Here', 'igual': 'same',
+    'Despejado': 'Clear', 'Mayormente despejado': 'Mostly clear', 'Parcialmente nublado': 'Partly cloudy', 'Nublado': 'Cloudy',
+    'Niebla': 'Fog', 'Llovizna': 'Drizzle', 'Lluvia': 'Rain', 'Nieve': 'Snow', 'Tormenta': 'Storm',
+    'Desactivado. Para verlo, pon tu ciudad en <code>config.json</code> → <code>"clima"</code> con <code>"activo": true</code>, <code>lat</code> y <code>lon</code>. Los datos vienen de Open-Meteo.':
+      'Turned off. To see it, put your city in <code>config.json</code> → <code>"clima"</code> with <code>"activo": true</code>, <code>lat</code> and <code>lon</code>. The data comes from Open-Meteo.',
+    'No disponible: {0}': 'Not available: {0}', 'Sensación {0}° · Humedad {1}%': 'Feels like {0}° · Humidity {1}%',
+  };
+  let lang = 'es';
+  try { lang = localStorage.getItem('panelLang') || (/^en\b/i.test(navigator.language) ? 'en' : 'es'); } catch {}
+  const t = (texto, ...datos) => datos.reduce((r, d, i) => r.split(`{${i}}`).join(String(d)), (lang === 'en' && EN[texto]) || texto);
+  const locale = () => (lang === 'en' ? 'en' : 'es');
+  // Textos fijos del HTML (y sus aria-label y placeholder), en español, para traducirlos al cambiar de idioma. Solo se
+  // tocan los que siguen igual: los que el código ya cambió se vuelven a dibujar con t().
+  const fijos = [];
+  {
+    const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n; (n = w.nextNode());) {
+      const k = n.nodeValue.trim();
+      if (EN[k] && !n.parentElement.closest('script')) fijos.push({ n, k, cur: k });
+    }
+    document.body.querySelectorAll('[aria-label],[placeholder]').forEach((el) => ['aria-label', 'placeholder'].forEach((a) => {
+      const k = el.getAttribute(a); if (k && EN[k]) fijos.push({ el, a, k, cur: k });
+    }));
+  }
+  function traducirFijos() {
+    for (const f of fijos) {
+      const nuevo = t(f.k);
+      if (f.n) { if (f.n.nodeValue.trim() !== f.cur) continue; f.n.nodeValue = f.n.nodeValue.replace(f.cur, nuevo); }
+      else { if (f.el.getAttribute(f.a) !== f.cur) continue; f.el.setAttribute(f.a, nuevo); }
+      f.cur = nuevo;
+    }
+  }
+  document.documentElement.lang = lang;
+  traducirFijos();
+
   // El token llega en el fragmento (#t=...), que nunca se envía al servidor.
   const fromHash = new URLSearchParams(location.hash.slice(1)).get('t');
   // Se guarda para que el icono de la pantalla de inicio funcione sin volver a pasar el token.
@@ -511,7 +588,8 @@
   if (fromHash) history.replaceState(null, '', location.pathname);
 
   const $ = (id) => document.getElementById(id);
-  $('linkType').textContent = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? 'USB' : 'Wi-Fi';
+  const linkType = () => { $('linkType').textContent = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? t('Este PC') : 'Wi-Fi'; };
+  linkType();
   // Cada petición tiene un tiempo máximo: si Chrome congela la pestaña o se corta la red, una petición colgada
   // no bloquea las siguientes (los comandos pueden tardar hasta 60 s; el resto, 10 s).
   const api = async (path, opts = {}) => {
@@ -523,7 +601,7 @@
       if (!r.ok) throw new Error(body.error || r.status);
       return body;
     } catch (e) {
-      throw e.name === 'AbortError' ? new Error('el PC no respondió a tiempo') : e;
+      throw e.name === 'AbortError' ? new Error(t('el PC no respondió a tiempo')) : e;
     } finally { clearTimeout(timer); }
   };
   const buzz = () => { try { navigator.vibrate && navigator.vibrate(10); } catch {} };
@@ -548,7 +626,7 @@
   };
   function buildDots() {
     dots.replaceChildren(...pages.map((p, i) => {
-      const b = document.createElement('button'); b.setAttribute('aria-label', p.dataset.name); b.onclick = () => go(i); return b;
+      const b = document.createElement('button'); b.setAttribute('aria-label', t(p.dataset.name)); b.onclick = () => go(i); return b;
     }));
   }
   function applyPages(ids) {
@@ -590,17 +668,17 @@
   // ---------- Acciones
   async function run(item, el) {
     buzz();
-    if (item.confirm && !(await confirmSheet(`¿${item.label}?`))) return;
+    if (item.confirm && !(await confirmSheet(t('¿{0}?', item.label)))) return;
     el && (el.classList.remove('ok', 'err'), el.classList.add('busy'));
-    if (item.type === 'command') { $('console').innerHTML = `<span class="hint">Ejecutando ${esc(item.label)}…</span>`; $('consoleMeta').textContent = ''; }
+    if (item.type === 'command') { $('console').innerHTML = `<span class="hint">${esc(t('Ejecutando {0}…', item.label))}</span>`; $('consoleMeta').textContent = ''; }
     try {
       const r = await api('/api/action', { method: 'POST', body: JSON.stringify({ id: item.id }) });
       el && (el.classList.remove('busy'), el.classList.add(r.code === 0 ? 'ok' : 'err'));
       if (r.showOutput) {
-        $('console').innerHTML = (esc(r.stdout) || '<span class="hint">(sin salida)</span>') + (r.stderr ? `\n\n<span class="err">${esc(r.stderr)}</span>` : '');
+        $('console').innerHTML = (esc(r.stdout) || `<span class="hint">${t('(sin salida)')}</span>`) + (r.stderr ? `\n\n<span class="err">${esc(r.stderr)}</span>` : '');
         $('consoleMeta').textContent = `${item.label} · ${r.ms} ms`;
-      } else if (r.code !== 0) toast('Error: ' + (r.stderr || r.code));
-    } catch (e) { el && (el.classList.remove('busy'), el.classList.add('err')); toast('Error: ' + e.message); }
+      } else if (r.code !== 0) toast(t('Error: {0}', r.stderr || r.code));
+    } catch (e) { el && (el.classList.remove('busy'), el.classList.add('err')); toast(t('Error: {0}', e.message)); }
     el && setTimeout(() => el.classList.remove('ok', 'err'), 1200);
     setTimeout(tick, 500);
   }
@@ -622,7 +700,7 @@
     mediaItems = Object.fromEntries(by('media').map((i) => [i.id, i]));
   }
   document.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', () => {
-    const item = mediaItems[b.dataset.act]; if (!item) return toast('Botón no configurado');
+    const item = mediaItems[b.dataset.act]; if (!item) return toast(t('Botón no configurado'));
     if (b.dataset.act === 'playpause' && lastMedia) { lastMedia.status = lastMedia.status === 'playing' ? 'paused' : 'playing'; renderMedia(lastMedia, true); }
     run(item, null);
   }));
@@ -643,12 +721,12 @@
   const mixBox = $('mixChans'), mixEmpty = $('mixEmpty'), GENERAL = '__general';
   const mixEls = new Map(), mixIcons = {}, mixIconAsked = new Set(), mixHold = {};
   let mixDrag = null, mixTimer = null, mixBusy = false;
-  const mixName = (n) => String(n || 'Aplicación').replace(/\s+(Internet|Web)?\s*Browser$/i, '');
+  const mixName = (n) => String(n || t('Aplicación')).replace(/\s+(Internet|Web)?\s*Browser$/i, '');
   function mixSend(k, body) {
     const req = k === GENERAL
       ? api('/api/volume', { method: 'POST', body: JSON.stringify(body.nivel != null ? { level: body.nivel } : { muted: body.silencio }) })
       : api('/api/mixer', { method: 'POST', body: JSON.stringify({ clave: k, ...body }) });
-    req.catch((e) => toast('Error: ' + e.message));
+    req.catch((e) => toast(t('Error: {0}', e.message)));
     if (k === GENERAL) volDragUntil = Date.now() + 2500;
   }
   function setMixIcon(el, a) {
@@ -670,13 +748,13 @@
   function newChan(a) {
     const el = document.createElement('div');
     el.className = 'chan' + (a.clave === GENERAL ? ' master' : ''); el.dataset.k = a.clave;
-    const nombre = a.clave === GENERAL ? 'General' : mixName(a.nombre);
+    const nombre = a.clave === GENERAL ? t('General') : mixName(a.nombre);
     el.innerHTML = `<div class="ico"></div><div class="nm"></div>
       <div class="fader" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100"><div class="lvl"></div><div class="mtr"><i></i></div><div class="knob"></div></div>
       <div class="pct">0</div><button class="mute"><svg class="i"><use href="#i-vol"/></svg></button>`;
     el.querySelector('.nm').textContent = nombre;
-    el.querySelector('.fader').setAttribute('aria-label', 'Volumen de ' + nombre);
-    el.querySelector('.mute').setAttribute('aria-label', 'Silenciar ' + nombre);
+    el.querySelector('.fader').setAttribute('aria-label', t('Volumen de {0}', nombre));
+    el.querySelector('.mute').setAttribute('aria-label', t('Silenciar {0}', nombre));
     setMixIcon(el, a);
     const f = el.querySelector('.fader'), k = a.clave;
     let lastSent = 0, trailing = null;
@@ -715,7 +793,7 @@
   }
   // Salida de audio: el botón de arriba muestra la actual; al tocarlo se elige otra, como en el icono del volumen de Windows.
   const OUT_ICON = { audifonos: 'headphones', pantalla: 'monitor', altavoces: 'vol' };
-  const outParts = (n) => { const m = /^(.*?)\s*\((.+)\)$/.exec(n || ''); return m ? [m[1], m[2]] : [n || 'Salida', '']; };
+  const outParts = (n) => { const m = /^(.*?)\s*\((.+)\)$/.exec(n || ''); return m ? [m[1], m[2]] : [n || t('Salida'), '']; };
   let mixOuts = [], mixOutId = '', outHold = null, outSig = '';
   function renderOut(m) {
     mixOuts = m.salidas || [];
@@ -727,7 +805,7 @@
     b.disabled = mixOuts.length < 2;
     $('mixDev').textContent = nombre;
     $('mixOutIcon').setAttribute('href', '#i-' + (OUT_ICON[cur && cur.tipo] || 'vol'));
-    b.setAttribute('aria-label', 'Salida de audio: ' + nombre + (b.disabled ? '' : '. Toca para cambiarla'));
+    b.setAttribute('aria-label', t('Salida de audio: {0}', nombre) + (b.disabled ? '' : t('. Toca para cambiarla')));
     if ($('outSheet').classList.contains('open')) renderOutList();
   }
   // La lista se vuelve a dibujar solo si cambió (llega una lectura nueva 4 veces por segundo y no debe perderse un toque).
@@ -757,10 +835,10 @@
     outHold = { id, until: Date.now() + 4000 };   // y una lectura que salió antes del cambio no la devuelve a la anterior
     try {
       const r = await api('/api/mixer/salida', { method: 'POST', body: JSON.stringify({ id }) });
-      toast('Salida: ' + outParts(r.nombre || (s && s.nombre))[0]);
+      toast(t('Salida: {0}', outParts(r.nombre || (s && s.nombre))[0]));
     } catch (err) {
       outHold = null;
-      toast('No se pudo cambiar la salida: ' + err.message);
+      toast(t('No se pudo cambiar la salida: {0}', err.message));
     }
   };
   function renderMixer(m) {
@@ -782,7 +860,7 @@
       prev = el;
     }
     mixEmpty.hidden = !!(m.apps && m.apps.length);
-    mixEmpty.textContent = 'Ninguna aplicación está usando el sonido ahora. Cuando alguna suene, aparecerá aquí.';
+    mixEmpty.textContent = t('Ninguna aplicación está usando el sonido ahora. Cuando alguna suene, aparecerá aquí.');
   }
   async function mixTick() {
     clearTimeout(mixTimer); mixTimer = null;
@@ -790,31 +868,31 @@
     if (!mixBusy) {
       mixBusy = true;
       try { renderMixer(await api('/api/mixer')); }
-      catch (e) { mixEmpty.hidden = false; mixEmpty.textContent = 'No se pudo leer el mezclador del PC: ' + e.message; }
+      catch (e) { mixEmpty.hidden = false; mixEmpty.textContent = t('No se pudo leer el mezclador del PC: {0}', e.message); }
       mixBusy = false;
     }
     mixTimer = setTimeout(mixTick, 250);
   }
   const mixWake = () => { if (!mixTimer && !mixBusy) mixTick(); };
+  function resetMixer() { for (const el of mixEls.values()) el.remove(); mixEls.clear(); outSig = ''; }
   pagesEl.addEventListener('scroll', () => { clearTimeout(mixWake.t); mixWake.t = setTimeout(mixWake, 120); });
   document.addEventListener('visibilitychange', mixWake);
   setTimeout(mixWake, 300);
 
   // ---------- Reloj
-  const dateFmt = new Intl.DateTimeFormat('es', { weekday: 'long', day: 'numeric', month: 'long' });
   const pad = (n) => String(n).padStart(2, '0');
-  function clock() { const d = new Date(); $('hh').textContent = pad(d.getHours()); $('mm').textContent = pad(d.getMinutes()); $('ss').textContent = pad(d.getSeconds()); const t = dateFmt.format(d); $('date').textContent = t.charAt(0).toUpperCase() + t.slice(1); }
+  function clock() { const d = new Date(); $('hh').textContent = pad(d.getHours()); $('mm').textContent = pad(d.getMinutes()); $('ss').textContent = pad(d.getSeconds()); const f = new Intl.DateTimeFormat(locale(), { weekday: 'long', day: 'numeric', month: 'long' }).format(d); $('date').textContent = f.charAt(0).toUpperCase() + f.slice(1); }
   clock(); setInterval(clock, 1000);
 
   // ---------- Música
   let lastMedia = null, mediaAt = 0, artKey = null;
   const mmss = (s) => { s = Math.max(0, Math.round(s || 0)); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60); return (h ? h + ':' + pad(m) : m) + ':' + pad(s % 60); };
   const appName = (id) => { id = (id || '').toLowerCase();
-    for (const [k, v] of [['spotify', 'Spotify'], ['opera', 'Opera'], ['chrome', 'Chrome'], ['msedge', 'Edge'], ['firefox', 'Firefox'], ['zune', 'Reproductor'], ['vlc', 'VLC'], ['music', 'Música']]) if (id.includes(k)) return v;
-    return id ? id.split(/[!.\\]/)[0] : 'Reproduciendo'; };
+    for (const [k, v] of [['spotify', 'Spotify'], ['opera', 'Opera'], ['chrome', 'Chrome'], ['msedge', 'Edge'], ['firefox', 'Firefox'], ['zune', t('Reproductor')], ['vlc', 'VLC'], ['music', t('Música')]]) if (id.includes(k)) return v;
+    return id ? id.split(/[!.\\]/)[0] : t('Reproduciendo'); };
   function renderMedia(m, optimistic) {
     lastMedia = m; if (!optimistic) mediaAt = Date.now();
-    if (!m) { $('mediaApp').textContent = 'Sin reproducción'; $('mediaTitle').textContent = 'Nada sonando'; $('mediaArtist').textContent = 'Reproduce algo en el PC';
+    if (!m) { $('mediaApp').textContent = t('Sin reproducción'); $('mediaTitle').textContent = t('Nada sonando'); $('mediaArtist').textContent = t('Reproduce algo en el PC');
       $('mediaBar').style.width = '0'; $('mediaPos').textContent = $('mediaDur').textContent = '0:00'; $('ppIcon').setAttribute('href', '#i-play'); setArt(null); return; }
     $('mediaApp').textContent = appName(m.app); $('mediaTitle').textContent = m.title; $('mediaArtist').textContent = m.artist || '';
     $('ppIcon').setAttribute('href', m.status === 'playing' ? '#i-pause' : '#i-play'); progress();
@@ -851,6 +929,8 @@
   const push = (k, v) => { hist[k].push(v); if (hist[k].length > 40) hist[k].shift(); };
   const R = 42, C = 2 * Math.PI * R, ARC = 0.75;
   function ring(el, label, color, pct, value, unit, sub) {
+    if (el.firstChild && el.dataset.label !== label) el.innerHTML = '';
+    el.dataset.label = label;
     if (!el.firstChild) el.innerHTML = `<div class="g"><svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="${R}" stroke-dasharray="${C * ARC} ${C}"/><circle class="arc" cx="50" cy="50" r="${R}" stroke="${color}" stroke-dasharray="${C * ARC} ${C}" stroke-dashoffset="${C * ARC}"/></svg><div class="n"></div></div><div class="cap" style="color:${color}">${esc(label)}</div><div class="s"></div>`;
     el.querySelector('.arc').style.strokeDashoffset = C * ARC * (1 - Math.max(0, Math.min(100, pct)) / 100);
     el.querySelector('.n').innerHTML = `<span>${esc(value)}<small>${esc(unit)}</small></span>`; el.querySelector('.s').textContent = sub;
@@ -860,45 +940,46 @@
   const fmtB = (b, d) => { const u = ['B', 'KB', 'MB', 'GB', 'TB']; let i = 0; while (b >= 1024 && i < 4) { b /= 1024; i++; } return [b.toFixed(d ?? (b < 10 && i ? 1 : 0)), u[i]]; };
   const fmtUp = (u) => { const d = Math.floor(u / 86400), h = Math.floor((u % 86400) / 3600), m = Math.floor((u % 3600) / 60); return (d ? d + ' d ' : '') + h + ' h ' + m + ' min'; };
   function render(s) {
+    setLang(s.idioma);
     applyPages(s.paginas);
     $('host').textContent = s.host; $('uptime').textContent = fmtUp(s.uptime); $('cpuModel').textContent = s.cpu.model || '';
     const cpu = s.cpu.percent; push('cpu', cpu);
-    $('cpuV').innerHTML = `${Math.round(cpu)}<small>%</small>`; $('cpuS').textContent = `${s.cpu.cores} hilos`;
+    $('cpuV').innerHTML = `${Math.round(cpu)}<small>%</small>`; $('cpuS').textContent = t('{0} hilos', s.cpu.cores);
     const used = s.mem.total - s.mem.free, rp = (used / s.mem.total) * 100; push('ram', rp);
     const [uv, uu] = fmtB(used, 1), [tv, tu] = fmtB(s.mem.total, 0);
-    $('ramV').innerHTML = `${uv}<small>${uu}</small>`; $('ramS').textContent = `${Math.round(rp)}% de ${tv} ${tu}`;
+    $('ramV').innerHTML = `${uv}<small>${uu}</small>`; $('ramS').textContent = t('{0}% de {1} {2}', Math.round(rp), tv, tu);
     const rx = s.net.rxBps || 0, tx = s.net.txBps || 0; push('net', rx + tx);
     const [rv, ru] = fmtB(rx), [xv, xu] = fmtB(tx);
     $('netV').innerHTML = `${rv}<small>${ru}/s</small>`; $('netS').textContent = `↓ ${rv} ${ru}/s · ↑ ${xv} ${xu}/s`;
     const disks = s.disks || [], d0 = disks[0];
     if (d0) { const p = ((d0.total - d0.free) / d0.total) * 100; push('disk', p); const [fv, fu] = fmtB(d0.free);
-      $('diskV').innerHTML = `${Math.round(p)}<small>%</small>`; $('diskS').textContent = `${d0.name} · ${fv} ${fu} libres`; }
+      $('diskV').innerHTML = `${Math.round(p)}<small>%</small>`; $('diskS').textContent = t('{0} · {1} {2} libres', d0.name, fv, fu); }
     drawSparks();
 
-    ring($('ringCpu'), 'CPU', colors.cpu, cpu, Math.round(cpu), '%', `${s.cpu.cores} hilos`);
-    ring($('ringRam'), 'RAM', colors.ram, rp, uv, uu, `de ${tv} ${tu}`);
+    ring($('ringCpu'), 'CPU', colors.cpu, cpu, Math.round(cpu), '%', t('{0} hilos', s.cpu.cores));
+    ring($('ringRam'), 'RAM', colors.ram, rp, uv, uu, t('de {0} {1}', tv, tu));
     [[$('ringD1'), disks[0], colors.disk], [$('ringD2'), disks[1], colors.net]].forEach(([el, d, c]) => {
       el.style.visibility = d ? '' : 'hidden'; if (!d) return;
       const p = ((d.total - d.free) / d.total) * 100, [fv, fu] = fmtB(d.free);
-      ring(el, 'Disco ' + d.name, c, p, Math.round(p), '%', `${fv} ${fu} libres`);
+      ring(el, t('Disco {0}', d.name), c, p, Math.round(p), '%', t('{0} {1} libres', fv, fu));
     });
 
     if (s.volume && s.volume.level != null && Date.now() > volDragUntil) {
       volMuted = !!s.volume.muted; paintVol(s.volume.level); $('volIcon').setAttribute('href', volMuted ? '#i-mute' : '#i-vol');
     }
-    $('stripVol').textContent = s.volume && s.volume.level != null ? (s.volume.muted ? 'Silencio' : `Vol ${s.volume.level}%`) : 'Vol –';
+    $('stripVol').textContent = s.volume && s.volume.level != null ? (s.volume.muted ? t('Silencio') : `Vol ${s.volume.level}%`) : 'Vol –';
     renderMedia(s.media); syncArt(s.artKey);
     renderPerf(s, rp); renderProcs(s.procs);
     const dOn = !!(s.apps && s.apps.discord);
-    $('dcLive').classList.toggle('on', dOn); $('dcState').textContent = dOn ? 'Abierto en el PC' : 'Cerrado';
+    $('dcLive').classList.toggle('on', dOn); $('dcState').textContent = dOn ? t('Abierto en el PC') : t('Cerrado');
   }
 
   function online(on, text) { $('live').classList.toggle('on', on); $('stripStatus').textContent = text; }
   let cfgLoaded = false, busy = false;
   async function tick() {
     if (busy) return; busy = true;
-    try { if (!cfgLoaded) { await loadConfig(); cfgLoaded = true; loadTasks(); loadWeather(); } render(await api('/api/stats')); online(true, 'Conectado'); }
-    catch (e) { online(false, String(e.message).includes('token') ? 'Token inválido' : 'Sin conexión'); }
+    try { if (!cfgLoaded) { await loadConfig(); cfgLoaded = true; loadTasks(); loadWeather(); } render(await api('/api/stats')); online(true, t('Conectado')); }
+    catch (e) { online(false, String(e.message).includes('token') ? t('Token inválido') : t('Sin conexión')); }
     busy = false;
   }
   // ---------- Gráficas grandes (Rendimiento)
@@ -950,11 +1031,11 @@
     el.innerHTML = rows.map((p) => {
       const v = valueOf(p), w = max > 0 ? Math.max(2, (v / max) * 100) : 0;
       return `<div class="prow"><div class="fill" style="width:${w}%"></div><span class="nm">${esc(p.name)}${p.count > 1 ? `<em>×${p.count}</em>` : ''}</span><span class="val">${esc(label(p))}</span></div>`;
-    }).join('') || '<div class="prow"><span class="nm" style="color:var(--dim)">Recopilando…</span></div>';
+    }).join('') || `<div class="prow"><span class="nm" style="color:var(--dim)">${t('Recopilando…')}</span></div>`;
   }
   function renderProcs(p) {
     if (!p) return;
-    $('procCount').textContent = `${p.total} procesos`;
+    $('procCount').textContent = t('{0} procesos', p.total);
     procRows($('procCpu'), p.byCpu, (x) => x.cpu, (x) => x.cpu.toFixed(x.cpu < 1 ? 2 : 1) + '%', Math.max(5, ...(p.byCpu || []).map((x) => x.cpu)));
     const memMax = Math.max(...(p.byMem || []).map((x) => x.mem), 1);
     procRows($('procMem'), p.byMem, (x) => x.mem, (x) => fmtB(x.mem, 1).join(' '), memMax);
@@ -984,14 +1065,15 @@
     const left = pomoLeft(), total = pomoTotal();
     if (pomo.endAt && left <= 0) {
       try { navigator.vibrate && navigator.vibrate([300, 150, 300, 150, 600]); } catch {}
-      beep(); toast(pomo.mode === 'enfoque' ? '¡Sesión terminada! Toca descansar' : '¡Descanso terminado! A enfocarse'); return pomoNext(true);
+      beep(); toast(pomo.mode === 'enfoque' ? t('¡Sesión terminada! Toca descansar') : t('¡Descanso terminado! A enfocarse')); return pomoNext(true);
     }
     const m = Math.floor(left / 60), s = Math.floor(left % 60);
     $('pomoTime').textContent = `${pad(m)}:${pad(s)}`;
     $('pomoArc').style.strokeDashoffset = 282.74 * (1 - left / total);
     $('pomoArc').setAttribute('stroke', POMO_COLOR[pomo.mode]);
     $('pomoGoIcon').setAttribute('href', pomo.endAt ? '#i-pause' : '#i-play');
-    $('pomoLabel').textContent = pomo.endAt ? `${POMO_LABEL[pomo.mode]} · ${pomo.done} hoy` : (left < total ? 'En pausa' : `${POMO_LABEL[pomo.mode]} · ${pomo.done} sesiones hoy`);
+    const modo = t(POMO_LABEL[pomo.mode]);
+    $('pomoLabel').textContent = pomo.endAt ? t('{0} · {1} hoy', modo, pomo.done) : (left < total ? t('En pausa') : t('{0} · {1} sesiones hoy', modo, pomo.done));
     [...$('pomoModes').children].forEach((b) => b.classList.toggle('on', b.dataset.m === pomo.mode));
   }
   $('pomoGo').onclick = () => { buzz(); if (pomo.endAt) { pomo.left = pomoLeft(); pomo.endAt = null; } else { pomo.endAt = Date.now() + pomoLeft() * 1000; pomo.left = null; } savePomo(); renderPomo(); };
@@ -1004,11 +1086,11 @@
   let tasks = [];
   function renderTasks() {
     const pend = tasks.filter((t) => !t.done).length;
-    $('taskCount').textContent = tasks.length ? `${pend} pendiente${pend === 1 ? '' : 's'}` : '';
-    $('taskList').innerHTML = tasks.length ? tasks.map((t) => `<div class="titem${t.done ? ' done' : ''}" data-id="${esc(t.id)}"><button class="ck" data-a="toggle" aria-label="Completar">${t.done ? '<svg class="i" style="font-size:13px"><use href="#i-check"/></svg>' : ''}</button><span class="tx" data-a="toggle">${esc(t.text)}</span><button class="rm" data-a="rm" aria-label="Eliminar">✕</button></div>`).join('')
-      : '<div class="hint">Sin tareas. Escribe una arriba.</div>';
+    $('taskCount').textContent = tasks.length ? t(pend === 1 ? '{0} pendiente' : '{0} pendientes', pend) : '';
+    $('taskList').innerHTML = tasks.length ? tasks.map((x) => `<div class="titem${x.done ? ' done' : ''}" data-id="${esc(x.id)}"><button class="ck" data-a="toggle" aria-label="${t('Completar')}">${x.done ? '<svg class="i" style="font-size:13px"><use href="#i-check"/></svg>' : ''}</button><span class="tx" data-a="toggle">${esc(x.text)}</span><button class="rm" data-a="rm" aria-label="${t('Eliminar')}">✕</button></div>`).join('')
+      : `<div class="hint">${t('Sin tareas. Escribe una arriba.')}</div>`;
   }
-  async function saveTasks() { renderTasks(); try { tasks = await api('/api/tasks', { method: 'PUT', body: JSON.stringify(tasks) }); renderTasks(); } catch (e) { toast('No se pudo guardar: ' + e.message); } }
+  async function saveTasks() { renderTasks(); try { tasks = await api('/api/tasks', { method: 'PUT', body: JSON.stringify(tasks) }); renderTasks(); } catch (e) { toast(t('No se pudo guardar: {0}', e.message)); } }
   async function loadTasks() { try { const r = await api('/api/tasks'); tasks = Array.isArray(r) ? r : (r.value || []); } catch {} renderTasks(); }
   $('taskForm').onsubmit = (e) => { e.preventDefault(); const v = $('taskInput').value.trim(); if (!v) return; buzz(); tasks.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text: v, done: false }); $('taskInput').value = ''; saveTasks(); };
   $('taskList').onclick = (e) => {
@@ -1022,10 +1104,10 @@
   let calOffset = 0, clocks = [];
   function renderCal() {
     const now = new Date(), base = new Date(now.getFullYear(), now.getMonth() + calOffset, 1);
-    const mt = new Intl.DateTimeFormat('es', { month: 'long', year: 'numeric' }).format(base);
+    const mt = new Intl.DateTimeFormat(locale(), { month: 'long', year: 'numeric' }).format(base);
     $('calTitle').textContent = mt.charAt(0).toUpperCase() + mt.slice(1);
     const start = (base.getDay() + 6) % 7, first = new Date(base); first.setDate(1 - start);
-    let html = ['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d) => `<div class="dn">${d}</div>`).join('');
+    let html = (lang === 'en' ? ['M', 'T', 'W', 'T', 'F', 'S', 'S'] : ['L', 'M', 'X', 'J', 'V', 'S', 'D']).map((d) => `<div class="dn">${d}</div>`).join('');
     for (let i = 0; i < 42; i++) {
       const d = new Date(first); d.setDate(first.getDate() + i);
       const cls = ['d', d.getMonth() !== base.getMonth() && 'out', (d.getDay() === 0 || d.getDay() === 6) && 'we', d.toDateString() === now.toDateString() && 'today'].filter(Boolean).join(' ');
@@ -1038,44 +1120,61 @@
   $('calToday').onclick = () => { calOffset = 0; renderCal(); };
   function renderClocks() {
     const now = new Date(), localOff = -now.getTimezoneOffset();
-    const list = [{ nombre: 'Aquí', zona: Intl.DateTimeFormat().resolvedOptions().timeZone }, ...clocks];
-    $('wclocks').innerHTML = '<span class="cap" style="color:var(--sky);grid-column:1/-1;margin-bottom:4px">Relojes del mundo</span>' + list.map((c) => {
-      let t = '--:--', diff = '';
+    const list = [{ nombre: t('Aquí'), zona: Intl.DateTimeFormat().resolvedOptions().timeZone, aqui: true }, ...clocks];
+    $('wclocks').innerHTML = `<span class="cap" style="color:var(--sky);grid-column:1/-1;margin-bottom:4px">${t('Relojes del mundo')}</span>` + list.map((c) => {
+      let hora = '--:--', diff = '';
       try {
-        t = new Intl.DateTimeFormat('es', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: c.zona }).format(now);
+        hora = new Intl.DateTimeFormat(locale(), { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: c.zona }).format(now);
         const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: c.zona, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' }).formatToParts(now).map((x) => [x.type, x.value]));
         const off = Math.round((Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute) - Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes())) / 60000);
-        const d = (off - localOff) / 60; diff = d === 0 ? (c.nombre === 'Aquí' ? '' : 'igual') : (d > 0 ? '+' : '') + d + ' h';
+        const d = (off - localOff) / 60; diff = d === 0 ? (c.aqui ? '' : t('igual')) : (d > 0 ? '+' : '') + d + ' h';
       } catch {}
-      return `<div class="wc"><div class="n">${esc(c.nombre)}</div><div class="t">${t}<small>${diff}</small></div></div>`;
+      return `<div class="wc"><div class="n">${esc(c.nombre)}</div><div class="t">${hora}<small>${diff}</small></div></div>`;
     }).join('');
   }
   setInterval(() => { renderClocks(); if (new Date().getSeconds() === 0) renderCal(); }, 1000);
 
   // ---------- Clima
   const WX = (code, day = true) => {
-    if (code === 0 || code === 1) return [day ? 'sun' : 'moonsm', code === 0 ? 'Despejado' : 'Mayormente despejado'];
-    if (code === 2) return ['cloudsun', 'Parcialmente nublado'];
-    if (code === 3) return ['cloud', 'Nublado'];
-    if (code === 45 || code === 48) return ['fog', 'Niebla'];
-    if (code >= 51 && code <= 57) return ['rain', 'Llovizna'];
-    if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return ['rain', 'Lluvia'];
-    if ((code >= 71 && code <= 77) || code === 85 || code === 86) return ['snow', 'Nieve'];
-    if (code >= 95) return ['storm', 'Tormenta'];
+    if (code === 0 || code === 1) return [day ? 'sun' : 'moonsm', t(code === 0 ? 'Despejado' : 'Mayormente despejado')];
+    if (code === 2) return ['cloudsun', t('Parcialmente nublado')];
+    if (code === 3) return ['cloud', t('Nublado')];
+    if (code === 45 || code === 48) return ['fog', t('Niebla')];
+    if (code >= 51 && code <= 57) return ['rain', t('Llovizna')];
+    if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return ['rain', t('Lluvia')];
+    if ((code >= 71 && code <= 77) || code === 85 || code === 86) return ['snow', t('Nieve')];
+    if (code >= 95) return ['storm', t('Tormenta')];
     return ['cloud', '—'];
   };
+  let lastWx = null;
   async function loadWeather() {
     let w; try { w = await api('/api/weather'); } catch (e) { w = { activo: true, error: e.message }; }
-    const box = $('wx');
-    if (!w.activo) { box.innerHTML = `<span class="cap" style="color:var(--orange)">Clima</span><div class="off">Desactivado. Para verlo, pon tu ciudad en <code>config.json</code> → <code>"clima"</code> con <code>"activo": true</code>, <code>lat</code> y <code>lon</code>. Los datos vienen de Open-Meteo.</div>`; return; }
-    if (w.error) { box.innerHTML = `<span class="cap" style="color:var(--orange)">Clima</span><div class="off">No disponible: ${esc(w.error)}</div>`; return; }
+    lastWx = w; renderWeather();
+  }
+  function renderWeather() {
+    const w = lastWx, box = $('wx');
+    if (!w) return;
+    const cap = `<span class="cap" style="color:var(--orange)">${t('Clima')}${w.ciudad ? ' · ' + esc(w.ciudad) : ''}</span>`;
+    if (!w.activo) { box.innerHTML = `${cap}<div class="off">${t('Desactivado. Para verlo, pon tu ciudad en <code>config.json</code> → <code>"clima"</code> con <code>"activo": true</code>, <code>lat</code> y <code>lon</code>. Los datos vienen de Open-Meteo.')}</div>`; return; }
+    if (w.error) { box.innerHTML = `${cap}<div class="off">${esc(t('No disponible: {0}', w.error))}</div>`; return; }
     const [ic, txt] = WX(w.now.code, w.now.day);
-    const dayFmt = new Intl.DateTimeFormat('es', { weekday: 'short' });
-    box.innerHTML = `<span class="cap" style="color:var(--orange)">Clima${w.ciudad ? ' · ' + esc(w.ciudad) : ''}</span>
-      <div class="now"><svg class="i"><use href="#i-${ic}"/></svg><b>${Math.round(w.now.temp)}°</b><div class="d">${txt}<br>Sensación ${Math.round(w.now.feels)}° · Humedad ${w.now.hum}%</div></div>
+    const dayFmt = new Intl.DateTimeFormat(locale(), { weekday: 'short' });
+    box.innerHTML = `${cap}
+      <div class="now"><svg class="i"><use href="#i-${ic}"/></svg><b>${Math.round(w.now.temp)}°</b><div class="d">${txt}<br>${t('Sensación {0}° · Humedad {1}%', Math.round(w.now.feels), w.now.hum)}</div></div>
       <div class="days">${w.days.slice(1, 5).map((d) => { const [di] = WX(d.code); return `<div>${esc(dayFmt.format(new Date(d.date + 'T12:00')))}<svg class="i"><use href="#i-${di}"/></svg><b>${Math.round(d.max)}°</b> ${Math.round(d.min)}°</div>`; }).join('')}</div>`;
   }
   setInterval(loadWeather, 15 * 60 * 1000);
+
+  // Llega con cada lectura del estado; si cambió, se traduce lo fijo y se vuelve a dibujar lo que no se redibuja solo
+  // (lo demás se actualiza con la siguiente lectura).
+  function setLang(l) {
+    if ((l !== 'es' && l !== 'en') || l === lang) return;
+    lang = l; document.documentElement.lang = l;
+    try { localStorage.setItem('panelLang', l); } catch {}
+    traducirFijos(); linkType(); buildDots(); markDot();
+    clock(); renderCal(); renderClocks(); renderPomo(); renderTasks(); renderWeather(); resetMixer();
+    if (lastMedia) renderMedia(lastMedia, true); else renderMedia(null);
+  }
 
   function onConfig(cfg) {
     clocks = (cfg.relojes || []).filter((c) => c.zona);
@@ -1104,7 +1203,7 @@
   document.addEventListener('pointerdown', keepAwake);
   keepAwake();
 
-  if (!token) online(false, 'Falta el token');
+  if (!token) online(false, t('Falta el token'));
   syncFs();
   markDot();
   tick(); setInterval(tick, 1500);
