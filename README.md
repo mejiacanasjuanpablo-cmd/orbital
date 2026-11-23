@@ -32,9 +32,10 @@ Se conecta por la red Wi-Fi de la casa, escaneando un código QR y aprobando el 
 | `v5.0` | 21 nov 2026 | Solo Wi-Fi: código QR y aprobación en el PC, sin modo desarrollador; .zip para compartir |
 | `v6.0` | 21 nov 2026 | Ventana propia en el PC, sin consola: QR, dispositivos, actividad, cambio de modo e icono junto al reloj |
 | `v7.0` | 23 nov 2026 | Mezclador de volumen con cambio de salida de audio, y elegir en el PC qué páginas ve el celular y en qué orden |
-| `v8.0` | 23 nov 2026 | **Versión final:** solo Wi-Fi, en español o inglés, y páginas del celular en tarjetas con vista previa |
+| `v8.0` | 23 nov 2026 | Solo Wi-Fi, en español o inglés, y páginas del celular en tarjetas con vista previa |
+| `v9.0` | 23 nov 2026 | Un solo programa para compartir, aviso del firewall, agenda y clima en el Calendario, y atajos editables desde el PC |
 
-La **v8.0** es la versión final del panel.
+La **v9.0** es la versión más reciente del panel.
 
 El recorrido por cada versión, con capturas y todos los cambios, está en **[HISTORIA.md](HISTORIA.md)**.
 

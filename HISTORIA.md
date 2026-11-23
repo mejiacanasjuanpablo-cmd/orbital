@@ -1,6 +1,6 @@
 # Historia del Panel del PC
 
-Recorrido por las ocho versiones del panel, de la primera a la **v8.0, que es la versión final**. Las capturas se tomaron ejecutando cada versión tal como quedó, en el PC y a tamaño de celular.
+Recorrido por las nueve versiones del panel, de la primera a la **v9.0**, la más reciente. Las capturas se tomaron ejecutando cada versión tal como quedó, en el PC y a tamaño de celular.
 
 > **Cómo se armó este historial.** Las versiones 1 a 5 se hicieron sin git. Su historial se reconstruyó el 21 de noviembre de 2026 a partir del registro de la sesión de Claude Code en la que se construyó.
 > - Cada commit es el estado real de los archivos después de cada pedido, con su fecha y hora de Colombia.
@@ -220,11 +220,11 @@ El panel pasa de 3 a 7 páginas:
 | 23/11 10:08 | Mezclador: cambiar la salida de audio desde el celular |
 | 23/11 10:51 | Elegir en el PC qué páginas ve el celular y en qué orden |
 
-## v8.0 · Solo Wi-Fi, en español o inglés (versión final)
+## v8.0 · Solo Wi-Fi, en español o inglés
 
 **23 nov 2026** · Pedidos: *«Tomemos de referencia este para rediseñar la selección de pantallas»*, *«Vamos a cambiarle el redondeado de los bordes de "Al conectar" y de los números para que coincidan con los de los marcos»* y *«Vamos a cambiar el toggle para la selección de modo y lo ponemos solo para selección de idioma, ya quitemos la opción de usb»*.
 
-**Es la versión final del panel.**
+Se marcó como la versión final; el mismo día llegó la v9.0.
 
 - **Solo Wi-Fi.** Se quitó el modo por cable USB: el celular entra siempre por la red de la casa, con el código QR y la aprobación en el PC.
   - Ya no hacen falta adb ni el modo desarrollador del celular.
@@ -252,3 +252,37 @@ El panel pasa de 3 a 7 páginas:
 | 23/11 11:29 | Páginas del celular: tarjetas con vista previa y arrastrar para ordenar |
 | 23/11 11:36 | Páginas del celular: etiquetas y números con esquinas como las de los marcos |
 | 23/11 12:23 | Solo Wi-Fi y selector de idioma (español o inglés) |
+
+## v9.0 · Un solo programa, agenda y atajos editables
+
+**23 nov 2026** · Pedidos: *«Vamos a generar un ejecutable que pueda compartir para así poder probarlo en otros dispositivos»*, *«¿Por qué en algunos dispositivos no se dejaría visualizar el apartado web?»*, *«Podemos revisar si puede tomar la ubicación para que la ventana de calendario pueda tener el clima, además podemos hacer que el calendario sea interactivo»*, *«Cambiemos el nombre a Páginas del celular, a selección de widgets»* y *«¿Podemos hacer que los atajos del sistema sean editables desde el PC?»*.
+
+- **Un solo programa para compartir.** `herramientas/portatil.ps1` genera `Panel del PC.exe`, con todo el panel y Node.js dentro.
+  - En otro PC basta con hacerle doble clic: se prepara en `%LOCALAPPDATA%\Panel del PC` y deja el icono en el menú Inicio.
+  - Un `.exe` más nuevo actualiza el programa y conserva la configuración, el token y los datos.
+- **Aviso del firewall de Windows.** Desde el propio PC no se nota si el firewall no deja entrar al celular, así que la ventana lo revisa aparte.
+  - Si está bloqueado, el estado pasa a naranja y el aviso ofrece **Permitir el acceso**, con el permiso de administrador de Windows.
+  - El aviso se quita solo en cuanto se arregla. `verificar.cmd` e `instalar.cmd` también lo revisan.
+- **Calendario con agenda y clima.**
+  - El clima usa la ubicación de Windows del PC, con el botón **Mostrar el clima de aquí**.
+  - La agenda se lee desde el enlace privado iCal de Google Calendar (u otro). Los días con algo agendado llevan un punto, y al tocar uno se abre su agenda.
+  - En la de hoy, lo que ya pasó se ve tenue y la lista empieza en lo siguiente.
+- **Selección de widgets.** Así se llama ahora lo que antes era «Páginas del celular».
+- **Atajos editables desde el PC.** Con el botón **Atajos** de la ventana se agregan, editan, quitan y ordenan los botones de la página Sistema.
+  - Cada botón tiene nombre, color e icono, y abre algo, envía un atajo de teclado o ejecuta un comando.
+  - El celular ve cada cambio al momento, sin recargar.
+
+![v9: atajos en la ventana del PC](docs/historia/v9-atajos.png)
+
+![v9: editor de un atajo](docs/historia/v9-editor.png)
+
+![v9: la agenda de hoy en el celular](docs/historia/v9-agenda.png)
+
+*Las capturas usan una IP, una agenda, un clima y datos de ejemplo.*
+
+| Fecha | Cambio |
+|---|---|
+| 23/11 14:23 | Ejecutable para compartir y aviso del firewall de Windows |
+| 23/11 14:47 | Calendario: clima con la ubicación del PC y agenda del día |
+| 23/11 14:52 | «Páginas del celular» pasa a llamarse «Selección de widgets» |
+| 23/11 16:57 | Editar los atajos de la página Sistema desde la ventana del PC |
