@@ -1,6 +1,6 @@
-# Panel del PC
+# Orbital
 
-Panel de control del PC que se abre en el navegador del celular. Incluye:
+**Orbital** es un panel de control del PC que se abre en el navegador del celular (hasta la v9.0 se llamaba **Panel del PC**). Incluye:
 
 - música y volumen, y un mezclador con el volumen de cada aplicación y la salida de audio;
 - CPU, RAM, red y disco, con su historial y los procesos que más consumen;
@@ -18,8 +18,8 @@ Se conecta por la red Wi-Fi de la casa, escaneando un código QR y aprobando el 
 ## Usarlo
 
 - **Guía:** [LEEME.md](LEEME.md) (es la misma que va en el .zip para compartir).
-- **En corto:** doble clic en `instalar.cmd`, que revisa los requisitos y crea la ventana del panel y su icono. Luego abre **Panel del PC**, escanea el QR con el celular y acepta el aviso en el PC.
-- **Para compartirlo como un solo programa:** `.\herramientas\portatil.ps1` crea `Panel del PC.exe`, con Node.js dentro: en el otro PC basta con hacerle doble clic.
+- **En corto:** doble clic en `instalar.cmd`, que revisa los requisitos y crea la ventana del panel y su icono. Luego abre **Orbital**, escanea el QR con el celular y acepta el aviso en el PC.
+- **Para compartirlo como un solo programa:** `.\herramientas\portatil.ps1` crea `Orbital.exe`, con Node.js dentro: en el otro PC basta con hacerle doble clic.
 
 ## Versiones
 
@@ -54,14 +54,14 @@ El recorrido por cada versión, con capturas y todos los cambios, está en **[HI
 | `lib/agenda.js` | Lee el calendario desde su enlace iCal (.ics), con repeticiones y zonas horarias, para la agenda de la página Calendario |
 | `lib/requisitos.ps1` | Revisión de requisitos (la usan `verificar`, `instalar`, `iniciar` y la ventana) |
 | `ventana.ps1` | La ventana del panel en el PC: QR, estado, dispositivos, actividad, páginas del celular, idioma e icono junto al reloj |
-| `lib/lanzador.cs` | `Panel del PC.exe`, que abre la ventana sin consola (lo compila `instalar` en cada PC) |
+| `lib/lanzador.cs` | `Orbital.exe`, que abre la ventana sin consola (lo compila `instalar` en cada PC) |
 | `lib/portatil.cs` | La parte del ejecutable portátil que deja el panel listo en `%LOCALAPPDATA%\Panel del PC` y crea el icono |
 | `lib/arranque.ps1` | Arranque compartido por la ventana y el modo consola: token, red y servidor |
 | `iniciar.cmd` | Abre la ventana del panel |
 | `iniciar.ps1` | Modo consola, con los mensajes del servidor a la vista |
 | `instalar.*`, `verificar.*`, `empaquetar.ps1` | Instalación, verificación de requisitos y .zip para compartir |
 | `herramientas/miniaturas.js` | Vuelve a generar `public/miniaturas/` con datos de ejemplo (Node 22+ y Edge); no va en el .zip |
-| `herramientas/portatil.ps1` | Genera el ejecutable portátil: un solo `Panel del PC.exe` con todo el panel y Node.js, para compartir |
+| `herramientas/portatil.ps1` | Genera el ejecutable portátil: un solo `Orbital.exe` con todo el panel y Node.js, para compartir |
 
 ## Datos personales
 

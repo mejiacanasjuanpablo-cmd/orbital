@@ -1,11 +1,12 @@
-﻿// Ejecutable portátil del panel: un solo "Panel del PC.exe" que lleva dentro todo el panel y Node.js (recursos panel.zip
+﻿// Ejecutable portátil del panel: un solo "Orbital.exe" que lleva dentro todo el panel y Node.js (recursos panel.zip
 // y panel.version). Lo genera herramientas\portatil.ps1, que compila este archivo junto con lib\lanzador.cs.
 //
 // Al abrirlo:
 // - La primera vez, o si la versión que lleva dentro es otra, descomprime el panel en %LOCALAPPDATA%\Panel del PC con un
 //   aviso mientras tanto. Los archivos de cada PC (config.json, .token, data) no vienen en el .zip: nunca se pisan.
-// - Se copia a esa carpeta y, si el menú Inicio no tiene ya un icono "Panel del PC" (por ejemplo, el de una instalación
-//   con instalar.cmd), crea uno que apunta a esa copia.
+//   La carpeta conserva el nombre de antes de llamarse Orbital, para que los paneles ya instalados sigan con lo suyo.
+// - Se copia a esa carpeta y, si el menú Inicio no tiene ya un icono "Orbital" (o el "Panel del PC" de una instalación
+//   con instalar.cmd), crea uno que apunta a esa copia. La copia y el icono de antes ("Panel del PC") se quitan.
 // - Después abre la ventana desde esa carpeta, igual que el .exe normal.
 // Para pruebas: la variable de entorno PANEL_PORTATIL_CARPETA cambia la carpeta y evita el icono del menú Inicio.
 using System;
@@ -84,7 +85,7 @@ static partial class Lanzador {
     static void ConAviso(Action trabajo) {
         Exception fallo = null;
         using (var f = new Form()) {
-            f.Text = "Panel del PC";
+            f.Text = "Orbital";
             f.FormBorderStyle = FormBorderStyle.FixedSingle; f.ControlBox = false;
             f.StartPosition = FormStartPosition.CenterScreen; f.ClientSize = new Size(400, 110);
             f.BackColor = Color.FromArgb(0x10, 0x14, 0x1A);
@@ -92,7 +93,7 @@ static partial class Lanzador {
             var texto = new Label();
             texto.Dock = DockStyle.Fill; texto.TextAlign = ContentAlignment.MiddleCenter;
             texto.ForeColor = Color.FromArgb(0xEE, 0xF1, 0xF6); texto.Font = new Font("Segoe UI", 10.5f);
-            texto.Text = T("Preparando el Panel del PC…\nTarda unos segundos.", "Getting Panel del PC ready…\nIt takes a few seconds.");
+            texto.Text = T("Preparando Orbital…\nTarda unos segundos.", "Getting Orbital ready…\nIt takes a few seconds.");
             f.Controls.Add(texto);
             f.HandleCreated += delegate { try { PanelNativo.BarraOscura(f.Handle, 0x10141A, 0x1B2029); } catch { } };
             f.Shown += delegate {
@@ -112,7 +113,12 @@ static partial class Lanzador {
     // compartió se puede borrar (o dejar en Descargas) sin que el icono deje de funcionar.
     static void Copiarse(Assembly yo, string destino, bool alDia) {
         string original = Path.GetFullPath(yo.Location);
-        string copia = Path.Combine(destino, "Panel del PC.exe");
+        // La copia de antes de llamarse Orbital sobra: si se abriera, volvería a poner la versión que lleva dentro.
+        string vieja = Path.Combine(destino, "Panel del PC.exe");
+        if (!string.Equals(original, Path.GetFullPath(vieja), StringComparison.OrdinalIgnoreCase)) {
+            try { if (File.Exists(vieja)) File.Delete(vieja); } catch { } // si está abierta, se queda
+        }
+        string copia = Path.Combine(destino, "Orbital.exe");
         if (string.Equals(original, Path.GetFullPath(copia), StringComparison.OrdinalIgnoreCase)) return;
         if (alDia && File.Exists(copia)) return;
         try { File.Copy(original, copia, true); } catch { } // si esa copia está abierta, se queda la que hay
@@ -120,18 +126,37 @@ static partial class Lanzador {
 
     static void CrearIcono(string destino) {
         try {
-            string lnk = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), "Panel del PC.lnk");
-            if (File.Exists(lnk)) return; // ya hay uno: no se toca
-            string exe = Path.Combine(destino, "Panel del PC.exe");
+            string menu = Environment.GetFolderPath(Environment.SpecialFolder.Programs);
             Type tipo = Type.GetTypeFromProgID("WScript.Shell");
             object shell = Activator.CreateInstance(tipo);
+            // El icono de antes ("Panel del PC"): si es de esta carpeta, se cambia por el nuevo; si es de una instalación
+            // con instalar.cmd, se deja y no se crea otro.
+            string viejo = Path.Combine(menu, "Panel del PC.lnk");
+            if (File.Exists(viejo)) {
+                object v = tipo.InvokeMember("CreateShortcut", BindingFlags.InvokeMethod, null, shell, new object[] { viejo });
+                string apunta = (string)v.GetType().InvokeMember("TargetPath", BindingFlags.GetProperty, null, v, null);
+                if (!EnCarpeta(apunta, destino)) return;
+                File.Delete(viejo);
+            }
+            string lnk = Path.Combine(menu, "Orbital.lnk");
+            if (File.Exists(lnk)) return; // ya hay uno: no se toca
+            string exe = Path.Combine(destino, "Orbital.exe");
             object acceso = tipo.InvokeMember("CreateShortcut", BindingFlags.InvokeMethod, null, shell, new object[] { lnk });
             Type t = acceso.GetType();
             t.InvokeMember("TargetPath", BindingFlags.SetProperty, null, acceso, new object[] { exe });
             t.InvokeMember("WorkingDirectory", BindingFlags.SetProperty, null, acceso, new object[] { destino });
             t.InvokeMember("IconLocation", BindingFlags.SetProperty, null, acceso, new object[] { exe + ",0" });
-            t.InvokeMember("Description", BindingFlags.SetProperty, null, acceso, new object[] { "Panel del PC" });
+            t.InvokeMember("Description", BindingFlags.SetProperty, null, acceso, new object[] { "Orbital" });
             t.InvokeMember("Save", BindingFlags.InvokeMethod, null, acceso, null);
         } catch { } // sin icono, el panel funciona igual
+    }
+
+    // ¿Está ese archivo dentro de esa carpeta?
+    static bool EnCarpeta(string archivo, string carpeta) {
+        if (string.IsNullOrEmpty(archivo)) return false;
+        try {
+            string dir = Path.GetDirectoryName(Path.GetFullPath(archivo));
+            return string.Equals(dir.TrimEnd('\\'), Path.GetFullPath(carpeta).TrimEnd('\\'), StringComparison.OrdinalIgnoreCase);
+        } catch { return false; }
     }
 }

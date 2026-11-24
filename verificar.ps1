@@ -1,4 +1,4 @@
-﻿# Panel del PC: revisa todo lo que necesita el panel y ofrece instalar lo que falte (Node.js).
+﻿# Orbital: revisa todo lo que necesita el panel y ofrece instalar lo que falte (Node.js).
 # Uso:  doble clic en verificar.cmd   (o .\verificar.ps1)
 param(
     [int]$Puerto = 8787,
@@ -11,6 +11,6 @@ if (-not (Test-Path (Join-Path $PSScriptRoot 'lib\requisitos.ps1'))) {
 }
 . (Join-Path $PSScriptRoot 'lib\requisitos.ps1')
 
-Write-Host "=== Verificación de requisitos del Panel del PC ===" -ForegroundColor Cyan
+Write-Host "=== Verificación de requisitos de Orbital ===" -ForegroundColor Cyan
 $ok = Invoke-Verificacion -Raiz $PSScriptRoot -Puerto $Puerto -Instalar -SinPreguntas:$SinPreguntas
 exit $(if ($ok) { 0 } else { 1 })

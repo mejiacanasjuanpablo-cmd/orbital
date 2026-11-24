@@ -1,6 +1,6 @@
 {
-  "name": "Panel del PC",
-  "short_name": "Panel PC",
+  "name": "Orbital",
+  "short_name": "Orbital",
   "description": "Panel de control del PC por USB",
   "start_url": "/",
   "scope": "/",

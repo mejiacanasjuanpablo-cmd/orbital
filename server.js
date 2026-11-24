@@ -1,4 +1,4 @@
-// Panel del PC — servidor local sin dependencias.
+// Orbital — servidor local sin dependencias.
 // Escucha en 127.0.0.1 (para abrirlo en este PC) y en la IP de la red local (PANEL_LAN_IP), por donde entra el celular.
 // Sin PANEL_LAN_IP solo responde a este PC (iniciar.ps1 -SoloPC y las pruebas).
 'use strict';
@@ -69,7 +69,7 @@ const EN = {
   'Equipo: {0}': 'Device: {0}',
   '¿Permitir este dispositivo?': 'Allow this device?',
   'Acepta solo si es tu celular y acabas de escanear el código QR del panel.': "Accept only if it's your phone and you just scanned the panel's QR code.",
-  'Panel del PC: dispositivo nuevo': 'Panel del PC: new device',
+  'Orbital: dispositivo nuevo': 'Orbital: new device',
   'token inválido': 'invalid token',
   'host no permitido': 'host not allowed',
   'solo desde este PC': 'only from this PC',
@@ -115,7 +115,8 @@ function trMezclador(e) {
 function publicConfig() {
   const cfg = loadConfig();
   return {
-    title: cfg.title || 'Panel',
+    // «Panel del PC» era el nombre de antes: los config.json que lo tengan muestran el nombre nuevo.
+    title: cfg.title && cfg.title !== 'Panel del PC' ? cfg.title : 'Orbital',
     relojes: (cfg.relojes || []).slice(0, 6).map((r) => ({ nombre: String(r.nombre || ''), zona: String(r.zona || '') })),
     pomodoro: cfg.pomodoro || null,
     groups: (cfg.groups || []).map((g) => ({
@@ -560,7 +561,7 @@ $c = [Globalization.CultureInfo]::InvariantCulture
   try {
     const u = new URL('https://nominatim.openstreetmap.org/reverse');
     u.search = new URLSearchParams({ format: 'jsonv2', lat: data.lat.toFixed(2), lon: data.lon.toFixed(2), zoom: '10', 'accept-language': idioma }).toString();
-    const g = await fetch(u, { signal: AbortSignal.timeout(6000), headers: { 'User-Agent': 'PanelDelPC/1.0' } });
+    const g = await fetch(u, { signal: AbortSignal.timeout(6000), headers: { 'User-Agent': 'Orbital/1.0' } });
     if (g.ok) {
       const a = (await g.json()).address || {};
       data.ciudad = a.city || a.town || a.village || a.municipality || a.county || a.state || '';
@@ -875,7 +876,7 @@ const handler = async (req, res) => {
 };
 
 http.createServer(handler).listen(PORT, '127.0.0.1', () => {
-  console.log(`Panel del PC escuchando en http://localhost:${PORT}`);
+  console.log(`Orbital escuchando en http://localhost:${PORT}`);
   if (!process.env.PANEL_TOKEN) console.log(`Abrir en este PC: http://localhost:${PORT}/#t=${TOKEN}`);
 });
 if (LAN_IP) {

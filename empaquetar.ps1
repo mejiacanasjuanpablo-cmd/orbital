@@ -1,5 +1,5 @@
 ﻿# Genera el .zip para compartir el panel. Nunca incluye tu .token, tu config.json ni tus datos (carpeta data).
-# Uso:  .\empaquetar.ps1                      → Panel-del-PC.zip en el Escritorio (junto a esta carpeta)
+# Uso:  .\empaquetar.ps1                      → Orbital.zip en el Escritorio (junto a esta carpeta)
 #       .\empaquetar.ps1 -Salida C:\ruta\x.zip
 param([string]$Salida)
 $ErrorActionPreference = 'Stop'
@@ -7,8 +7,8 @@ Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
 
 # La lista de archivos del programa sale de lib\requisitos.ps1 (la misma que se verifica al instalar y al arrancar).
 . (Join-Path $PSScriptRoot 'lib\requisitos.ps1')
-if (-not $Salida) { $Salida = Join-Path (Split-Path $PSScriptRoot -Parent) 'Panel-del-PC.zip' }
-$carpeta = 'Panel-del-PC'
+if (-not $Salida) { $Salida = Join-Path (Split-Path $PSScriptRoot -Parent) 'Orbital.zip' }
+$carpeta = 'Orbital'
 
 # Origen → nombre dentro del .zip
 $mapa = [ordered]@{}

@@ -1,5 +1,5 @@
-﻿# Panel del PC: ventana para arrancar y controlar el panel, sin consola. El celular entra por la red Wi-Fi de la casa.
-# La abre "Panel del PC.exe" (lo crea instalar.cmd) o, si no existe, iniciar.cmd con PowerShell oculto.
+﻿# Orbital: ventana para arrancar y controlar el panel, sin consola. El celular entra por la red Wi-Fi de la casa.
+# La abre "Orbital.exe" (lo crea instalar.cmd) o, si no existe, iniciar.cmd con PowerShell oculto.
 #   ventana.ps1             puerto 8787
 #   ventana.ps1 -Puerto N   otro puerto
 # -Wifi se acepta y no hace nada: lo pasan los iconos "Panel Wi-Fi" de versiones anteriores.
@@ -197,13 +197,13 @@ function Format-Texto([string]$Texto, [object[]]$Datos) { $t = T $Texto; if ($Da
 function TF([string]$Formato) { Format-Texto $Formato $args }
 
 if (-not (Test-Path (Join-Path $Raiz 'lib\requisitos.ps1')) -or -not (Test-Path (Join-Path $Raiz 'lib\arranque.ps1'))) {
-    [void][Windows.MessageBox]::Show((T 'Faltan archivos del panel. Vuelve a descomprimir el .zip del panel completo.'), 'Panel del PC', 'OK', 'Error')
+    [void][Windows.MessageBox]::Show((T 'Faltan archivos del panel. Vuelve a descomprimir el .zip del panel completo.'), 'Orbital', 'OK', 'Error')
     return
 }
 . (Join-Path $Raiz 'lib\requisitos.ps1')
 . (Join-Path $Raiz 'lib\arranque.ps1')
 
-# Funciones nativas (barra de título oscura, pasar al frente). Ya vienen dentro de Panel del PC.exe; si no, se compilan.
+# Funciones nativas (barra de título oscura, pasar al frente). Ya vienen dentro de Orbital.exe; si no, se compilan.
 if (-not ('PanelNativo' -as [type])) {
     try { Add-Type -Path (Join-Path $Raiz 'lib\lanzador.cs') -ReferencedAssemblies System.Windows.Forms } catch { }
 }
@@ -240,7 +240,7 @@ $script:tema = Get-TemaGuardado
 $xaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Panel del PC" Width="780" MinWidth="780" MinHeight="600" SizeToContent="Height" ResizeMode="CanResize"
+        Title="Orbital" Width="780" MinWidth="780" MinHeight="600" SizeToContent="Height" ResizeMode="CanResize"
         WindowStartupLocation="CenterScreen" Background="{DynamicResource Fondo}" Foreground="{DynamicResource Texto}"
         FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" UseLayoutRounding="True">
   <Window.Resources>
@@ -433,7 +433,7 @@ $xaml = @'
       <Border x:Name="Logo" DockPanel.Dock="Left" Width="42" Height="42" CornerRadius="12" Margin="0,0,12,0"
               BorderBrush="{DynamicResource Linea2}" BorderThickness="1"/>
       <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
-        <TextBlock Text="Panel del PC" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+        <TextBlock Text="Orbital" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
         <DockPanel Margin="0,2,0,0">
           <Ellipse x:Name="Punto" Width="8" Height="8" Fill="#FB923C" VerticalAlignment="Center" Margin="0,1,8,0"/>
           <TextBlock x:Name="Estado" Text="Arrancando…" Foreground="{DynamicResource Tenue}" TextTrimming="CharacterEllipsis"/>
@@ -742,7 +742,7 @@ function Update-TextoTema {
     $ui.CambiarTema.ToolTip = $t
     [Windows.Automation.AutomationProperties]::SetName($ui.CambiarTema, $t)
 }
-# Barra de título oscura o clara, del mismo color que el fondo (Windows 11). Panel del PC.exe de versiones anteriores solo
+# Barra de título oscura o clara, del mismo color que el fondo (Windows 11). El .exe de versiones anteriores solo
 # sabe ponerla oscura.
 function Set-BarraTitulo {
     if (-not $hayNativo) { return }
@@ -819,7 +819,7 @@ function Set-Estado([string]$Texto, [string]$Color, [switch]$Normal, [object[]]$
     $t = Format-Texto $Texto $Datos
     $ui.Estado.Text = $t
     $ui.Punto.Fill = Get-Pincel $Color
-    $b = "Panel del PC: $t"
+    $b = "Orbital: $t"
     $tray.Text = if ($b.Length -gt 63) { $b.Substring(0, 63) } else { $b }
 }
 
@@ -1250,7 +1250,7 @@ function Update-Tick([switch]$Forzar) {
 
 function Remove-Dispositivo([string]$Ip) {
     $texto = (TF '¿Quitar {0} de los dispositivos autorizados?' $Ip) + "`n`n" + (T 'Dejará de poder usar el panel. Si vuelve a escanear el código, este PC te preguntará otra vez.')
-    $r = [Windows.MessageBox]::Show($w, $texto, 'Panel del PC', 'YesNo', 'Question')
+    $r = [Windows.MessageBox]::Show($w, $texto, 'Orbital', 'YesNo', 'Question')
     if ("$r" -ne 'Yes') { return }
     [void](Invoke-PanelApi 'POST' '/api/pc/quitar' @{ ip = $Ip })
     $script:firmaDispositivos = $null
@@ -1359,7 +1359,7 @@ function Set-PaginaVisible([string]$Id, [bool]$Ver) {
 }
 
 function Reset-Paginas {
-    $r = [Windows.MessageBox]::Show($w, (T '¿Volver al orden original, con todas las páginas?'), 'Panel del PC', 'YesNo', 'Question')
+    $r = [Windows.MessageBox]::Show($w, (T '¿Volver al orden original, con todas las páginas?'), 'Orbital', 'YesNo', 'Question')
     if ("$r" -eq 'Yes') { Save-Paginas @() }
 }
 
@@ -1710,7 +1710,7 @@ function Save-Atajos($Lista) {
 }
 
 function Reset-Atajos {
-    $r = [Windows.MessageBox]::Show($w, (T '¿Volver a los atajos de ejemplo? Se pierden los que cambiaste.'), 'Panel del PC', 'YesNo', 'Question')
+    $r = [Windows.MessageBox]::Show($w, (T '¿Volver a los atajos de ejemplo? Se pierden los que cambiaste.'), 'Orbital', 'YesNo', 'Question')
     if ("$r" -ne 'Yes') { return }
     if (Save-Atajos $script:atajosEjemplo) { Update-ListaAtajos } else { Show-Aviso 'No se pudieron guardar los atajos: {0}' 'error' -Datos $script:errorAtajos }
 }
@@ -1873,7 +1873,7 @@ function Save-EditorAtajo {
 
 function Remove-EditorAtajo {
     $e = $script:edicion; if (-not $e -or $e.nuevo) { return }
-    $r = [Windows.MessageBox]::Show($w, (TF '¿Eliminar el atajo {0}?' $e.label), 'Panel del PC', 'YesNo', 'Question')
+    $r = [Windows.MessageBox]::Show($w, (TF '¿Eliminar el atajo {0}?' $e.label), 'Orbital', 'YesNo', 'Question')
     if ("$r" -ne 'Yes') { return }
     if (Save-Atajos @(@($script:atajos) | Where-Object { $_.id -ne $e.id })) { $script:edicion = $null; Update-ListaAtajos }
     else { Show-ErrorEditor (TF 'No se pudo guardar: {0}' $script:errorAtajos) }
@@ -1889,7 +1889,7 @@ function Select-DestinoAtajo {
 # ---------- Icono junto al reloj
 $tray = New-Object Windows.Forms.NotifyIcon
 try { $tray.Icon = New-Object Drawing.Icon((Join-Path $Raiz 'panel.ico'), [Windows.Forms.SystemInformation]::SmallIconSize) } catch { $tray.Icon = [Drawing.SystemIcons]::Application }
-$tray.Text = 'Panel del PC'
+$tray.Text = 'Orbital'
 $menu = New-Object Windows.Forms.ContextMenuStrip
 $itemMostrar = $menu.Items.Add('Mostrar la ventana'); $itemMostrar.Font = New-Object Drawing.Font($itemMostrar.Font, [Drawing.FontStyle]::Bold)
 $itemMostrar.Add_Click({ Invoke-Seguro { Show-Ventana } })

@@ -1,4 +1,4 @@
-﻿# Panel del PC en modo consola: arranca el servidor y muestra sus mensajes en esta ventana (útil para diagnosticar).
+﻿# Orbital en modo consola: arranca el servidor y muestra sus mensajes en esta ventana (útil para diagnosticar).
 # Lo normal es abrir la ventana del panel (icono del menú Inicio, iniciar.cmd o ventana.ps1); esto hace lo mismo en una consola.
 # Uso:  .\iniciar.ps1            (el celular entra por la red Wi-Fi de la casa, con el código QR)
 #       .\iniciar.ps1 -SoloPC    (sin celular: lo abre en el navegador de este PC)

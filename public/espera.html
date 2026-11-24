@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0e14">
-<title>Panel del PC</title>
+<title>Orbital</title>
 <style>
   :root { --bg: #0b0e14; --tile: #131823; --line: #232a38; --text: #e6ebf3; --muted: #8a94a8; --teal: #2dd4bf; --red: #f87171; --orange: #fb923c; }
   * { box-sizing: border-box; }
@@ -38,16 +38,16 @@
   const EN = {
     'Conectando con el PC…': 'Connecting to the PC…', 'Un momento.': 'One moment.',
     'El código no es válido': "The code isn't valid",
-    'Vuelve a escanear el código QR que aparece en la ventana "Panel del PC" del PC.': 'Scan the QR code shown in the "Panel del PC" window on the PC again.',
+    'Vuelve a escanear el código QR de la ventana de Orbital en el PC.': 'Scan the QR code in the Orbital window on the PC again.',
     'Acceso aprobado': 'Access approved', 'Abriendo el panel…': 'Opening the panel…',
     'El PC rechazó este dispositivo': 'The PC rejected this device',
-    'Si fue un error, cierra y vuelve a abrir "Panel del PC" en el PC y escanea el código otra vez.': 'If it was a mistake, close and reopen "Panel del PC" on the PC and scan the code again.',
+    'Si fue un error, cierra y vuelve a abrir "Orbital" en el PC y escanea el código otra vez.': 'If it was a mistake, close and reopen "Orbital" on the PC and scan the code again.',
     'Acepta el aviso en el PC': 'Accept the prompt on the PC',
     'En la pantalla del PC apareció la pregunta "¿Permitir este dispositivo?". Pulsa Sí y el panel se abrirá aquí solo.': 'The question "Allow this device?" appeared on the PC\'s screen. Press Yes and the panel will open here by itself.',
     'Buscando el PC…': 'Looking for the PC…',
-    'Comprueba que el celular esté en la misma red Wi-Fi que el PC y que "Panel del PC" siga abierto.': 'Check that your phone is on the same Wi-Fi network as the PC and that "Panel del PC" is still open.',
+    'Comprueba que el celular esté en la misma red Wi-Fi que el PC y que "Orbital" siga abierto.': 'Check that your phone is on the same Wi-Fi network as the PC and that "Orbital" is still open.',
     'Escanea el código QR': 'Scan the QR code',
-    'Abre "Panel del PC" en el PC y escanea con la cámara del celular el código que aparece en la ventana.': 'Open "Panel del PC" on the PC and scan the code shown in the window with your phone\'s camera.',
+    'Abre "Orbital" en el PC y escanea con la cámara del celular el código que aparece en la ventana.': 'Open "Orbital" on the PC and scan the code shown in the window with your phone\'s camera.',
   };
   let lang = 'es';
   try { lang = localStorage.getItem('panelLang') || (/^en\b/i.test(navigator.language) ? 'en' : 'es'); } catch {}
@@ -75,20 +75,20 @@
       setLang(body.idioma);
       if (r.status === 401) {
         try { localStorage.removeItem('panelToken'); } catch {}
-        return show('El código no es válido', 'Vuelve a escanear el código QR que aparece en la ventana "Panel del PC" del PC.', 'var(--red)', false);
+        return show('El código no es válido', 'Vuelve a escanear el código QR de la ventana de Orbital en el PC.', 'var(--red)', false);
       }
       const { estado } = body;
       if (estado === 'aprobado') { show('Acceso aprobado', 'Abriendo el panel…', 'var(--teal)', true); return location.reload(); }
-      if (estado === 'rechazado') return show('El PC rechazó este dispositivo', 'Si fue un error, cierra y vuelve a abrir "Panel del PC" en el PC y escanea el código otra vez.', 'var(--red)', false);
+      if (estado === 'rechazado') return show('El PC rechazó este dispositivo', 'Si fue un error, cierra y vuelve a abrir "Orbital" en el PC y escanea el código otra vez.', 'var(--red)', false);
       show('Acepta el aviso en el PC', 'En la pantalla del PC apareció la pregunta "¿Permitir este dispositivo?". Pulsa Sí y el panel se abrirá aquí solo.', 'var(--orange)', true);
     } catch {
-      show('Buscando el PC…', 'Comprueba que el celular esté en la misma red Wi-Fi que el PC y que "Panel del PC" siga abierto.', 'var(--orange)', true);
+      show('Buscando el PC…', 'Comprueba que el celular esté en la misma red Wi-Fi que el PC y que "Orbital" siga abierto.', 'var(--orange)', true);
     } finally { clearTimeout(tm); }
     setTimeout(ask, 2000);
   }
 
   document.documentElement.lang = lang;
-  if (!token) show('Escanea el código QR', 'Abre "Panel del PC" en el PC y escanea con la cámara del celular el código que aparece en la ventana.', 'var(--teal)', false);
+  if (!token) show('Escanea el código QR', 'Abre "Orbital" en el PC y escanea con la cámara del celular el código que aparece en la ventana.', 'var(--teal)', false);
   else { show('Conectando con el PC…', 'Un momento.', 'var(--teal)', true); ask(); }
 </script>
 </body>

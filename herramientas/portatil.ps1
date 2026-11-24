@@ -1,16 +1,16 @@
-﻿# Genera el ejecutable portátil del panel: un solo "Panel del PC.exe" con todo el panel y Node.js dentro, para
+﻿# Genera el ejecutable portátil del panel: un solo "Orbital.exe" con todo el panel y Node.js dentro, para
 # compartirlo y probarlo en otros PC. Quien lo recibe solo le hace doble clic: no tiene que instalar Node.js ni nada más
 # (cómo se prepara al abrirlo: lib\portatil.cs).
 # Usa el Node.js de este PC (el de "node" en el PATH) y el compilador de C# que trae Windows. Nunca incluye tu .token,
 # tu config.json ni la carpeta data.
-# Uso:  .\herramientas\portatil.ps1                        → "Panel del PC.exe" en el Escritorio (junto a la carpeta del panel)
+# Uso:  .\herramientas\portatil.ps1                        → "Orbital.exe" en el Escritorio (junto a la carpeta del panel)
 #       .\herramientas\portatil.ps1 -Salida C:\ruta\x.exe
 param([string]$Salida)
 $ErrorActionPreference = 'Stop'
 $Raiz = Split-Path $PSScriptRoot -Parent
 . (Join-Path $Raiz 'lib\requisitos.ps1')   # $PanelArchivos, $PanelMiniaturas, Invoke-Oculto
 Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
-if (-not $Salida) { $Salida = Join-Path (Split-Path $Raiz -Parent) 'Panel del PC.exe' }
+if (-not $Salida) { $Salida = Join-Path (Split-Path $Raiz -Parent) 'Orbital.exe' }
 # Un .exe abierto no se puede reemplazar: se avisa antes de compilar.
 if (Test-Path $Salida) {
     try { [IO.File]::Open($Salida, 'Open', 'ReadWrite', 'None').Dispose() }
@@ -93,7 +93,7 @@ version is in https://github.com/nodejs/node/blob/$versionNode/LICENSE
     $sma = "$env:WINDIR\Microsoft.NET\assembly\GAC_MSIL\System.Management.Automation\v4.0_3.0.0.0__31bf3856ad364e35\System.Management.Automation.dll"
     if (-not (Test-Path $sma)) { $sma = [PSObject].Assembly.Location }
     if (-not (Test-Path $csc)) { throw 'No se encontró el compilador de C# de Windows (.NET Framework 4).' }
-    $exeTmp = Join-Path $tmp 'Panel del PC.exe'
+    $exeTmp = Join-Path $tmp 'Orbital.exe'
     $r = Invoke-Oculto $csc @('/nologo', '/target:winexe', '/optimize+', "/out:$exeTmp", "/win32icon:$(Join-Path $Raiz 'panel.ico')",
         "/r:$sma", '/r:System.Windows.Forms.dll', '/r:System.Drawing.dll', '/r:System.IO.Compression.dll', '/r:System.IO.Compression.FileSystem.dll',
         "/resource:$zipRuta,panel.zip", "/resource:$versionRuta,panel.version",
@@ -105,4 +105,4 @@ version is in https://github.com/nodejs/node/blob/$versionNode/LICENSE
 }
 
 Write-Host "Listo: $Salida ($([math]::Round((Get-Item $Salida).Length / 1MB, 1)) MB; $($entradas.Count) archivos, con Node.js $versionNode; versión $version)" -ForegroundColor Green
-Write-Host "Quien lo reciba: doble clic. La primera vez se prepara en %LOCALAPPDATA%\Panel del PC y deja el icono en el menú Inicio."
+Write-Host "Quien lo reciba: doble clic. La primera vez se prepara en %LOCALAPPDATA%\Panel del PC y deja el icono Orbital en el menú Inicio."

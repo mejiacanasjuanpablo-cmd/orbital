@@ -1,6 +1,6 @@
-# Historia del Panel del PC
+# Historia de Orbital
 
-Recorrido por las nueve versiones del panel, de la primera a la **v9.0**, la más reciente. Las capturas se tomaron ejecutando cada versión tal como quedó, en el PC y a tamaño de celular.
+Recorrido por las nueve versiones del panel, de la primera a la **v9.0**, la más reciente. Hasta la v9.0 se llamó **Panel del PC**; desde el 23 de noviembre de 2026 se llama **Orbital**. Las capturas se tomaron ejecutando cada versión tal como quedó, en el PC y a tamaño de celular.
 
 > **Cómo se armó este historial.** Las versiones 1 a 5 se hicieron sin git. Su historial se reconstruyó el 21 de noviembre de 2026 a partir del registro de la sesión de Claude Code en la que se construyó.
 > - Cada commit es el estado real de los archivos después de cada pedido, con su fecha y hora de Colombia.

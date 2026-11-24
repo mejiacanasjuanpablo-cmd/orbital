@@ -81,16 +81,16 @@ function Stop-OtraCopia([int]$Puerto) {
     $true
 }
 
-# ---------- Panel del PC.exe
+# ---------- Orbital.exe
 # Crea el programa que abre la ventana del panel sin consola. Se compila aquí, con el compilador de C# que trae
 # Windows (.NET Framework 4), así que no se descarga nada. Devuelve la ruta del .exe, o $null si no se pudo.
 function Build-PanelVentana([string]$Raiz) {
-    $exe = Join-Path $Raiz 'Panel del PC.exe'
+    $exe = Join-Path $Raiz 'Orbital.exe'
     $csc = Join-Path ([Runtime.InteropServices.RuntimeEnvironment]::GetRuntimeDirectory()) 'csc.exe'
     $sma = "$env:WINDIR\Microsoft.NET\assembly\GAC_MSIL\System.Management.Automation\v4.0_3.0.0.0__31bf3856ad364e35\System.Management.Automation.dll"
     if (-not (Test-Path $sma)) { $sma = [PSObject].Assembly.Location }
     if (-not (Test-Path $csc)) { return $null }
-    $tmp = Join-Path ([IO.Path]::GetTempPath()) "panel-del-pc-$PID.exe"
+    $tmp = Join-Path ([IO.Path]::GetTempPath()) "orbital-$PID.exe"
     $r = Invoke-Oculto $csc @('/nologo', '/target:winexe', '/optimize+', "/out:$tmp", "/win32icon:$(Join-Path $Raiz 'panel.ico')",
         "/r:$sma", '/r:System.Windows.Forms.dll', (Join-Path $Raiz 'lib\lanzador.cs')) -EsperaMs 60000
     if ($r.Codigo -ne 0 -or -not (Test-Path $tmp)) { Write-Verbose $r.Salida; return $null }

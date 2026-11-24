@@ -1,7 +1,7 @@
-﻿# Panel del PC: instalación en un PC nuevo (después de descomprimir el .zip).
-# Revisa los requisitos (y ofrece instalar lo que falte), prepara config.json, crea "Panel del PC.exe" (la ventana del
-# panel, sin consola) y el icono "Panel del PC" en el menú Inicio (y quita los "Panel USB" y "Panel Wi-Fi" de versiones
-# anteriores, si apuntan a esta carpeta).
+﻿# Orbital: instalación en un PC nuevo (después de descomprimir el .zip).
+# Revisa los requisitos (y ofrece instalar lo que falte), prepara config.json, crea "Orbital.exe" (la ventana del
+# panel, sin consola) y el icono "Orbital" en el menú Inicio (y quita los "Panel del PC", "Panel USB" y "Panel Wi-Fi" de
+# versiones anteriores, si apuntan a esta carpeta).
 # Uso:  doble clic en instalar.cmd   (o .\instalar.ps1)
 param(
     [string]$CarpetaAccesos = (Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs'),
@@ -20,7 +20,7 @@ if (-not (Test-Path (Join-Path $PSScriptRoot 'lib\requisitos.ps1')) -or -not (Te
 . (Join-Path $PSScriptRoot 'lib\arranque.ps1')
 
 Write-Host ""
-Write-Host "=== Instalación del Panel del PC ===" -ForegroundColor Cyan
+Write-Host "=== Instalación de Orbital ===" -ForegroundColor Cyan
 Write-Host "Carpeta: $PSScriptRoot"
 
 # 2. Requisitos: revisa todo y ofrece instalar lo que falte.
@@ -32,19 +32,24 @@ $cfg = Join-Path $PSScriptRoot 'config.json'
 if (Test-Path $cfg) { Write-Host "[OK] config.json ya existe (no se toca)" -ForegroundColor Green }
 else { Copy-Item (Join-Path $PSScriptRoot 'config.ejemplo.json') $cfg; Write-Host "[OK] config.json creado a partir del ejemplo" -ForegroundColor Green }
 
-# 4. La ventana del panel: Panel del PC.exe se compila aquí con el compilador de C# que trae Windows.
+# 4. La ventana del panel: Orbital.exe se compila aquí con el compilador de C# que trae Windows.
 $exe = Build-PanelVentana $PSScriptRoot
-if ($exe) { Write-Host "[OK] Ventana del panel lista: Panel del PC.exe" -ForegroundColor Green }
-else { Write-Host "[AVISO] No se pudo crear Panel del PC.exe; el icono abrirá la ventana con PowerShell (funciona igual)." -ForegroundColor Yellow }
+if ($exe) {
+    Write-Host "[OK] Ventana del panel lista: Orbital.exe" -ForegroundColor Green
+    # El de antes de llamarse Orbital sobra (si está abierto, se queda; iniciar.cmd ya abre el nuevo).
+    Remove-Item (Join-Path $PSScriptRoot 'Panel del PC.exe') -ErrorAction SilentlyContinue
+}
+else { Write-Host "[AVISO] No se pudo crear Orbital.exe; el icono abrirá la ventana con PowerShell (funciona igual)." -ForegroundColor Yellow }
 
 # 5. Icono en el menú Inicio: abre la ventana del panel, sin consola.
 $shell = New-Object -ComObject WScript.Shell
-# Los iconos de versiones anteriores (había uno para el cable y otro para el Wi-Fi) se quitan si son de esta carpeta.
-foreach ($viejo in 'Panel USB', 'Panel Wi-Fi') {
+# Los iconos de versiones anteriores se quitan si son de esta carpeta: «Panel del PC» (el nombre de antes) y, antes aún,
+# uno para el cable y otro para el Wi-Fi.
+foreach ($viejo in 'Panel del PC', 'Panel USB', 'Panel Wi-Fi') {
     $ruta = Join-Path $CarpetaAccesos "$viejo.lnk"
     if ((Test-Path $ruta) -and $shell.CreateShortcut($ruta).WorkingDirectory -eq $PSScriptRoot) { Remove-Item $ruta -ErrorAction SilentlyContinue }
 }
-$lnk = $shell.CreateShortcut((Join-Path $CarpetaAccesos 'Panel del PC.lnk'))
+$lnk = $shell.CreateShortcut((Join-Path $CarpetaAccesos 'Orbital.lnk'))
 if ($exe) {
     $lnk.TargetPath = $exe
     $lnk.Arguments = ''
@@ -55,9 +60,9 @@ if ($exe) {
 }
 $lnk.WorkingDirectory = $PSScriptRoot
 $lnk.IconLocation = "$(Join-Path $PSScriptRoot 'panel.ico'),0"
-$lnk.Description = 'Panel del PC en el celular, por Wi-Fi'
+$lnk.Description = 'Orbital: tu PC en el celular, por Wi-Fi'
 $lnk.Save()
-Write-Host "[OK] Icono 'Panel del PC' creado en el menú Inicio" -ForegroundColor Green
+Write-Host "[OK] Icono 'Orbital' creado en el menú Inicio" -ForegroundColor Green
 
 Write-Host ""
 if (-not $listo) {
@@ -66,7 +71,7 @@ if (-not $listo) {
 }
 Write-Host "Siguientes pasos:" -ForegroundColor Cyan
 Write-Host " No hay que instalar ni activar nada en el celular; solo tiene que estar en la misma red Wi-Fi que el PC."
-Write-Host "   1. Abre 'Panel del PC' desde el menú Inicio y escanea con la cámara del celular el código QR de la ventana."
+Write-Host "   1. Abre 'Orbital' desde el menú Inicio y escanea con la cámara del celular el código QR de la ventana."
 Write-Host "   2. En el PC aparecerá un aviso para aprobar el celular: pulsa Sí."
 Write-Host "   3. En el celular, en Chrome: menú ⋮ > Agregar a pantalla principal."
 Write-Host " Personaliza los botones en config.json. Todo está explicado en LEEME.md."

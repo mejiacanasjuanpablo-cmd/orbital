@@ -1,7 +1,7 @@
-﻿// Panel del PC.exe: abre la ventana del panel (ventana.ps1) sin ninguna consola.
+﻿// Orbital.exe: abre la ventana del panel (ventana.ps1) sin ninguna consola.
 // instalar.ps1 lo compila en cada PC con el compilador de C# que trae Windows (.NET Framework 4); no se descarga nada.
 // Ejecuta ventana.ps1 dentro de este mismo proceso, así que en la barra de tareas y en el Administrador de tareas
-// aparece como "Panel del PC", con su icono.
+// aparece como "Orbital", con su icono.
 using System;
 using System.IO;
 using System.Management.Automation;
@@ -11,8 +11,8 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 
-[assembly: AssemblyTitle("Panel del PC")]
-[assembly: AssemblyProduct("Panel del PC")]
+[assembly: AssemblyTitle("Orbital")]
+[assembly: AssemblyProduct("Orbital")]
 [assembly: AssemblyDescription("Panel de control del PC en el celular")]
 [assembly: AssemblyVersion("1.0.0.0")]
 
@@ -89,6 +89,6 @@ static partial class Lanzador {
     }
 
     static void Error(string texto) {
-        MessageBox.Show(texto, "Panel del PC", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        MessageBox.Show(texto, "Orbital", MessageBoxButtons.OK, MessageBoxIcon.Error);
     }
 }

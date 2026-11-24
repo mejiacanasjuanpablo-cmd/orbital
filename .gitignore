@@ -4,5 +4,6 @@ config.json
 data/
 debug.log
 *.zip
-# La ventana del panel: instalar.cmd la compila en cada PC
+# La ventana del panel: instalar.cmd la compila en cada PC (Panel del PC.exe es su nombre de antes)
 Panel del PC.exe
+Orbital.exe

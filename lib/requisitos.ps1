@@ -70,8 +70,8 @@ $PanelFirewall = {
         foreach ($r in $bloqueos) { $r.Enabled = $false }
         if (-not $permisos.Count) {
             $n = New-Object -ComObject HNetCfg.FWRule
-            $n.Name = 'Panel del PC'
-            $n.Description = 'Deja que el celular entre al Panel del PC por la red local.'
+            $n.Name = 'Orbital'
+            $n.Description = 'Deja que el celular entre a Orbital por la red local.'
             $n.ApplicationName = $programa
             $n.Protocol = 6; $n.Direction = 1; $n.Action = 1; $n.Profiles = $Perfil; $n.Enabled = $true
             [void]$Politica.Rules.Add($n)
@@ -167,8 +167,8 @@ function Get-Requisitos([string]$Raiz, [int]$Puerto = 8787) {
     if ($faltan.Count) {
         $r += New-Requisito 'Archivos del panel' 'FALTA' "faltan: $($faltan -join ', ')" $true 'Vuelve a descomprimir el .zip del panel completo, en una carpeta fija (no lo abras desde dentro del .zip).'
     } else { $r += New-Requisito 'Archivos del panel' 'OK' "$($PanelArchivos.Count) archivos" $true }
-    if (Test-Path (Join-Path $Raiz 'Panel del PC.exe')) { $r += New-Requisito 'Ventana del panel' 'OK' 'Panel del PC.exe' $false }
-    else { $r += New-Requisito 'Ventana del panel' 'INFO' 'todavía no se ha creado Panel del PC.exe' $false 'Se crea al ejecutar instalar.cmd. Sin él, el panel abre su ventana con PowerShell.' }
+    if (Test-Path (Join-Path $Raiz 'Orbital.exe')) { $r += New-Requisito 'Ventana del panel' 'OK' 'Orbital.exe' $false }
+    else { $r += New-Requisito 'Ventana del panel' 'INFO' 'todavía no se ha creado Orbital.exe' $false 'Se crea al ejecutar instalar.cmd. Sin él, el panel abre su ventana con PowerShell.' }
 
     # 2. Windows
     $build = [Environment]::OSVersion.Version.Build

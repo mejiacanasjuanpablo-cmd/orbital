@@ -1,16 +1,16 @@
-# Panel del PC
+# Orbital
 
-Panel de control del PC que se abre en el navegador del celular por la red Wi-Fi de la casa.
+**Orbital** es un panel de control del PC que se abre en el navegador del celular por la red Wi-Fi de la casa.
 No hay que instalar ninguna app en el celular ni activar nada en sus ajustes. Funciona en Windows 10 y 11, en español o en inglés.
 
 ## Instalación (una sola vez)
 
-1. Descomprime `Panel-del-PC.zip` en una carpeta fija (por ejemplo, en Documentos). No lo ejecutes desde dentro del .zip.
+1. Descomprime `Orbital.zip` en una carpeta fija (por ejemplo, en Documentos). No lo ejecutes desde dentro del .zip.
 2. Doble clic en **`instalar.cmd`**. Revisa los requisitos y pregunta antes de instalar lo que falte
    (**Node.js 18 o superior**, con winget; si el PC no tiene winget, abre la página oficial) y antes de dar permiso a
    Node.js en el firewall de Windows.
-   También crea `config.json`, la ventana del panel (`Panel del PC.exe`, que se compila en el propio PC con lo que trae
-   Windows) y el icono **Panel del PC** en el menú Inicio.
+   También crea `config.json`, la ventana del panel (`Orbital.exe`, que se compila en el propio PC con lo que trae
+   Windows) y el icono **Orbital** en el menú Inicio.
    Si Windows avisa de que el archivo viene de internet, elige **Más información → Ejecutar de todas formas**.
 3. La primera vez que abras el panel, Windows puede preguntar si permites que Node.js use la red:
    permítelo en **redes privadas**. Si se cancela o nadie responde, la ventana del panel lo avisa y lo arregla con
@@ -18,8 +18,9 @@ No hay que instalar ninguna app en el celular ni activar nada en sus ajustes. Fu
 
 Si mueves la carpeta a otro sitio, vuelve a ejecutar `instalar.cmd` para que el icono apunte a la nueva ubicación.
 
-**Si vienes de una versión anterior** (con los iconos **Panel USB** y **Panel Wi-Fi**): vuelve a ejecutar `instalar.cmd`.
-Los cambia por el icono **Panel del PC**. Mientras tanto, los dos iconos viejos siguen funcionando y abren el panel por Wi-Fi.
+**Si vienes de una versión anterior** (con el icono **Panel del PC**, que era el nombre de antes, o con **Panel USB** y
+**Panel Wi-Fi**): vuelve a ejecutar `instalar.cmd`. Los cambia por el icono **Orbital**. Mientras tanto, los iconos viejos
+siguen funcionando.
 
 ### Verificar requisitos
 
@@ -40,7 +41,7 @@ Si falta algo obligatorio, el panel tampoco arranca: lo avisa y te manda a `veri
 
 ## Usar
 
-Abre **Panel del PC** desde el menú Inicio (o doble clic en `iniciar.cmd`). Se abre la **ventana del panel** en el PC,
+Abre **Orbital** desde el menú Inicio (o doble clic en `iniciar.cmd`). Se abre la **ventana del panel** en el PC,
 sin consola:
 - **Personaliza las pantallas** es la pantalla principal: qué páginas se ven en el celular y en qué orden (ver
   [Páginas](#páginas)). Arriba dice si el panel está en marcha.
@@ -70,7 +71,7 @@ sin consola:
 
 1. Con el celular en la **misma red Wi-Fi** que el PC, escanea con la cámara el código QR de la ventana.
    Se abre el panel en el navegador (si se abre en uno que no sea Chrome, usa "Abrir en Chrome").
-2. **La primera vez, el PC pide permiso:** aparece el aviso "Panel del PC: dispositivo nuevo" con la IP y el modelo
+2. **La primera vez, el PC pide permiso:** aparece el aviso "Orbital: dispositivo nuevo" con la IP y el modelo
    del celular. Pulsa **Sí** y el panel se abre solo en el celular.
    Pulsa **No** si no lo reconoces: ese dispositivo no podrá volver a pedir acceso hasta que reinicies el panel.
 3. En el celular, en Chrome: menú ⋮ > **Agregar a pantalla principal**. Desde ese icono se abre directo y a pantalla completa.
@@ -235,19 +236,21 @@ Hay dos formas. Ninguna incluye nunca tu `.token`, tu `config.json` ni la carpet
 páginas y el idioma).
 
 **Un solo programa (lo más fácil para probarlo en otros PC).** En la carpeta del panel ejecuta
-`.\herramientas\portatil.ps1`. Crea `Panel del PC.exe` en el Escritorio (unos 35 MB): lleva dentro todo el panel y Node.js,
+`.\herramientas\portatil.ps1`. Crea `Orbital.exe` en el Escritorio (unos 35 MB): lleva dentro todo el panel y Node.js,
 así que en el otro PC no hay que instalar nada.
 - Quien lo reciba solo le hace doble clic. Como el programa no está firmado, Windows puede avisar: **Más información →
   Ejecutar de todas formas**.
-- La primera vez tarda unos segundos: deja el panel en `%LOCALAPPDATA%\Panel del PC` y el icono **Panel del PC** en el
-  menú Inicio (si ya había uno, no lo toca). Después se abre directo, también desde ese icono.
-- Si le llega un `Panel del PC.exe` más nuevo, al abrirlo actualiza el programa y conserva su `config.json`, su token y sus
+- La primera vez tarda unos segundos: deja el panel en `%LOCALAPPDATA%\Panel del PC` y el icono **Orbital** en el
+  menú Inicio (si ya había uno, no lo toca). La carpeta conserva el nombre de antes de llamarse Orbital: si ese PC ya
+  tenía el **Panel del PC**, sigue con su configuración y el icono viejo se cambia por el nuevo. Después se abre
+  directo, también desde ese icono.
+- Si le llega un `Orbital.exe` más nuevo, al abrirlo actualiza el programa y conserva su `config.json`, su token y sus
   datos. Si el panel está abierto, primero pide cerrarlo con **Detener el panel**.
 - La primera vez Windows pregunta si permite que Node.js use la red: permítelo en **redes privadas**. Si se cancela o
   nadie responde, la ventana lo avisa y lo arregla con **Permitir el acceso**.
 - Para quitarlo: borra la carpeta `%LOCALAPPDATA%\Panel del PC` y el icono del menú Inicio.
 
-**El .zip.** En la carpeta del panel ejecuta `.\empaquetar.ps1`. Crea `Panel-del-PC.zip` junto a la carpeta, con solo los
+**El .zip.** En la carpeta del panel ejecuta `.\empaquetar.ps1`. Crea `Orbital.zip` junto a la carpeta, con solo los
 archivos del programa (sin Node.js). Quien lo reciba empieza por la sección **Instalación**.
 
 ## Seguridad
